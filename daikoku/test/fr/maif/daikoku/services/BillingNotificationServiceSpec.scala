@@ -125,6 +125,33 @@ class BillingNotificationServiceSpec
       (action \ "effectiveAt").as[Long] mustBe effectiveAt.getMillis
     }
 
+    "tell the subscribing team that the producer blocked its subscription, and why" in {
+      Await.result(
+        service.blockedByOwner(tenant, subscription, Some("Abusive usage")),
+        10.seconds
+      )
+
+      val notification = theOnlyStoredNotification()
+      notification.team mustBe Some(teamConsumer.id)
+
+      val action = (notification.asJson \ "action").as[JsObject]
+      (action \ "type").as[String] mustBe "SubscriptionBlockedByOwner"
+      (action \ "subscription").as[String] mustBe "billing-sub"
+      (action \ "reason").as[String] mustBe "Abusive usage"
+    }
+
+    "tell the subscribing team that the producer unblocked its subscription" in {
+      Await.result(
+        service.unblockedByOwner(tenant, subscription),
+        10.seconds
+      )
+
+      val notification = theOnlyStoredNotification()
+      notification.team mustBe Some(teamConsumer.id)
+      (notification.asJson \ "action" \ "type")
+        .as[String] mustBe "SubscriptionUnblockedByOwner"
+    }
+
     "address the notification to the subscribing team, not to the producer" in {
       Await.result(
         service.cancellationScheduled(tenant, subscription, effectiveAt),
@@ -149,7 +176,9 @@ class BillingNotificationServiceSpec
     "have a mail template in every supported language" in {
       val keys = Seq(
         "mail.billing.price.change",
-        "mail.billing.cancellation"
+        "mail.billing.cancellation",
+        "mail.subscription.blocked.by.owner",
+        "mail.subscription.unblocked.by.owner"
       ).flatMap(key => Seq(s"$key.title", s"$key.body"))
 
       Seq("en", "fr").foreach { lang =>

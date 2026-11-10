@@ -125,6 +125,11 @@ $cell-border-color: color-mix(in srgb, variables.$level2_bg-color 95%, #000);
       background-color: color-mix(in srgb, variables.$level3_bg-color 90%, #000);
     }
 
+    &.--highlighted {
+      box-shadow: inset 3px 0 0 variables.$primary-color;
+      background-color: color-mix(in srgb, variables.$primary-color 10%, transparent);
+    }
+
     .nav_item {
       font-size: 1.1rem;
       width: 1.5rem;

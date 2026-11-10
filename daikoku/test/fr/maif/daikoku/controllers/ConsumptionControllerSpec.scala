@@ -224,6 +224,79 @@ class ConsumptionControllerSpec()
 
     }
 
+    "see the last day of a closed month in the team consumption and income" in {
+      val lastDay =
+        DateTime.now().withDayOfMonth(1).withTimeAtStartOfDay().minusDays(1)
+
+      val lastDayConsumption = yesterdayConsumption.copy(
+        id = DatastoreId("last-day"),
+        from = lastDay,
+        to = lastDay.plusDays(1)
+      )
+      val nextMonthConsumption = yesterdayConsumption.copy(
+        id = DatastoreId("next-month"),
+        from = lastDay.plusDays(1),
+        to = lastDay.plusDays(2)
+      )
+
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(userAdmin),
+        teams = Seq(teamOwner, teamConsumer),
+        usagePlans = defaultApi.plans,
+        apis = Seq(defaultApi.api),
+        subscriptions = Seq(payperUserSub),
+        keyrings = Seq(payperUserKeyring),
+        consumptions = Seq(lastDayConsumption, nextMonthConsumption)
+      )
+      val session = loginWithBlocking(userAdmin, tenant)
+
+      val from = lastDay.withDayOfMonth(1).getMillis
+      val to = lastDay.plusDays(1).getMillis - 1
+
+      def idsOf(path: String): Seq[String] = {
+        val resp = httpJsonCallBlocking(path = path)(using tenant, session)
+        resp.status mustBe 200
+
+        val consumptions = resp.json.as[JsArray].value.toSeq
+
+        consumptions.map(consumption => (consumption \ "_id").as[String])
+      }
+
+      idsOf(
+        s"/api/teams/${teamConsumerId.value}/consumptions?from=$from&to=$to"
+      ) mustBe Seq("last-day")
+      idsOf(
+        s"/api/teams/${teamOwnerId.value}/income?from=$from&to=$to"
+      ) mustBe Seq("last-day")
+    }
+
+    "not sync the consumption of an ended subscription" in {
+      val endedSub = payperUserSub.copy(
+        blockedBy = Set(SubscriptionBlockReason.Ended)
+      )
+
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(userAdmin),
+        teams = Seq(teamOwner, teamConsumer),
+        usagePlans = defaultApi.plans,
+        apis = Seq(defaultApi.api),
+        subscriptions = Seq(endedSub),
+        keyrings = Seq(payperUserKeyring)
+      )
+      val session = loginWithBlocking(userAdmin, tenant)
+
+      val resp = httpJsonCallBlocking(
+        path =
+          s"/api/teams/${teamConsumerId.value}/subscription/${endedSub.id.value}/consumption/_sync",
+        method = "POST"
+      )(using tenant, session)
+
+      resp.status mustBe 200
+      resp.json.as[JsArray].value mustBe empty
+    }
+
     "sync apikey consumption" in {
       setupEnvBlocking(
         tenants = Seq(tenant),

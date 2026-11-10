@@ -480,6 +480,106 @@ class ApiControllerAggregateSpec() extends ApiControllerSpecBase {
         String
       ] mustBe "The subscribed plan has another otoroshi of the parent plan"
     }
+    "not hold a paid plan, whichever subscription joins the other" in {
+      val freePlan = UsagePlan(
+        UsagePlanId("free-plan"),
+        tenant = tenant.id,
+        customName = "free",
+        customDescription = None,
+        otoroshiTarget = Some(
+          OtoroshiTarget(
+            containerizedOtoroshi,
+            Some(
+              AuthorizedEntities(routes = Set(OtoroshiRouteId(parentRouteId)))
+            )
+          )
+        ),
+        allowMultipleKeys = Some(true),
+        subscriptionProcess = SubscriptionProcess(),
+        integrationProcess = IntegrationProcess.ApiKey,
+        autoRotation = Some(false),
+        aggregationApiKeysSecurity = Some(true)
+      )
+      val paidPlan = freePlan.copy(
+        id = UsagePlanId("paid-plan"),
+        customName = "paid",
+        costPerMonth = BigDecimal(10).some,
+        currency = Currency("EUR").some,
+        paymentSettings = PaymentSettings
+          .Stripe(
+            thirdPartyPaymentSettingsId = ThirdPartyPaymentSettingsId("stripe"),
+            productId = "prod_1234",
+            priceIds = StripePriceIds(
+              basePriceId = "price_base",
+              additionalPriceId = "price_usage",
+              meterId = "mtr_1234",
+              meterEventName = "daikoku_usage_1234"
+            )
+          )
+          .some
+      )
+      val api = defaultApi.api.copy(
+        id = ApiId("shared-key-api"),
+        possibleUsagePlans = Seq(freePlan.id, paidPlan.id)
+      )
+
+      def keyringWith(plan: UsagePlan): (Keyring, ApiSubscription) = {
+        val keyring = Keyring(
+          id = KeyringId(s"keyring-${plan.id.value}"),
+          tenant = tenant.id,
+          team = teamConsumerId,
+          apiKey = OtoroshiApiKey("name", s"client-${plan.id.value}", "secret"),
+          otoroshiSettings =
+            KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+          createdAt = DateTime.now(),
+          customName = s"keyring-${plan.id.value}",
+          integrationToken = s"token-${plan.id.value}"
+        )
+        val subscription = ApiSubscription(
+          id = ApiSubscriptionId(s"sub-${plan.id.value}"),
+          tenant = tenant.id,
+          plan = plan.id,
+          createdAt = DateTime.now(),
+          team = teamConsumerId,
+          api = api.id,
+          by = userTeamAdminId,
+          customName = None,
+          keyring = keyring.id
+        )
+
+        (keyring, subscription)
+      }
+
+      val (freeKeyring, freeSubscription) = keyringWith(freePlan)
+      val (paidKeyring, paidSubscription) = keyringWith(paidPlan)
+
+      setupEnvBlocking(
+        tenants = Seq(tenant.copy(aggregationApiKeysSecurity = Some(true))),
+        users = Seq(user),
+        teams = Seq(teamOwner, teamConsumer),
+        usagePlans = defaultApi.plans ++ Seq(freePlan, paidPlan),
+        apis = Seq(defaultApi.api, api),
+        subscriptions = Seq(freeSubscription, paidSubscription),
+        keyrings = Seq(freeKeyring, paidKeyring)
+      )
+      val session = loginWithBlocking(user, tenant)
+
+      def joinIsRefused(plan: UsagePlan, keyring: Keyring): Unit = {
+        val resp = httpJsonCallBlocking(
+          path =
+            s"/api/apis/${api.id.value}/plan/${plan.id.value}/team/${teamConsumerId.value}/${keyring.id.value}/_extends",
+          method = "PUT",
+          body = Json.obj().some
+        )(using tenant, session)
+
+        resp.status mustBe Status.CONFLICT
+        (resp.json \ "error")
+          .as[String] mustBe "A paid plan cannot be on a shared api key"
+      }
+
+      joinIsRefused(paidPlan, freeKeyring)
+      joinIsRefused(freePlan, paidKeyring)
+    }
     "update subscription on keyring do not erase authorizedEntities" in {
       val parentPlan = UsagePlan(
         id = UsagePlanId("parent.dev"),

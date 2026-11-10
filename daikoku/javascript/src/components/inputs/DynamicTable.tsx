@@ -223,6 +223,7 @@ export type DynamicTableProps<T extends RowData> = {
   toolbar?: ReactNode;
   getRowId?: (row: T) => string;
   getRowAriaLabel?: (row: T) => string;
+  highlightedRowId?: string;
   /** Extra CSS class added to the `<div>` wrapping the rows (`.dynamic-table__data` is always applied). */
   dataClassName?: string;
   /** Translation key for the item noun (used with plural support). Shown as "{n} {label}" or "{filtered} {label} (sur {total})". */
@@ -249,6 +250,7 @@ export function DynamicTable<T extends RowData>({
   toolbar = null,
   getRowId,
   getRowAriaLabel,
+  highlightedRowId,
   ariaLabel,
   dataClassName,
   countLabelKey,
@@ -792,7 +794,12 @@ export function DynamicTable<T extends RowData>({
             }
             <ul className="table-rows" aria-label={ariaLabel}>
               {table.getRowModel().rows.map(row => (
-                <li key={row.id} tabIndex={-1} aria-label={getRowAriaLabel?.(row.original)} className="table-row">
+                <li
+                  key={row.id}
+                  tabIndex={-1}
+                  aria-label={getRowAriaLabel?.(row.original)}
+                  className={classNames('table-row', { '--highlighted': row.id === highlightedRowId })}
+                >
                   {row.getAllCells().map(cell => (
                     (cell.column.columnDef.meta?.hidden !== true) && <div key={cell.id} className={cell.column.columnDef.meta?.className}>
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}

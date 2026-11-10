@@ -8,7 +8,7 @@ import difference from 'lodash/difference';
 import { CopyPlus, Download, EllipsisVertical, ExternalLink, KeyRound, Pencil, Plus, Trash2 } from 'lucide-react';
 import { nanoid } from 'nanoid';
 import { ReactNode, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import Select, { components, OptionProps } from 'react-select';
 import CreatableSelect from 'react-select/creatable';
 import { toast } from 'sonner';
@@ -17,7 +17,6 @@ import { I18nContext, ModalContext } from '../../../contexts';
 import { GlobalContext } from '../../../contexts/globalContext';
 import * as Services from '../../../services';
 import { SubscriptionReturn } from '../../../services';
-import { currencies } from '../../../services/currencies';
 import {
   ApiPricingProps,
   IApi,
@@ -657,23 +656,6 @@ const BillingForm = (props: { ownerTeam: ITeamSimple, plan: IUsagePlanGQL, saveP
           : []),
       ],
     },
-    currency: {
-      type: type.object,
-      format: format.form,
-      label: null,
-      schema: {
-        code: {
-          type: type.string,
-          format: format.select,
-          label: translate('Currency'),
-          defaultValue: 'EUR',
-          options: currencies.map((c) => ({
-            label: `${c.name} (${c.symbol})`,
-            value: c.code,
-          })),
-        },
-      },
-    },
   })
 
   return (
@@ -701,7 +683,13 @@ const BillingForm = (props: { ownerTeam: ITeamSimple, plan: IUsagePlanGQL, saveP
       {billingDisplayed && <Form
         schema={billingSchema}
         value={props.plan}
-        onSubmit={(data) => props.savePlan({ ...props.plan, ...data })}
+        onSubmit={(data) => props.savePlan({
+          ...props.plan,
+          ...data,
+          currency: {
+            code: 'EUR',
+          },
+        })}
       />}
       {!billingDisplayed && (
         <div className='mrf-flex mrf-jc_end mrf-mt_5'>
@@ -897,6 +885,8 @@ export const ApiPricing = (props: ApiPricingProps) => {
   const { connectedUser, tenant, customGraphQLClient, flags: {
     multiPlanSubscriptionEnabled
   } } = useContext(GlobalContext);
+
+  const { hash } = useLocation();
 
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const hasSelectedRow = Object.values(rowSelection).includes(true)
@@ -1278,6 +1268,9 @@ export const ApiPricing = (props: ApiPricingProps) => {
           };
         };
         aggregationApiKeysSecurity: boolean;
+        paymentSettings?: {
+          thirdPartyPaymentSettingsId: string;
+        } | null;
       };
       type IApiGQL = {
         _id: string;
@@ -1331,6 +1324,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
               .filter(([, members]) =>
                 members.every(
                   (m) =>
+                    !m.plan?.paymentSettings &&
                     // same Otoroshi instance
                     m.plan?.otoroshiTarget?.otoroshiSettings === joiningOtoroshi &&
                     // environment aggregation security : same plan name
@@ -1355,7 +1349,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
 
             if (
               !tenant.aggregationApiKeysSecurity || !plan.aggregationApiKeysSecurity ||
-              keyrings.length <= 0
+              !!plan.paymentSettings || keyrings.length <= 0
             ) {
               askForApikeys(teamId, convertIUsagePlanGQLToIUsagePlan(plan));
             } else {
@@ -2105,6 +2099,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
         fetchData={usagePlansFetchData}
         getRowId={plan => plan._id}
         getRowAriaLabel={plan => plan.customName}
+        highlightedRowId={hash.slice(1)}
         tableClassName="col-12 api_list_container"
         dataClassName="api-table table-rows"
         countLabelKey="Plan"

@@ -1907,6 +1907,13 @@ class ApiService(
               (),
               AppError.SubscriptionAggregationReadOnlyConflict
             )
+            paidPlanInvolved = plan.paymentSettings.isDefined ||
+              memberPlans.exists(_.paymentSettings.isDefined)
+            _ <- EitherT.cond[Future][AppError, Unit](
+              !paidPlanInvolved,
+              (),
+              AppError.SubscriptionAggregationPaymentConflict
+            )
           } yield ()
       }
     }

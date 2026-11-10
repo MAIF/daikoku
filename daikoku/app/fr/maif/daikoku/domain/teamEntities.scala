@@ -348,6 +348,19 @@ object NotificationAction {
       effectiveAt: DateTime
   ) extends NotificationAction
 
+  case class SubscriptionBlockedByOwner(
+      subscription: ApiSubscriptionId,
+      api: ApiId,
+      plan: UsagePlanId,
+      reason: Option[String]
+  ) extends NotificationAction
+
+  case class SubscriptionUnblockedByOwner(
+      subscription: ApiSubscriptionId,
+      api: ApiId,
+      plan: UsagePlanId
+  ) extends NotificationAction
+
   case class ApiDepreciationWarning(api: ApiId) extends NotificationAction
 
   case class ApiBlockingWarning(api: ApiId, subscription: ApiSubscriptionId)

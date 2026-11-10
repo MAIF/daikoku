@@ -15,6 +15,7 @@
   //border: 1px solid #bbc9d8;
   background-color: variables.$level3_bg-color;
   color: variables.$level3_text-color;
+
   .title__container__bloc {
     display: flex;
     align-items: center;
@@ -35,58 +36,8 @@
   }
 }
 
-.subscription-billing {
-  margin-bottom: 20px;
-
-  .subscription-billing__title {
-    font-size: 20px;
-    color: variables.$level3_text-color;
-  }
-
-  .subscription-billing__cards {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-    gap: 12px;
-  }
-
-  .subscription-billing__card {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    padding: 12px 16px;
-    background-color: variables.$level3_bg-color;
-    color: variables.$level3_text-color;
-    border: 1px solid variables.$neutral-color-200;
-    border-radius: 4px;
-  }
-
-  .subscription-billing__header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    gap: 8px;
-  }
-
-  .subscription-billing__api {
-    font-weight: bold;
-  }
-
-  .subscription-billing__plan {
-    font-size: 14px;
-  }
-
-  .subscription-billing__line {
-    margin: 0;
-    font-size: 14px;
-
-    &.--info {
-      color: variables.$info-color;
-    }
-  }
-
-  .subscription-billing__invoices {
-    align-self: flex-start;
-  }
+.subscription-billing__price-change {
+  color: variables.$info-color;
 }
 
 .api__billing__card__container {
@@ -136,7 +87,7 @@
     cursor: pointer;
   }
 
-  + .price__cartridge {
+  +.price__cartridge {
     margin-top: 5px;
   }
 
@@ -149,9 +100,11 @@
 .apikeys {
   text-align: center;
   margin-top: 40px;
+
   .api-plans-consumptions {
     background-color: variables.$level3_bg-color;
   }
+
   @media screen and (max-width: 768px) {
     position: absolute;
     top: 120px;
@@ -195,11 +148,13 @@
     font-size: 14px;
   }
 }
+
 .no-data__container {
   display: flex;
   justify-content: center;
   margin: 10px;
 }
+
 .badge.no-data {
   font-size: 20px;
 }
@@ -207,4 +162,113 @@
 
 .month__selector .ant-calendar-picker:hover .ant-calendar-picker-clear {
   opacity: 0;
+}
+
+.billing-charts {
+  margin-top: 1rem;
+
+  .recharts-cartesian-grid line {
+    stroke: variables.$neutral-color-200;
+  }
+
+  .recharts-rectangle.recharts-tooltip-cursor {
+    fill: variables.$neutral-color-100;
+  }
+
+  .recharts-curve.recharts-tooltip-cursor {
+    stroke: variables.$neutral-color-300;
+    stroke-width: 1px;
+  }
+}
+
+.billing-chart__title {
+  margin: 1rem 0 0.25rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: variables.$level2_text-color;
+}
+
+.billing-chart__axis {
+  .recharts-cartesian-axis-line {
+    stroke: variables.$neutral-color-200;
+  }
+
+  .recharts-cartesian-axis-tick-value {
+    fill: variables.$neutral-color-500;
+    font-size: 0.75rem;
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+.billing-chart__bar .recharts-rectangle {
+  fill: variables.$primary-color;
+}
+
+.billing-chart__area {
+  .recharts-area-curve {
+    stroke: variables.$primary-color;
+  }
+
+  .recharts-area-area {
+    fill: variables.$primary-color;
+    fill-opacity: 0.1;
+  }
+}
+
+.billing-chart__dot {
+  fill: variables.$primary-color;
+  stroke: variables.$level2_bg-color;
+  stroke-width: 2px;
+}
+
+.billing-chart__end-label {
+  fill: variables.$level2_text-color;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.billing-chart__tooltip {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid variables.$neutral-color-200;
+  border-radius: 6px;
+  background-color: variables.$level3_bg-color;
+  color: variables.$level3_text-color;
+  font-size: 0.8125rem;
+}
+
+.billing-chart__tooltip-day {
+  color: variables.$neutral-color-500;
+}
+
+.billing-kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.billing-kpi {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 1rem 1.25rem;
+  border-radius: 6px;
+}
+
+.billing-kpi__label {
+  font-size: 0.875rem;
+  color: variables.$neutral-color-500;
+}
+
+.billing-kpi__value {
+  font-size: 1.75rem;
+  font-weight: 600;
+  color: variables.$level2_text-color;
+}
+
+.billing-tab {
+  border-radius: 0 0 6px 6px;
 }

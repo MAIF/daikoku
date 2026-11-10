@@ -3110,6 +3110,10 @@ object json {
             SubscriptionPriceChangeScheduledFormat.reads(json)
           case "SubscriptionCancellationScheduled" =>
             SubscriptionCancellationScheduledFormat.reads(json)
+          case "SubscriptionBlockedByOwner" =>
+            SubscriptionBlockedByOwnerFormat.reads(json)
+          case "SubscriptionUnblockedByOwner" =>
+            SubscriptionUnblockedByOwnerFormat.reads(json)
           case "ApiDepreciationWarning" =>
             ApiDepreciationWarningFormat.reads(json)
           case "ApiBlockingWarning" => ApiBlockingWarningFormat.reads(json)
@@ -3236,6 +3240,18 @@ object json {
               .writes(p)
               .as[JsObject] ++ Json.obj(
               "type" -> "SubscriptionCancellationScheduled"
+            )
+          case p: SubscriptionBlockedByOwner =>
+            SubscriptionBlockedByOwnerFormat
+              .writes(p)
+              .as[JsObject] ++ Json.obj(
+              "type" -> "SubscriptionBlockedByOwner"
+            )
+          case p: SubscriptionUnblockedByOwner =>
+            SubscriptionUnblockedByOwnerFormat
+              .writes(p)
+              .as[JsObject] ++ Json.obj(
+              "type" -> "SubscriptionUnblockedByOwner"
             )
           case p: ApiDepreciationWarning =>
             ApiDepreciationWarningFormat.writes(p).as[JsObject] ++ Json.obj(
@@ -3403,6 +3419,58 @@ object json {
           "api" -> o.api.asJson,
           "plan" -> o.plan.asJson,
           "effectiveAt" -> DateTimeFormat.writes(o.effectiveAt)
+        )
+    }
+
+  val SubscriptionBlockedByOwnerFormat =
+    new Format[SubscriptionBlockedByOwner] {
+      override def reads(json: JsValue): JsResult[SubscriptionBlockedByOwner] =
+        Try {
+          JsSuccess(
+            SubscriptionBlockedByOwner(
+              subscription =
+                (json \ "subscription").as(using ApiSubscriptionIdFormat),
+              api = (json \ "api").as(using ApiIdFormat),
+              plan = (json \ "plan").as(using UsagePlanIdFormat),
+              reason = (json \ "reason").asOpt[String]
+            )
+          )
+        } recover { case e =>
+          JsError(e.getMessage)
+        } get
+
+      override def writes(o: SubscriptionBlockedByOwner): JsValue =
+        Json.obj(
+          "subscription" -> o.subscription.asJson,
+          "api" -> o.api.asJson,
+          "plan" -> o.plan.asJson,
+          "reason" -> o.reason.map(JsString(_)).getOrElse(JsNull).as[JsValue]
+        )
+    }
+
+  val SubscriptionUnblockedByOwnerFormat =
+    new Format[SubscriptionUnblockedByOwner] {
+      override def reads(
+          json: JsValue
+      ): JsResult[SubscriptionUnblockedByOwner] =
+        Try {
+          JsSuccess(
+            SubscriptionUnblockedByOwner(
+              subscription =
+                (json \ "subscription").as(using ApiSubscriptionIdFormat),
+              api = (json \ "api").as(using ApiIdFormat),
+              plan = (json \ "plan").as(using UsagePlanIdFormat)
+            )
+          )
+        } recover { case e =>
+          JsError(e.getMessage)
+        } get
+
+      override def writes(o: SubscriptionUnblockedByOwner): JsValue =
+        Json.obj(
+          "subscription" -> o.subscription.asJson,
+          "api" -> o.api.asJson,
+          "plan" -> o.plan.asJson
         )
     }
 

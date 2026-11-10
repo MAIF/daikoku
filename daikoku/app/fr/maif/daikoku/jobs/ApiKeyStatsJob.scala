@@ -193,7 +193,10 @@ class ApiKeyStatsJob(
                                                    maybeLastConsumption: Option[ApiKeyConsumption],
                                                    completed: Boolean = false
                                                  ): Future[Seq[ApiKeyConsumption]] = {
+    val ended = subscription.blockedBy.contains(SubscriptionBlockReason.Ended)
+
     (for {
+      _ <- OptionT.fromOption[Future](Option.unless(ended)(()))
       api <- OptionT.fromOption[Future](maybeApi)
       plan <- OptionT(
         env.dataStore.usagePlanRepo

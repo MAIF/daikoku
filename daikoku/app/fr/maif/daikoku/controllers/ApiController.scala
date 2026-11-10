@@ -1982,6 +1982,11 @@ class ApiController(
         import cats.implicits.*
 
         ctx.setCtxValue("subscription.id", subscriptionId)
+        val reason = ctx.request.body.asJson
+          .flatMap(body => (body \ "reason").asOpt[String])
+          .map(_.trim)
+          .filter(_.nonEmpty)
+
         (for {
           sub <- EitherT.fromOptionF[Future, AppError, ApiSubscription](
             env.dataStore.apiSubscriptionRepo
@@ -1994,6 +1999,13 @@ class ApiController(
             AppError.ApiNotFound
           )
           _ <- EitherT.cond[Future](api.state != ApiState.Blocked, (), AppError.ForbiddenAction)
+          _ <- EitherT.cond[Future](
+            !sub.blockedBy.contains(SubscriptionBlockReason.Ended),
+            (),
+            AppError.Forbidden(
+              "This subscription was cancelled in Stripe and cannot be reactivated: the team has to subscribe again"
+            )
+          )
           plan <- EitherT.fromOptionF[Future, AppError, UsagePlan](
             env.dataStore.usagePlanRepo
               .forTenant(ctx.tenant)
@@ -2002,11 +2014,30 @@ class ApiController(
           )
           _ <- EitherT.right[AppError](apiKeyStatsJob.syncForSubscription(sub, ctx.tenant))
           delete <- EitherT(apiService.archiveApiKey(ctx.tenant, sub, plan, enabled.getOrElse(false), byOwner = true))
+          _ <- EitherT.liftF[Future, AppError, Unit](
+            notifyOwnerBlocking(ctx.tenant, sub, enabled.getOrElse(false), reason)
+          )
         } yield Ok(delete))
           .leftMap(_.render())
           .merge
       }
     }
+
+  private def notifyOwnerBlocking(
+      tenant: Tenant,
+      subscription: ApiSubscription,
+      enabled: Boolean,
+      reason: Option[String]
+  ): Future[Unit] = {
+    val wasBlocked =
+      subscription.blockedBy.contains(SubscriptionBlockReason.Owner)
+
+    if (wasBlocked && enabled)
+      billingNotificationService.unblockedByOwner(tenant, subscription)
+    else if (!wasBlocked && !enabled)
+      billingNotificationService.blockedByOwner(tenant, subscription, reason)
+    else FastFuture.successful(())
+  }
 
   def deleteApiSubscription(teamId: String, subscriptionId: String): Action[AnyContent] =
     DaikokuAction.async { ctx =>

@@ -1835,6 +1835,10 @@ trait ConsumptionRepo
     s"AND (content->>'from')::bigint >= $$$from " +
       s"AND (content->>'to')::bigint <= $$$to"
 
+  private def startsWithinSql(from: Int, to: Int): String =
+    s"AND (content->>'from')::bigint >= $$$from " +
+      s"AND (content->>'from')::bigint < $$$to"
+
   private def millis(value: Long): AnyRef = java.lang.Long.valueOf(value)
 
   def findByClientIdBetween(
@@ -1891,7 +1895,7 @@ trait ConsumptionRepo
     repo.query(
       s"SELECT content FROM ${repo.tableName} " +
         s"WHERE $consumptionScope AND content->>'team' = $$2 " +
-        s"${windowSql(3, 4)} ORDER BY (content->>'from')::bigint ASC",
+        s"${startsWithinSql(3, 4)} ORDER BY (content->>'from')::bigint ASC",
       Seq(tenant.value, team.value, millis(from), millis(to))
     )
   }
@@ -1943,7 +1947,7 @@ trait ConsumptionRepo
     }
     between.foreach { case (from, to) =>
       predicates += s"(content->>'from')::bigint >= $$${placeholder + 1}"
-      predicates += s"(content->>'to')::bigint <= $$${placeholder + 2}"
+      predicates += s"(content->>'from')::bigint < $$${placeholder + 2}"
       placeholder += 2
       params += millis(from)
       params += millis(to)

@@ -1,55 +1,7 @@
-import classNames from 'classnames';
-import React, { useContext } from 'react';
-import {ExternalLink, PlusSquare} from 'lucide-react'
+import { useContext } from 'react';
 
 import { I18nContext } from '../../../contexts';
-import { formatCurrency, getCurrencySymbol } from '../../utils/formatters';
-import { ICurrency } from '../../../types';
-
-export const ApiTotal = (props: any) => {
-  return (
-    <div className="col-4 api__billing__card" onClick={props.handleClick}>
-      <div className="api__billing__name label">{props.api ? props.api.name : null}</div>
-      <div className="api__billing__total currency">
-        {formatCurrency(props.total)}
-        <span className="unit">{getCurrencySymbol('EUR')}</span>
-      </div>
-      <div>
-        <PlusSquare />
-      </div>
-    </div>
-  );
-};
-
-type PriceCartridgeProps = {
-  handleClick?: () => void
-  label: string
-  fetchInvoices?: () => void
-  total: number
-  currency: ICurrency
-}
-export const PriceCartridge = (props: PriceCartridgeProps) => {
-  return (
-    <div
-      className={classNames('price__cartridge', { clickable: !!props.handleClick })}
-      onClick={() => (props.handleClick ? props.handleClick() : {})}
-      {...props}
-    >
-      {!!props.fetchInvoices && <span className="price__cartridge__label d-flex align-items-center">
-        {props.label}
-        <ExternalLink
-          className="ms-1 cursor-pointer"
-          style={{ height: '15px', width: '15px' }}
-          onClick={props.fetchInvoices} />
-      </span>}
-
-      <span className="price__cartridge__total currency">
-        {formatCurrency(props.total)}
-        <span className="unit">{getCurrencySymbol(props.currency.code)}</span>
-      </span>
-    </div>
-  );
-};
+import { getCurrencySymbol } from '../../utils/formatters';
 
 export const NoData = () => {
   const { Translation } = useContext(I18nContext);

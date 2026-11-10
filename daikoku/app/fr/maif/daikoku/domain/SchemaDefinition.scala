@@ -3194,6 +3194,71 @@ object SchemaDefinition {
       )
     )
 
+    lazy val SubscriptionBlockedByOwnerType = new PossibleObject(
+      ObjectType(
+        "SubscriptionBlockedByOwner",
+        "A notification triggered when the API producer blocks a subscription",
+        interfaces[
+          (DataStore, DaikokuActionContext[JsValue]),
+          SubscriptionBlockedByOwner
+        ](NotificationActionType),
+        fields[
+          (DataStore, DaikokuActionContext[JsValue]),
+          SubscriptionBlockedByOwner
+        ](
+          Field(
+            "subscription",
+            OptionType(ApiSubscriptionType),
+            resolve =
+              ctx => apiSubscriptionsFetcher.defer(ctx.value.subscription)
+          ),
+          Field(
+            "api",
+            OptionType(ApiType),
+            resolve = ctx => apisFetcher.defer(ctx.value.api)
+          ),
+          Field(
+            "plan",
+            OptionType(UsagePlanType),
+            resolve = ctx => usagePlansFetcher.defer(ctx.value.plan)
+          ),
+          Field("reason", OptionType(StringType), resolve = _.value.reason)
+        )
+      )
+    )
+
+    lazy val SubscriptionUnblockedByOwnerType = new PossibleObject(
+      ObjectType(
+        "SubscriptionUnblockedByOwner",
+        "A notification triggered when the API producer unblocks a subscription",
+        interfaces[
+          (DataStore, DaikokuActionContext[JsValue]),
+          SubscriptionUnblockedByOwner
+        ](NotificationActionType),
+        fields[
+          (DataStore, DaikokuActionContext[JsValue]),
+          SubscriptionUnblockedByOwner
+        ](
+          Field(
+            "subscription",
+            OptionType(ApiSubscriptionType),
+            resolve =
+              ctx => apiSubscriptionsFetcher.defer(ctx.value.subscription)
+          ),
+          Field(
+            "api",
+            OptionType(ApiType),
+            resolve = ctx => apisFetcher.defer(ctx.value.api)
+          ),
+          Field(
+            "plan",
+            OptionType(UsagePlanType),
+            resolve = ctx => usagePlansFetcher.defer(ctx.value.plan)
+          )
+        )
+      )
+    )
+
     lazy val ApiSubscriptionTransferSuccessType = new PossibleObject(
       ObjectType(
         "ApiSubscriptionTransferSuccess",
@@ -3479,6 +3544,8 @@ object SchemaDefinition {
             AccountCreationAttemptType,
             SubscriptionPriceChangeScheduledType,
             SubscriptionCancellationScheduledType,
+            SubscriptionBlockedByOwnerType,
+            SubscriptionUnblockedByOwnerType,
             ApiDepreciationWarningType,
             ApiBlockingWarningType
           )
@@ -5284,6 +5351,7 @@ object SchemaDefinition {
         apiPostsFetcher,
         apiDocumentationPagesFetcher,
         apiSubscriptionsFetcher,
+        apiKeyringSubscriptionsFetcher,
         apiSubscriptionDemandsFetcher,
         keyringsFetcher,
         usagePlansFetcher,

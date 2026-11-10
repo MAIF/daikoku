@@ -44,7 +44,7 @@ const PendingDemandCell = ({ demand, column }: { demand: IKeyringDemandGql; colu
 
   switch (column) {
     case 'api': {
-      const link = `/${demand.api.team._humanReadableId}/${demand.api._humanReadableId}/${demand.api.currentVersion}/keyrings`;
+      const link = `/${demand.api.team._humanReadableId}/${demand.api._humanReadableId}/${demand.api.currentVersion}/apikeys`;
       return (
         <div className="d-flex flex-column">
           <Link className="underline" to={{ pathname: link, search }}>
@@ -659,7 +659,7 @@ export const KeyringCard = ({ api, keyring, currentTeam, pendingCount = 0 }: Key
           const row = info.cell.row.original;
           if (row.demand) return <PendingDemandCell demand={row.demand} column="api" />;
           const sub = row.subscription;
-          const link = `/${sub.api.team._humanReadableId}/${sub.api._humanReadableId}/${sub.api.currentVersion}/keyrings`;
+          const link = `/${sub.api.team._humanReadableId}/${sub.api._humanReadableId}/${sub.api.currentVersion}/apikeys`;
           return (
             <div className="d-flex flex-column">
               <Link className="underline" to={{ pathname: link, search }}>
@@ -687,7 +687,7 @@ export const KeyringCard = ({ api, keyring, currentTeam, pendingCount = 0 }: Key
               className="api-subscription__value__type d-flex align-items-center gap-1"
               aria-label={translate('State')}
             >
-              <div className={`dot ${sub.enabled ? 'enabled' : 'disabled'}`} />
+              <div className={`dot ${sub.enabled && sub.state === 'active' ? 'enabled' : 'disabled'}`} />
               <span className={`badge --state d-flex align-items-center gap-2 ${stateClass}`}>
                 {sub.enabled && sub.state === 'active' && translate('subscription.enable.label')}
                 {sub.state === 'blocked' && translate('subscription.blocked.label')}
@@ -825,6 +825,10 @@ export const KeyringCard = ({ api, keyring, currentTeam, pendingCount = 0 }: Key
   const [folding, setFolding] = useState(false);
 
   const keyringPending = pendingActions.has(`keyring:${keyring._id}`);
+  const allSubscriptionsBlocked =
+    !!keyring.subscriptions?.length &&
+    keyring.subscriptions.every((sub) => sub.state === 'blocked');
+
   const invalidateSubscriptions = () => {
     queryClient.invalidateQueries({ queryKey: QUERY_KEYS.keyringSubscriptions(keyring._id) });
     queryClient.invalidateQueries({
@@ -854,11 +858,13 @@ export const KeyringCard = ({ api, keyring, currentTeam, pendingCount = 0 }: Key
       <div className="keyring-card-name">
         <h4 title={keyring.customName}>{keyring.customName}</h4>
         <span
-          className={`badge --state d-flex align-items-center gap-2 ${keyring.enabled ? '--success' : '--danger'}`}
+          className={`badge --state d-flex align-items-center gap-2 ${keyring.enabled && !allSubscriptionsBlocked ? '--success' : '--danger'}`}
         >
-          {keyring.enabled
-            ? translate('subscription.enable.label')
-            : translate('subscription.disable.label')}
+          {!keyring.enabled
+            ? translate('subscription.disable.label')
+            : allSubscriptionsBlocked
+              ? translate('subscription.blocked.label')
+              : translate('subscription.enable.label')}
         </span>
       </div>
       <div className="keyring-card-count-env d-flex gap-2">

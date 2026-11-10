@@ -145,6 +145,15 @@ mail.billing.cancellation.title=Your cancellation has been recorded
 mail.billing.cancellation.body=The subscription of the team [teamName] to the plan [planName] of the API [apiName] ends on [effectiveAt]. </br>\
 The api key keeps working until that date, and the last invoice covers the usage up to it. </br>\
 <a href="[link]">See your subscription</a>
+mail.subscription.blocked.by.owner.title=Your subscription has been blocked
+mail.subscription.blocked.by.owner.body=The subscription of the team [teamName] to the plan [planName] of the API [apiName] has been blocked by the team publishing the API. </br>\
+[reason] </br>\
+The api key no longer gives access to this plan while the subscription stays blocked. </br>\
+<a href="[link]">See your subscription</a>
+mail.subscription.unblocked.by.owner.title=Your subscription has been restored
+mail.subscription.unblocked.by.owner.body=The subscription of the team [teamName] to the plan [planName] of the API [apiName] has been restored by the team publishing the API. </br>\
+The api key gives access to this plan again. </br>\
+<a href="[link]">See your subscription</a>
 
 mail.api.depreciation.warning.title = the API [apiName] has been deprecated
 mail.api.depreciation.warning.body = Hello [recipientName], </br>\

@@ -13,7 +13,6 @@ import fr.maif.daikoku.domain.{
   Api,
   ApiId,
   ApiSubscription,
-  Currency,
   OtoroshiSettings,
   SubscriptionBlockReason,
   Tenant,
@@ -445,7 +444,8 @@ class ConsumptionController(
                   c.asJson.as[JsObject] ++ Json.obj(
                     "apiName" -> apiName,
                     "clientName" -> clientName,
-                    "plan" -> plan
+                    "plan" -> plan,
+                    "planId" -> c.plan.value
                   )
                 })
             )
@@ -559,8 +559,7 @@ class ConsumptionController(
       "planName" -> plan.customName,
       "blockedBy" -> SetSubscriptionBlockReasonFormat.writes(
         subscription.blockedBy
-      ),
-      "currency" -> plan.currency.getOrElse(Currency("EUR")).code
+      )
     )
 
     if (subscription.blockedBy.contains(SubscriptionBlockReason.Ended)) {

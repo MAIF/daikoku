@@ -11,6 +11,7 @@ import {
   TeamApiKeysForApi,
   TeamAssets,
   TeamBilling,
+  TeamBillingUsage,
   TeamConsumption,
   TeamEdit,
   TeamIncome,
@@ -129,6 +130,7 @@ export const TeamBackOffice = () => {
 
             <Route path={`/consumption`} element={<TeamRoute I={read} a={stat}><TeamConsumption /></TeamRoute>} />
             <Route path={`/billing`} element={<TeamRoute I={manage} a={team}><TeamBilling /></TeamRoute>} />
+            <Route path={`/billing-usage`} element={<TeamRoute I={manage} a={team}><TeamBillingUsage /></TeamRoute>} />
             <Route path={`/income`} element={<TeamRoute I={manage} a={team}><TeamIncome /></TeamRoute>} />
             <Route
               path={`/apikeys/:apiId/:versionId/subscription/:subscription/consumptions`}

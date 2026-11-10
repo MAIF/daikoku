@@ -13,9 +13,9 @@ import play.api.libs.json.*
 
 import scala.concurrent.{ExecutionContext, Future}
 
-/** Announces to a subscribing team what happens to the money behind its
-  * subscription. Every event reaches the team administrators, both in their
-  * notification list and by mail.
+/** Announces to a subscribing team what happens to its subscription: its
+  * price, its end, its blocking by the API producer. Every event reaches the
+  * team administrators, both in their notification list and by mail.
   */
 class BillingNotificationService {
 
@@ -79,6 +79,50 @@ class BillingNotificationService {
       ),
       "mail.billing.cancellation",
       Map("effectiveAt" -> JsString(asDay(effectiveAt)))
+    )
+
+  def blockedByOwner(
+      tenant: Tenant,
+      subscription: ApiSubscription,
+      reason: Option[String]
+  )(implicit
+      env: Env,
+      ec: ExecutionContext,
+      translator: Translator,
+      messagesApi: MessagesApi
+  ): Future[Unit] =
+    notifySubscribingTeam(
+      tenant,
+      subscription,
+      SubscriptionBlockedByOwner(
+        subscription = subscription.id,
+        api = subscription.api,
+        plan = subscription.plan,
+        reason = reason
+      ),
+      "mail.subscription.blocked.by.owner",
+      Map("reason" -> JsString(reason.getOrElse("")))
+    )
+
+  def unblockedByOwner(
+      tenant: Tenant,
+      subscription: ApiSubscription
+  )(implicit
+      env: Env,
+      ec: ExecutionContext,
+      translator: Translator,
+      messagesApi: MessagesApi
+  ): Future[Unit] =
+    notifySubscribingTeam(
+      tenant,
+      subscription,
+      SubscriptionUnblockedByOwner(
+        subscription = subscription.id,
+        api = subscription.api,
+        plan = subscription.plan
+      ),
+      "mail.subscription.unblocked.by.owner",
+      Map.empty
     )
 
   private def asDay(date: DateTime): String = date.toString("yyyy-MM-dd")

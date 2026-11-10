@@ -25,7 +25,9 @@ processes:
     command: |
       if [[ $MODE = "ldap" ]] ;
       then docker-compose -f docker-compose-ldap.yml rm -f && docker-compose --ansi=always -f docker-compose-ldap.yml up ;
-      elif [[ $MODE = "local" ]] || [[ $MODE = "empty" ]] || [[ $MODE = "dump" ]] || [[ $MODE = "stripe" ]] ;
+      elif [[ $MODE = "stripe" ]] ;
+      then docker-compose -f docker-compose-local.yml -f ../daikoku/javascript/tests/docker-compose-es.yml rm -f && docker-compose --ansi=always -f docker-compose-local.yml -f ../daikoku/javascript/tests/docker-compose-es.yml up ;
+      elif [[ $MODE = "local" ]] || [[ $MODE = "empty" ]] || [[ $MODE = "dump" ]] ;
       then docker-compose -f docker-compose-local.yml rm -f && docker-compose --ansi=always -f docker-compose-local.yml up ;
       else docker-compose -f docker-compose-oidc.yml rm -f && docker-compose --ansi=always -f docker-compose-oidc.yml up ;
       fi
@@ -44,7 +46,9 @@ processes:
       command: |
         if [[ $MODE = "ldap" ]] ;
         then docker-compose -f docker-compose-ldap.yml down && docker-compose -f docker-compose-ldap.yml rm -f ;
-        elif [[ $MODE = "local" ]] || [[ $MODE = "empty" ]] || [[ $MODE = "dump" ]] || [[ $MODE = "stripe" ]] ;
+        elif [[ $MODE = "stripe" ]] ;
+        then docker-compose -f docker-compose-local.yml -f ../daikoku/javascript/tests/docker-compose-es.yml down && docker-compose -f docker-compose-local.yml -f ../daikoku/javascript/tests/docker-compose-es.yml rm -f ;
+        elif [[ $MODE = "local" ]] || [[ $MODE = "empty" ]] || [[ $MODE = "dump" ]] ;
         then docker-compose -f docker-compose-local.yml down && docker-compose -f docker-compose-local.yml rm -f ;
         else docker-compose -f docker-compose-oidc.yml down && docker-compose -f docker-compose-oidc.yml rm -f ;
         fi

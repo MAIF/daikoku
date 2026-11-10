@@ -587,7 +587,6 @@ export interface ISubscriptionBillingState {
   plan: string;
   planName: string;
   blockedBy: Array<'owner' | 'lifecycle' | 'ended'>;
-  currency: string;
   error?: string;
   cancelAt?: number | null;
   periodEnd?: number | null;

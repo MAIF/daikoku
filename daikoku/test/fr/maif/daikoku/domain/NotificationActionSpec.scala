@@ -25,18 +25,32 @@ class NotificationActionSpec extends PlaySpec {
       effectiveAt = date
     )
 
-  val billingActions: Seq[(String, NotificationAction)] = Seq(
+  val blockedByOwner: SubscriptionBlockedByOwner =
+    SubscriptionBlockedByOwner(
+      subscription = subscription,
+      api = api,
+      plan = plan,
+      reason = Some("Abusive usage")
+    )
+
+  val subscriptionActions: Seq[(String, NotificationAction)] = Seq(
     "SubscriptionPriceChangeScheduled" -> priceChange,
     "SubscriptionCancellationScheduled" -> SubscriptionCancellationScheduled(
       subscription = subscription,
       api = api,
       plan = plan,
       effectiveAt = date
+    ),
+    "SubscriptionBlockedByOwner" -> blockedByOwner,
+    "SubscriptionUnblockedByOwner" -> SubscriptionUnblockedByOwner(
+      subscription = subscription,
+      api = api,
+      plan = plan
     )
   )
 
-  "The billing notification actions" must {
-    billingActions.foreach { case (expectedType, action) =>
+  "The subscription notification actions" must {
+    subscriptionActions.foreach { case (expectedType, action) =>
       s"round-trip $expectedType through JSON" in {
         val written = NotificationActionFormat.writes(action)
 
@@ -59,6 +73,15 @@ class NotificationActionSpec extends PlaySpec {
 
       NotificationActionFormat.reads(written) mustBe JsSuccess(
         priceChange.copy(costPerRequest = None)
+      )
+    }
+
+    "read a blocking without a reason" in {
+      val written =
+        NotificationActionFormat.writes(blockedByOwner).as[JsObject] - "reason"
+
+      NotificationActionFormat.reads(written) mustBe JsSuccess(
+        blockedByOwner.copy(reason = None)
       )
     }
 

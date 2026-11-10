@@ -715,7 +715,8 @@ export const apiSubscriptions = (
 export const archiveSubscriptionByOwner = (
   ownerId: string,
   subscriptionId: string,
-  enabled: boolean
+  enabled: boolean,
+  reason?: string
 ) =>
   customFetch(
     `/api/teams/${ownerId}/subscriptions/${subscriptionId}/_archiveByOwner?enabled=${enabled}`,
@@ -726,6 +727,7 @@ export const archiveSubscriptionByOwner = (
         Accept: 'application/json',
         'Content-Type': 'application/json',
       },
+      body: JSON.stringify({ reason }),
     }
   );
 
@@ -1369,6 +1371,7 @@ export const graphql = {
             team { name }
             rotation { enabled rotationEvery gracePeriod pendingRotation }
             subscriptionsCount isRotationLocked environments
+            subscriptions { state }
           }
         }
         total totalFiltered keyringsCount creationsCount
@@ -1463,6 +1466,9 @@ export const graphql = {
               }
             }
             aggregationApiKeysSecurity
+            paymentSettings {
+              thirdPartyPaymentSettingsId
+            }
           }
         }
       }
@@ -1824,14 +1830,17 @@ export const graphql = {
   getTeamIncome: `
   query getTeamIncome ($teamId: String!, $from: Long, $to: Long) {
     teamIncomes (teamId: $teamId, from: $from, to: $to) {
+      _id
       api {
         _id
         name
       }
       plan {
         _id
+        customName
       }
       team {
+        _id
         name
       }
       billing {
@@ -1900,6 +1909,7 @@ export const graphql = {
           customName
           enabled
           state
+          blockedBy
           tags
           metadata
           customMetadata
@@ -2457,6 +2467,9 @@ export const graphql = {
                 _humanReadableId
                 name
                 currentVersion
+                team {
+                  _humanReadableId
+                }
               }
               plan {
                 _id
@@ -2482,6 +2495,39 @@ export const graphql = {
                 customName
               }
               effectiveAt
+            }
+            ... on SubscriptionBlockedByOwner {
+              __typename
+              api {
+                _id
+                _humanReadableId
+                name
+                currentVersion
+                team {
+                  _humanReadableId
+                }
+              }
+              plan {
+                _id
+                customName
+              }
+              reason
+            }
+            ... on SubscriptionUnblockedByOwner {
+              __typename
+              api {
+                _id
+                _humanReadableId
+                name
+                currentVersion
+                team {
+                  _humanReadableId
+                }
+              }
+              plan {
+                _id
+                customName
+              }
             }
           }
           date

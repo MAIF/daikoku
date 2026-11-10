@@ -171,9 +171,9 @@ export const useApiFrontOffice = (api?: IApi, team?: ITeamSimple, plans?: IUsage
           },
           viewApiKey: canReadApiKey && {
             label: translate({ key: 'navbar.keyrings.label', plural: true }),
-            action: () => navigateTo('keyrings'),
+            action: () => navigateTo('apikeys'),
             className: {
-              active: currentTab === 'keyrings',
+              active: currentTab === 'apikeys',
             },
           }
         },
@@ -318,15 +318,18 @@ export const useTeamBackOffice = () => {
               billing: {
                 label: translate('Billing'),
                 action: () => navigateTo('billing'),
-                className: { active: ['billing', 'income'].includes(currentTab) },
-                childs: {
-                  income: {
-                    label: translate('Income'),
-                    action: () => navigateTo('income'),
-                    className: { active: currentTab === 'income' },
-                  },
-                },
-              }
+                className: { active: currentTab === 'billing' },
+              },
+              usage: {
+                label: translate('billing.usage.title'),
+                action: () => navigateTo('billing-usage'),
+                className: { active: currentTab === 'billing-usage' },
+              },
+              income: {
+                label: translate('Income'),
+                action: () => navigateTo('income'),
+                className: { active: currentTab === 'income' },
+              },
             } : {})
           },
         },

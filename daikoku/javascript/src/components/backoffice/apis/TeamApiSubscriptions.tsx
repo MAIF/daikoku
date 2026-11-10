@@ -1,4 +1,4 @@
-import { type } from "@maif/react-forms";
+import { format, type } from "@maif/react-forms";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import classNames from "classnames";
 import { useContext, useEffect, useRef, useState } from "react";
@@ -50,6 +50,7 @@ export interface IApiSubscriptionGql extends ISubscriptionCustomization {
   customName: string;
   enabled: boolean;
   state: 'active' | 'blocked';
+  blockedBy: Array<'owner' | 'lifecycle' | 'ended'>;
   customMetadata?: JSON;
   adminCustomName?: string;
   customMaxPerSecond?: number;
@@ -92,11 +93,12 @@ export const TeamApiSubscriptions = ({
   const togglesInFlight = useRef(new Set<string>());
   const [pendingToggles, setPendingToggles] = useState<Set<string>>(new Set());
   const toggleSubscription = useMutation({
-    mutationFn: (sub: IApiSubscriptionGql) =>
+    mutationFn: ({ sub, reason }: { sub: IApiSubscriptionGql; reason?: string }) =>
       Services.archiveSubscriptionByOwner(
         currentTeam._id,
         sub._id,
-        sub.state !== 'active'
+        sub.state !== 'active',
+        reason
       ),
     onSuccess: (result) => {
       if (result?.error) {
@@ -170,12 +172,18 @@ export const TeamApiSubscriptions = ({
       meta: { title: translate("State"), size: 10 },
       cell: (info) => {
         const sub = info.row.original;
-        return <span className={classNames("badge --state d-flex align-items-center gap-2", {
-          "--success": sub.enabled && sub.state === 'active',
-          "--danger": !sub.enabled || sub.state === 'blocked',
-        })}>
+        const ended = sub.blockedBy.includes('ended');
+
+        return <span
+          className={classNames("badge --state d-flex align-items-center gap-2", {
+            "--success": sub.enabled && sub.state === 'active',
+            "--danger": !sub.enabled || sub.state === 'blocked',
+          })}
+          title={ended ? translate('subscription.ended.help') : undefined}
+        >
           {(sub.enabled && sub.state === "active") && translate('subscription.enable.label')}
-          {(sub.state === "blocked") && translate('subscription.blocked.label')}
+          {(sub.state === "blocked" && !ended) && translate('subscription.blocked.label')}
+          {ended && translate('subscription.ended.label')}
           {(!sub.enabled && sub.state === "active") && translate('subscription.disable.label')}
 
         </span>
@@ -239,7 +247,7 @@ export const TeamApiSubscriptions = ({
                   {translate("Update metadata")}
                 </button>
                 <div className="dropdown-divider" />
-                {api.state !== 'blocked' && (
+                {api.state !== 'blocked' && !sub.blockedBy.includes('ended') && (
                   <button
                     className="dropdown-item cursor-pointer danger"
                     disabled={rowPending}
@@ -311,17 +319,33 @@ export const TeamApiSubscriptions = ({
   });
 
   const toggleApiSubscriptionState = (sub: IApiSubscriptionGql) => {
-    if (api.state === 'blocked' || togglesInFlight.current.has(sub._id)) return Promise.resolve();
+    if (api.state === 'blocked') return;
+    if (sub.state !== 'active') return runToggle(sub);
+
+    openFormModal<{ reason: string }>({
+      title: translate('subscription.block.modal.title'),
+      description: translate('subscription.block.modal.description'),
+      value: { reason: '' },
+      schema: {
+        reason: {
+          type: type.string,
+          format: format.text,
+          label: translate('subscription.block.reason.label'),
+        },
+      },
+      onSubmit: ({ reason }) => {
+        runToggle(sub, reason);
+      },
+      actionLabel: translate('subscription.block.action.label'),
+    });
+  }
+
+  const runToggle = (sub: IApiSubscriptionGql, reason?: string) => {
+    if (togglesInFlight.current.has(sub._id)) return Promise.resolve();
     togglesInFlight.current.add(sub._id);
     setPendingToggles(new Set(togglesInFlight.current));
 
-    return Promise.resolve()
-      .then(() => sub.state === 'active'
-        ? confirm({ message: translate('subscription.disable.confirm') })
-        : true)
-      .then((confirmed) => {
-        if (confirmed) return toggleSubscription.mutateAsync(sub);
-      })
+    return toggleSubscription.mutateAsync({ sub, reason })
       .catch((error) => {
         const message = error && typeof error === 'object' && 'error' in error && typeof error.error === 'string'
           ? error.error
