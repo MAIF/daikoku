@@ -131,6 +131,13 @@ test.describe('Stripe metered billing (dev only, real Stripe test mode)', () => 
       settingsId,
     });
 
+    // 4b. The paid subscription shows on Consommation > Paiements, active on Stripe.
+    log('reading the payment state of the subscription');
+    await page.goto(`/vendeurs/settings/payments`);
+    const paymentRow = page.locator('.table-row', { hasText: 'metered' });
+    await expect(paymentRow).toContainText('Active', { timeout: 30_000 });
+    await expect(paymentRow).toContainText('Prochain prélèvement');
+
     // 5. Read the subscription's Otoroshi key (prod_paper_route -> paper.oto.tools).
     log('reading the Otoroshi apikey of the subscription from the UI');
     await findAndGoToTeam('Vendeurs', page);
@@ -194,6 +201,11 @@ test.describe('Stripe metered billing (dev only, real Stripe test mode)', () => 
     await expect
       .poll(syncAndReadMeter, { timeout: 180_000, intervals: [10_000] })
       .toBeGreaterThan(reported);
+
+    // 9b. The consumer sees the estimated amount of its month on Consommation > Utilisation.
+    await page.goto(`/vendeurs/settings/consumption`);
+    const estimatedToDate = page.locator('.billing-kpi', { hasText: 'Estimé à date' });
+    await expect(estimatedToDate.locator('.billing-kpi__value')).not.toHaveText(/^0,00/);
 
     // 10. The producer raises the price. New Stripe prices are built on the same
     //     product and the same meter, so usage keeps being reported to the counter

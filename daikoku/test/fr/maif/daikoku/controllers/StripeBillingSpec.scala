@@ -13,6 +13,7 @@ import fr.maif.daikoku.domain._
 import fr.maif.daikoku.testUtils.DaikokuSpecHelper
 import fr.maif.daikoku.utils.Cypher.encrypt
 import fr.maif.daikoku.utils.{IdGenerator, StripeSignature}
+import org.joda.time.DateTime
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.concurrent.{Eventually, IntegrationPatience}
 import org.scalatestplus.play.PlaySpec
@@ -503,6 +504,28 @@ class StripeBillingSpec()
     daikokuComponents.statsJob
       .syncForSubscription(currentSubscription(), stripeTenant)
       .futureValue
+  }
+
+  "subscribing to a priced plan" must {
+    "record its monthly cost as income of the producer right away" in {
+      setupTenantWithStripeAccount()
+      stubOtoroshi(hits = 0)
+
+      subscribeToPlan().status mustBe 200
+
+      val session = loginWithBlocking(userAdmin, stripeTenant)
+      val startOfMonth =
+        DateTime.now().withDayOfMonth(1).withTimeAtStartOfDay().getMillis
+      val tomorrow = DateTime.now().plusDays(1).withTimeAtStartOfDay().getMillis
+      val income = httpJsonCallBlocking(
+        path =
+          s"/api/teams/${teamOwnerId.value}/income?from=$startOfMonth&to=$tomorrow"
+      )(using stripeTenant, session)
+
+      income.status mustBe 200
+      val incomes = json.SeqConsumptionFormat.reads(income.json).get
+      incomes.map(_.billing.total) mustBe Seq(payPerUsePlan.costPerMonth.get)
+    }
   }
 
   "confirming a checkout (#1221)" must {

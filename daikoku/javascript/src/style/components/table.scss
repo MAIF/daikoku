@@ -17,6 +17,10 @@ $cell-border-color: color-mix(in srgb, variables.$level2_bg-color 95%, #000);
   background: variables.$level2_bg-color;
   border-radius: 10px;
   padding: 20px;
+
+  &.--small .table-row:not(.select-all-row) {
+    padding: .375rem 1rem;
+  }
 }
 
 .dynamic-table__data {
@@ -28,6 +32,21 @@ $cell-border-color: color-mix(in srgb, variables.$level2_bg-color 95%, #000);
 
   background-color: variables.$level2_bg-color;
   color: variables.$level2_text-color;
+
+  container-type: inline-size;
+  container-name: dynamic-table;
+
+  // The containment above creates a stacking context: without this, a menu
+  // opened from the last row would slide under the pagination.
+  position: relative;
+  z-index: 1;
+
+  .table-header.table-row > div {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
   .line-through {
     text-decoration: line-through
   }
@@ -65,6 +84,11 @@ $cell-border-color: color-mix(in srgb, variables.$level2_bg-color 95%, #000);
     margin: 0;
     border-radius: 0 0 10px 10px;
 
+  }
+
+  &:has(> .table-total) .table-rows,
+  &:has(> .table-total) .table-rows .table-row:last-of-type {
+    border-radius: 0;
   }
 
   .table-header {
@@ -128,6 +152,13 @@ $cell-border-color: color-mix(in srgb, variables.$level2_bg-color 95%, #000);
     &.--highlighted {
       box-shadow: inset 3px 0 0 variables.$primary-color;
       background-color: color-mix(in srgb, variables.$primary-color 10%, transparent);
+    }
+
+    &.table-total,
+    &.table-total:hover {
+      background-color: variables.$level1_bg-color;
+      font-weight: bold;
+      border-bottom: none;
     }
 
     .nav_item {
@@ -247,6 +278,65 @@ $cell-border-color: color-mix(in srgb, variables.$level2_bg-color 95%, #000);
     .btn-action {
       width: 30px;
       height: 30px;
+    }
+  }
+}
+
+// Narrow table: the column grid cannot hold, so every row stacks its cells and
+// each one shows its column title, taken from `data-label`.
+@container dynamic-table (max-width: 45rem) {
+  .dynamic-table__data {
+    .table-header.table-row > div {
+      display: none;
+    }
+
+    .table-header.table-row:not(:has(> label)) {
+      display: none;
+    }
+
+    .table-total > div:empty {
+      display: none;
+    }
+
+    .table-row:not(.select-all-row) {
+      grid-template-columns: minmax(0, 1fr);
+      gap: .375rem;
+
+      > div[data-label] {
+        display: flex;
+        justify-content: flex-start;
+        align-items: baseline;
+        gap: 1rem;
+        text-align: start;
+
+        &::before {
+          content: attr(data-label);
+          flex: 0 0 40%;
+          font-weight: bold;
+        }
+      }
+    }
+  }
+}
+
+@container dynamic-table (max-width: 24rem) {
+  .dynamic-table__data .table-row:not(.select-all-row) > div[data-label] {
+    flex-direction: column;
+    gap: 0;
+
+    &::before {
+      flex: none;
+    }
+  }
+}
+
+@media (max-width: 576px) {
+  .dynamic-table__pagination {
+    flex-direction: column;
+    gap: .75rem;
+
+    .dynamic-table__page-size {
+      position: static !important;
     }
   }
 }

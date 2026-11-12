@@ -13,7 +13,7 @@ export const TeamBilling = () => {
 
   useEffect(() => {
     if (currentTeam && !isError(currentTeam))
-      document.title = `${currentTeam.name} - ${translate('Billing')}`;
+      document.title = `${currentTeam.name} - ${translate('billing.payments.title')}`;
   }, [currentTeam]);
 
   if (isLoading) {
@@ -24,7 +24,7 @@ export const TeamBilling = () => {
         <div className="row">
           <div className="col">
             <h1>
-              <Translation i18nkey="Billing">Billing</Translation>
+              <Translation i18nkey="billing.payments.title">Payments</Translation>
             </h1>
             <SubscriptionBillingStates team={currentTeam} />
           </div>

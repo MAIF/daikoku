@@ -27,7 +27,6 @@ import {
 import { FeedbackButton } from '../../utils/FeedbackButton';
 import { BillingCharts } from './BillingCharts';
 import { BillingConsumption, BillingDay, PlanBilling, billingByPlan, dailyBilling } from './billingSeries';
-import { NoData } from './components';
 
 const CURRENCY_SYMBOL = getCurrencySymbol('EUR')!;
 
@@ -171,9 +170,14 @@ export const TeamBillingUsage = () => {
   const drawContent = () => {
     if (consumptionsQuery.isLoading) return <Spinner />;
     if (data && isError(data)) return <div>{data.error}</div>;
-    if (!consumptions.length) return <NoData />;
 
     const plans = billingByPlan(consumptions);
+    const hasUsage = sumBy(plans, 'calls') > 0 || sumBy(plans, 'total') > 0;
+
+    if (!hasUsage) {
+      return <div className="alert alert-info mt-3">{translate('billing.usage.empty')}</div>;
+    }
+
     const days = dailyBilling(consumptions, date);
     const pastDays = days.filter((d) => d.calls !== null).reverse();
 
@@ -229,6 +233,7 @@ export const TeamBillingUsage = () => {
               fetchData={() => Promise.resolve({ items: pastDays, total: pastDays.length })}
               getRowId={(d) => String(d.day)}
               persistFiltersInUrl={false}
+              tableClassName="--small"
             />
           )}
 

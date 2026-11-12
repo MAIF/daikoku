@@ -1,5 +1,6 @@
 import test, { expect } from '@playwright/test';
 import otoroshi_data from '../config/otoroshi/otoroshi-state.json' with { type: "json" };
+import { generateApi, generatePlan, saveApi, savePlan } from './apis';
 import { DWIGHT, JIM, MICHAEL } from './users';
 import { ACCUEIL, adminApikeyId, adminApikeySecret, apiDivision, exposedPort, loginAs, otoroshiAdminApikeyId, otoroshiAdminApikeySecret, tenant, tenantAdminTeam, updateUserRightForTeam } from './utils';
 
@@ -314,6 +315,96 @@ test("[#1079] - l'admin d'une équipe voit toutes les entrées de menu associée
   const sideBarLocator = page.getByText('API DivisionParamètres')
   await expect(sideBarLocator.getByText('Informations')).toBeVisible();
   await expect(sideBarLocator.getByText('Assets')).toBeVisible();
+  await expect(sideBarLocator.getByText('Consommation')).toBeVisible();
+  await expect(sideBarLocator.getByText('Utilisation')).toBeVisible();
+  await expect(sideBarLocator.getByText('Paiements')).toBeVisible();
+  await expect(sideBarLocator.getByText('Exposition')).toBeVisible();
   await expect(sideBarLocator.getByText('Statistiques')).toBeVisible();
   await expect(sideBarLocator.getByText('Revenus')).toBeVisible();
+})
+
+test("la page Revenus dit quand aucune API de l'équipe ne propose de plan payant", async ({ page }) => {
+  await page.goto(ACCUEIL);
+  await loginAs(MICHAEL, page);
+
+  await page.goto(`/api-division/settings/income`);
+
+  const noPaidPlanMessage = page.getByText('Aucune de vos API ne propose encore de plan payant.');
+  await expect(page.getByRole('heading', { name: 'Revenus' })).toBeVisible();
+  await expect(noPaidPlanMessage).toBeVisible();
+
+  const paidPlan = generatePlan({
+    costPerMonth: 10,
+  });
+  const paidApi = generateApi({
+    name: 'API payante',
+    team: apiDivision,
+    possibleUsagePlans: [paidPlan._id],
+  });
+  expect((await savePlan(paidPlan)).ok).toBeTruthy();
+  expect((await saveApi(paidApi as any)).ok).toBeTruthy();
+
+  await page.reload();
+
+  await expect(page.getByRole('heading', { name: 'Revenus' })).toBeVisible();
+  await expect(noPaidPlanMessage).not.toBeVisible();
+})
+
+test("le menu d'une équipe mène à ce qu'elle consomme et à ce qu'elle expose", async ({ page }) => {
+  await page.goto(ACCUEIL);
+  await loginAs(MICHAEL, page);
+
+  await page.goto(`/api-division/settings/dashboard`);
+
+  const sideBarLocator = page.getByText('API DivisionParamètres')
+
+  await sideBarLocator.getByText('Consommation').click();
+  await expect(page).toHaveURL(/\/api-division\/settings\/consumption$/);
+
+  await sideBarLocator.getByText('Paiements').click();
+  await expect(page).toHaveURL(/\/api-division\/settings\/payments$/);
+  await expect(page.getByRole('heading', { name: 'Paiements' })).toBeVisible();
+
+  await sideBarLocator.getByText('Utilisation').click();
+  await expect(page).toHaveURL(/\/api-division\/settings\/consumption$/);
+  await expect(page.getByRole('heading', { name: 'Utilisation' })).toBeVisible();
+
+  await sideBarLocator.getByText('Exposition').click();
+  await expect(page).toHaveURL(/\/api-division\/settings\/stats$/);
+
+  await sideBarLocator.getByText('Revenus').click();
+  await expect(page).toHaveURL(/\/api-division\/settings\/income$/);
+  await expect(page.getByRole('heading', { name: 'Revenus' })).toBeVisible();
+
+  await sideBarLocator.getByText('Statistiques').click();
+  await expect(page).toHaveURL(/\/api-division\/settings\/stats$/);
+  await expect(page.getByRole('heading', { name: 'Statistiques' })).toBeVisible();
+})
+
+test("l'ancienne adresse de la facturation d'une équipe mène à son utilisation", async ({ page }) => {
+  await page.goto(ACCUEIL);
+  await loginAs(MICHAEL, page);
+
+  await page.goto(`/api-division/settings/billing`);
+
+  await expect(page).toHaveURL(/\/api-division\/settings\/consumption$/);
+  await expect(page.getByRole('heading', { name: 'Utilisation' })).toBeVisible();
+})
+
+test("les pages d'une équipe sans activité disent ce qui s'y affichera", async ({ page }) => {
+  await page.goto(ACCUEIL);
+  await loginAs(MICHAEL, page);
+
+  await page.goto(`/api-division/settings/consumption`);
+  await expect(page.getByText('Aucune utilisation sur ce mois.')).toBeVisible();
+
+  await page.goto(`/api-division/settings/payments`);
+  await expect(page.getByText('Aucune souscription payante pour votre équipe.')).toBeVisible();
+
+  await page.goto(`/api-division/settings/stats`);
+  await expect(page.getByText('7 derniers jours')).toBeVisible();
+  await expect(page.getByText('Aucun appel reçu sur cette période.')).toBeVisible();
+
+  await page.goto(`/api-division/settings/income`);
+  await expect(page.getByText('Aucune souscription à vos API sur ce mois.')).toBeVisible();
 })

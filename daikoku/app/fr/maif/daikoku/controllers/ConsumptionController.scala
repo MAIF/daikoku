@@ -454,6 +454,70 @@ class ConsumptionController(
       }
     }
 
+  def exposedConsumptions(
+      teamId: String,
+      from: Option[Long],
+      to: Option[Long]
+  ): Action[AnyContent] =
+    DaikokuAction.async { ctx =>
+      TeamAdminOnly(
+        AuditTrailEvent(
+          s"@{user.name} has accessed to the consumption of the apis of @{team.name}"
+        )
+      )(teamId, ctx) { team =>
+        val fromTimestamp = from.getOrElse(
+          DateTime.now().withTimeAtStartOfDay().toDateTime.getMillis
+        )
+        val toTimestamp = to.getOrElse(DateTime.now().toDateTime.getMillis)
+
+        for {
+          exposedApis <-
+            env.dataStore.apiRepo.findByTeam(ctx.tenant.id, team.id)
+          plans <-
+            env.dataStore.usagePlanRepo
+              .forTenant(ctx.tenant.id)
+              .findByIds(exposedApis.flatMap(_.possibleUsagePlans).distinct)
+          consumptions <-
+            env.dataStore.consumptionRepo.findByApisBetween(
+              ctx.tenant.id,
+              exposedApis.map(_.id),
+              fromTimestamp,
+              toTimestamp
+            )
+          subscriberTeams <-
+            env.dataStore.teamRepo
+              .forTenant(ctx.tenant.id)
+              .findByIds(consumptions.map(_.team).distinct)
+        } yield {
+          Ok(
+            JsArray(
+              consumptions.map(consumption => {
+                val apiName = exposedApis
+                  .find(api => api.id == consumption.api)
+                  .map(api => api.name)
+                  .getOrElse(consumption.api.value)
+                val planName = plans
+                  .find(plan => plan.id == consumption.plan)
+                  .map(plan => plan.customName)
+                  .getOrElse(consumption.plan.value)
+                val teamName = subscriberTeams
+                  .find(subscriber => subscriber.id == consumption.team)
+                  .map(subscriber => subscriber.name)
+                  .getOrElse(consumption.team.value)
+
+                consumption.asJson.as[JsObject] ++ Json.obj(
+                  "apiName" -> apiName,
+                  "plan" -> planName,
+                  "planId" -> consumption.plan.value,
+                  "teamName" -> teamName
+                )
+              })
+            )
+          )
+        }
+      }
+    }
+
   def billings(
       teamId: String,
       from: Option[Long],

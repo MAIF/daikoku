@@ -35,6 +35,7 @@ import play.api.mvc.{AnyContent, Result}
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try
+import scala.util.control.NonFatal
 
 class ApiService(
     env: Env,
@@ -222,6 +223,30 @@ class ApiService(
     }
   }
 
+  /** A priced plan owes its monthly cost from the first day: recording it at
+    * subscription time lets both teams see the estimate without waiting for
+    * the stats job.
+    */
+  private def recordFirstConsumptionOfPricedPlan(
+      tenant: Tenant,
+      plan: UsagePlan,
+      subscription: ApiSubscription
+  ): Future[Unit] = {
+    if (plan.costPerMonth.isEmpty) {
+      FastFuture.successful(())
+    } else {
+      apiKeyStatsJob
+        .syncForSubscription(subscription, tenant)
+        .map(_ => ())
+        .recover { case NonFatal(error) =>
+          AppLogger.error(
+            s"[subscribeToApi] :: first consumption of subscription ${subscription.id.value} not recorded",
+            error
+          )
+        }
+    }
+  }
+
   def subscribeToApi(
       tenant: Tenant,
       user: User,
@@ -402,6 +427,9 @@ class ApiService(
             env.dataStore.apiSubscriptionRepo
               .forTenant(tenant.id)
               .save(apiSubscription)
+          )
+          _ <- EitherT.right[AppError](
+            recordFirstConsumptionOfPricedPlan(tenant, plan, apiSubscription)
           )
           _ <- EitherT.right[AppError](
             env.dataStore.notificationRepo

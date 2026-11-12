@@ -12,8 +12,8 @@ import {
   TeamAssets,
   TeamBilling,
   TeamBillingUsage,
-  TeamConsumption,
   TeamEdit,
+  TeamExposedApisStats,
   TeamIncome,
   TeamMembers,
 } from "../backoffice";
@@ -128,9 +128,10 @@ export const TeamBackOffice = () => {
             <Route path={`/edition`} element={<TeamRoute I={manage} a={team}><TeamEdit /></TeamRoute>} />
             <Route path={`/assets`} element={<TeamRoute I={manage} a={asset}><TeamAssets /></TeamRoute>} />
 
-            <Route path={`/consumption`} element={<TeamRoute I={read} a={stat}><TeamConsumption /></TeamRoute>} />
-            <Route path={`/billing`} element={<TeamRoute I={manage} a={team}><TeamBilling /></TeamRoute>} />
-            <Route path={`/billing-usage`} element={<TeamRoute I={manage} a={team}><TeamBillingUsage /></TeamRoute>} />
+            <Route path={`/consumption`} element={<TeamRoute I={manage} a={team}><TeamBillingUsage /></TeamRoute>} />
+            <Route path={`/payments`} element={<TeamRoute I={manage} a={team}><TeamBilling /></TeamRoute>} />
+            <Route path={`/stats`} element={<TeamRoute I={read} a={stat}><TeamExposedApisStats /></TeamRoute>} />
+            <Route path={`/billing`} element={<Navigate to="../consumption" replace />} />
             <Route path={`/income`} element={<TeamRoute I={manage} a={team}><TeamIncome /></TeamRoute>} />
             <Route
               path={`/apikeys/:apiId/:versionId/subscription/:subscription/consumptions`}

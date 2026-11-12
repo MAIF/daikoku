@@ -199,6 +199,47 @@ class ConsumptionControllerSpec()
       (resp.json \ 0 \ "billing" \ "total").as[BigDecimal] mustBe BigDecimal(30)
     }
 
+    "get the daily consumption of the apis its team exposes" in {
+      val todayConsumption = yesterdayConsumption.copy(
+        id = DatastoreId("today"),
+        hits = 400L,
+        from = DateTime.now().withTimeAtStartOfDay(),
+        to = DateTime.now()
+      )
+      val consumptionOfAnotherApi = yesterdayConsumption.copy(
+        id = DatastoreId("another-api"),
+        api = ApiId("api-of-another-team")
+      )
+
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(userAdmin),
+        teams = Seq(teamOwner, teamConsumer),
+        usagePlans = defaultApi.plans,
+        apis = Seq(defaultApi.api),
+        subscriptions = Seq(payperUserSub),
+        keyrings = Seq(payperUserKeyring),
+        consumptions = Seq(
+          yesterdayConsumption,
+          todayConsumption,
+          consumptionOfAnotherApi
+        )
+      )
+      val session = loginWithBlocking(userAdmin, tenant)
+      val from = DateTime.now().minusDays(1).withTimeAtStartOfDay().getMillis
+      val to = DateTime.now().getMillis
+      val resp = httpJsonCallBlocking(
+        path =
+          s"/api/teams/${teamOwnerId.value}/exposed-consumptions?from=$from&to=$to"
+      )(using tenant, session)
+      resp.status mustBe 200
+
+      val exposedConsumptions = resp.json.as[JsArray].value
+      exposedConsumptions.map(c => (c \ "hits").as[Long]) mustBe Seq(1000L, 400L)
+      (exposedConsumptions.head \ "apiName").as[String] mustBe defaultApi.api.name
+      (exposedConsumptions.head \ "teamName").as[String] mustBe teamConsumer.name
+    }
+
     "get team billings" in {
       setupEnvBlocking(
         tenants = Seq(tenant),
@@ -777,6 +818,29 @@ class ConsumptionControllerSpec()
       val to = DateTime.now().withTimeAtStartOfDay().getMillis
       val resp = httpJsonCallBlocking(
         path = s"/api/teams/${teamOwnerId.value}/income?from=$from&to=$to"
+      )(using tenant, session)
+      resp.status mustBe 403
+    }
+
+    "not get the consumption of the apis a team exposes" in {
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(randomUser),
+        teams = Seq(teamOwner, teamConsumer),
+        usagePlans = defaultApi.plans,
+        apis = Seq(defaultApi.api),
+        subscriptions = Seq(payperUserSub),
+        keyrings = Seq(payperUserKeyring),
+        consumptions = Seq(
+          yesterdayConsumption
+        )
+      )
+      val session = loginWithBlocking(randomUser, tenant)
+      val from = DateTime.now().minusDays(1).withTimeAtStartOfDay().getMillis
+      val to = DateTime.now().getMillis
+      val resp = httpJsonCallBlocking(
+        path =
+          s"/api/teams/${teamOwnerId.value}/exposed-consumptions?from=$from&to=$to"
       )(using tenant, session)
       resp.status mustBe 403
     }

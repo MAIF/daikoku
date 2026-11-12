@@ -16,7 +16,6 @@ import { DynamicTable, DynamicTableFeatures } from '../../inputs';
 import { MonthPicker } from '../../inputs/monthPicker';
 import { api, Can, formatCurrency, formatDate, getCurrencySymbol, read, Spinner } from '../../utils';
 import { FeedbackButton } from '../../utils/FeedbackButton';
-import { NoData, TheadBillingContainer } from './components';
 
 type TeamIncomeGql = {
   _id: string;
@@ -67,8 +66,8 @@ export const TeamIncome = () => {
     Services.syncTeamIncome(teamId!)
       .then(() => queryClient.invalidateQueries({ queryKey: ['team-income'] }));
 
-  const money = (income: TeamIncomeGql) =>
-    `${formatCurrency(income.billing.total)} ${getCurrencySymbol('EUR')}`;
+  const money = (amount: number) =>
+    `${formatCurrency(amount)} ${getCurrencySymbol('EUR')}`;
 
   const columnHelper = createColumnHelper<DynamicTableFeatures, TeamIncomeGql>();
   const columns = [
@@ -95,7 +94,7 @@ export const TeamIncome = () => {
     columnHelper.display({
       id: 'total',
       meta: { title: translate('billing.table.total'), size: 2 },
-      cell: (info) => money(info.row.original),
+      cell: (info) => money(info.row.original.billing.total),
     }),
   ];
 
@@ -120,20 +119,25 @@ export const TeamIncome = () => {
   const drawContent = () => {
     if (incomesQuery.isLoading) return <Spinner />;
     if (incomesQuery.isError) return <div className="alert alert-danger">{translate('billing.income.error')}</div>;
-    if (!incomes.length) return <NoData />;
+    if (!incomes.length) {
+      return <div className="alert alert-info">{translate('billing.income.empty')}</div>;
+    }
+
+    const totalRow = {
+      api: translate('Total'),
+      calls: sumBy(incomes, (income) => income.billing.hits),
+      total: money(sumBy(incomes, (income) => income.billing.total)),
+    };
 
     return (
-      <div style={incomesQuery.isPlaceholderData ? { opacity: 0.5 } : undefined}>
-        <TheadBillingContainer
-          label={translate('Apis')}
-          total={formatCurrency(sumBy(incomes, (i) => i.billing.total))}
-        />
+      <div style={incomesQuery.isPlaceholderData ? { opacity: 0.5 } : undefined} className='mt-3'>
         <DynamicTable<TeamIncomeGql>
           queryKey={['team-income-table', String(teamId), String(date.getTime()), String(incomesQuery.dataUpdatedAt)]}
           columns={columns}
           fetchData={() => Promise.resolve({ items: incomes, total: incomes.length })}
           getRowId={(income) => income._id}
           persistFiltersInUrl={false}
+          totalRow={totalRow}
         />
       </div>
     );
@@ -142,6 +146,8 @@ export const TeamIncome = () => {
   if (isLoading) {
     return <Spinner />;
   } else if (currentTeam && !isError(currentTeam)) {
+    const sellsNothing = !currentTeam.sellsPaidPlans;
+
     return (
       <Can I={read} a={api} team={currentTeam} dispatchError={true}>
         <div className="row">
@@ -149,6 +155,9 @@ export const TeamIncome = () => {
             <h1>
               <Translation i18nkey="Income">Income</Translation>
             </h1>
+            {sellsNothing && (
+              <div className="alert alert-info">{translate('billing.income.no.paid.plan')}</div>
+            )}
             <div className="month__selector d-flex align-items-center gap-2">
               <MonthPicker updateDate={setDate} value={date} />
               <FeedbackButton className="btn --secondary --small --icon-only" onPress={sync}>

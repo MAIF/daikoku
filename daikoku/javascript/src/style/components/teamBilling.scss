@@ -8,34 +8,6 @@
   justify-content: space-between;
 }
 
-.total {
-  flex-grow: 1;
-  display: flex;
-  justify-content: space-between;
-  //border: 1px solid #bbc9d8;
-  background-color: variables.$level3_bg-color;
-  color: variables.$level3_text-color;
-
-  .title__container__bloc {
-    display: flex;
-    align-items: center;
-  }
-
-  .title__container {
-    font-size: 24px;
-  }
-
-  .pricing__zone {
-    //border: 1px solid #ececec;
-    padding: 5px;
-
-    .label {
-      margin-bottom: 4px;
-      font-size: 14px;
-    }
-  }
-}
-
 .subscription-billing__price-change {
   color: variables.$info-color;
 }
@@ -58,12 +30,6 @@
       font-size: 14px;
     }
   }
-}
-
-.currency__total {
-  font-size: 24px;
-  color: variables.$level3_text-color;
-  margin-left: 8px;
 }
 
 .currency {
@@ -147,16 +113,6 @@
   .entry__value {
     font-size: 14px;
   }
-}
-
-.no-data__container {
-  display: flex;
-  justify-content: center;
-  margin: 10px;
-}
-
-.badge.no-data {
-  font-size: 20px;
 }
 
 

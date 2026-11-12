@@ -1882,6 +1882,24 @@ trait ConsumptionRepo
     )
   }
 
+  def findByApisBetween(
+      tenant: TenantId,
+      apis: Seq[ApiId],
+      from: Long,
+      to: Long
+  )(implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Seq[ApiKeyConsumption]] = {
+    val repo = forTenant(tenant)
+    repo.query(
+      s"SELECT content FROM ${repo.tableName} " +
+        s"WHERE $consumptionScope AND content->>'api' = ANY($$2::text[]) " +
+        s"${startsWithinSql(3, 4)} ORDER BY (content->>'from')::bigint ASC",
+      Seq(tenant.value, apis.map(_.value).toArray, millis(from), millis(to))
+    )
+  }
+
   def findByTeamBetween(
       tenant: TenantId,
       team: TeamId,
@@ -2592,6 +2610,28 @@ trait UsagePlanRepo extends TenantCapableRepo[UsagePlan, UsagePlanId] {
         "  ANY($2::text[])",
       Seq(tenant.value, settings.toArray)
     )
+  }
+
+  /** Whether one of the apis of the team offers a priced plan: its prices are
+    * what the estimated income is computed from.
+    */
+  def existsPaidForTeam(tenant: TenantId, team: TeamId)(implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Boolean] = {
+    val repo = forTenant(tenant)
+    repo
+      .queryCount(
+        s"SELECT COUNT(*) AS count FROM ${repo.tableName} plan " +
+          "WHERE plan.content->>'_tenant' = $1 " +
+          "AND plan.content->>'costPerMonth' IS NOT NULL " +
+          "AND EXISTS (SELECT 1 FROM apis api " +
+          "  WHERE api.content->>'_tenant' = $1 " +
+          "  AND api.content->>'team' = $2 " +
+          "  AND api.content->'possibleUsagePlans' @> to_jsonb(plan._id::text))",
+        Seq(tenant.value, team.value)
+      )
+      .map(count => count > 0)
   }
 
   /** Plans are named after the environment they target when the tenant runs in

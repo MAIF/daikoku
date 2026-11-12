@@ -56,12 +56,23 @@ class TeamController(
         env.dataStore.teamRepo
           .forTenant(ctx.tenant.id)
           .findByIdOrHrId(teamId)
-          .map {
+          .flatMap {
             case Some(team) =>
               ctx.setCtxValue("team.name", team.name);
               ctx.setCtxValue("team.id", team.id.value);
-              Ok(team.asSimpleJson)
-            case None => NotFound(Json.obj("error" -> "Team not found"))
+              env.dataStore.usagePlanRepo
+                .existsPaidForTeam(ctx.tenant.id, team.id)
+                .map(sellsPaidPlans =>
+                  Ok(
+                    team.asSimpleJson.as[JsObject] ++ Json.obj(
+                      "sellsPaidPlans" -> sellsPaidPlans
+                    )
+                  )
+                )
+            case None =>
+              FastFuture.successful(
+                NotFound(Json.obj("error" -> "Team not found"))
+              )
           }
       }
     }

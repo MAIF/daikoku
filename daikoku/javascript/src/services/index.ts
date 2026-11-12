@@ -746,6 +746,9 @@ export const getSubscriptionInformations = (
 export const getTeamConsumptions = (teamId: any, from: any, to: any) =>
   customFetch(`/api/teams/${teamId}/consumptions?from=${from}&to=${to}`);
 
+export const getTeamExposedConsumptions = (teamId: string, from: number, to: number) =>
+  customFetch(`/api/teams/${teamId}/exposed-consumptions?from=${from}&to=${to}`);
+
 export const getTeamBillings = (
   teamId: string,
   from: number,
