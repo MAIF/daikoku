@@ -132,6 +132,11 @@ class MockController(
       Ok(req.body.as[JsObject]).future
     }
 
+  def fakeOtoroshiApiKeyResponse() =
+    Action.async(parse.json) { _ =>
+      Ok(Json.obj("accept" -> true)).future
+    }
+
   def updateFakeOtoroshiApiKey(clientId: String) =
     Action.async(parse.json) { req =>
       json.ActualOtoroshiApiKeyFormat.reads(req.body).asOpt match {

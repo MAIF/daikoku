@@ -8,6 +8,7 @@ import fr.maif.daikoku.domain.*
 import fr.maif.daikoku.domain.SubscriptionDemandState.Accepted
 import fr.maif.daikoku.domain.TeamPermission.Administrator
 import fr.maif.daikoku.env.Env
+import fr.maif.daikoku.logger.AppLogger
 import fr.maif.daikoku.utils.Cypher.encrypt
 import fr.maif.daikoku.utils.StringImplicits.BetterString
 import fr.maif.daikoku.utils.{IdGenerator, Translator}
@@ -19,6 +20,7 @@ import play.api.mvc.Results.Ok
 import play.api.libs.ws.JsonBodyWritables.writeableOf_JsValue
 
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.Try
 
 class TeamService(
     env: Env,
@@ -307,7 +309,7 @@ class TeamService(
       messagesApi: MessagesApi
   ): EitherT[Future, AppError, Result] = {
 
-    def declineTeamCreation(): EitherT[Future, AppError, Result] = {
+    def declineTeamCreation(demand:TeamCreation ): EitherT[Future, AppError, Result] = {
       val language = tenant.defaultLanguage.getOrElse("en")
       for {
         _ <- EitherT.right[AppError](
@@ -354,52 +356,83 @@ class TeamService(
       } yield Ok(Json.obj("creation" -> "refused"))
     }
 
+    def validStep(js: JsValue): EitherT[Future, AppError, Result] = {
+      val metadata = (js \ "metadata").asOpt[JsObject]
+      val authorizedEntitiesResult: Either[
+        AppError,
+        Option[Seq[TeamAuthorizedEntities]]
+      ] =
+        (js \ "authorizedOtoroshiEntities")
+          .validateOpt(using json.SeqTeamAuthorizedEntitiesFormat) match {
+          case JsSuccess(value, _) => Right(value)
+          case JsError(errors) =>
+            Left(AppError.BadRequestError(Json.stringify(JsError.toJson(errors))))
+        }
+      val apisCreationPermission = (js \ "apisCreationPermission").asOpt[Boolean]
+
+      for {
+        authorizedEntities <- EitherT.fromEither[Future](authorizedEntitiesResult)
+        _ <- _step.check()
+        updatedDemand = demand.copy(
+          steps = demand.steps.map(s =>
+            if (s.id == _step.id)
+              s.copy(state = SubscriptionDemandState.Accepted)
+            else s
+          ),
+          metadata = demand.metadata ++ metadata
+            .map(_.as[Map[String, String]])
+            .getOrElse(Map.empty),
+          creationSecurity = apisCreationPermission,
+          adminReview = Some(
+            TeamCreationAdminReview(
+              metadata = demand.metadata,
+              removedMetadataKeys = Set.empty,
+              authorizedOtoroshiEntities = authorizedEntities,
+              creationSecurity = demand.creationSecurity,
+            )
+          )
+        )
+        _ <- EitherT.liftF(
+          env.dataStore.teamCreationRepo
+            .save(updatedDemand)
+        )
+        result <- runTeamCreationProcess(
+          demand.id,
+          tenant
+        )
+      } yield result
+    }
+
     for {
-      response <-
-        EitherT
-          .liftF(
-            env.wsClient
-              .url(step.url)
-              .withHttpHeaders(step.headers.toSeq*)
-              .post(
-                Json.obj(
-                        "demand" -> demand.asJson,
-              "api" -> api.asJson,
-              "plan" -> plan.asJson,
-              "user" -> user.asJson,
-              "team" -> team.asJson,
-              "aggregate" -> keyring.fold[JsValue](JsNull)(k =>
-                Json.obj(
-                  "keyring" -> k.asSafeJson,
-                  "subscriptions" -> keyringSubscriptions.map(sub => {
-                    Json.obj(
-                      "subscription" -> sub.asJson,
-                      "api" -> aggregatedApis
-                        .find(_.id == sub.api)
-                        .map(_.asJson)
-                        .getOrElse(JsNull)
-                        .as[JsValue],
-                      "plan" -> aggregatedPlan
-                        .find(_.id == sub.plan)
-                        .map(_.asJson)
-                        .getOrElse(JsNull)
-                        .as[JsValue]
-                    )
-                  })
-                )
-              ))
-                  ))
-          .map(_.json)
-      accept <- EitherT.fromOption[Future](
-        (response \ "accept").asOpt[Boolean],
-        AppError.BadRequestError("accept not in response call")
+      response <- EitherT(
+        env.wsClient
+          .url(step.url)
+          .withHttpHeaders(step.headers.toSeq*)
+          .post(
+            Json.obj(
+              "demand" -> demand.asJson
+            )
+          )
+          .map(resp => {
+            val value: Either[AppError, (Boolean, JsValue)] = Try {
+              Right(((resp.json \ "accept").as[Boolean], resp.json))
+            }.recover(e => {
+              AppLogger.error(e.getMessage, e)
+              AppLogger.error(s"body ==> ${Json.stringify(resp.json)}")
+              Left(AppError.OtoroshiError(Json.obj("error" -> e.getMessage)))
+            }).get
+            value
+          })
       )
-      result <-
-        if (accept)
-          validateStep(_step, demand, (response \ "metadata").asOpt[JsObject])
-            .flatMap(_ => runTeamCreationProcess(demand.id, tenant))
-        else declineTeamCreation()
-    } yield result
+
+      r <-
+        if (response._1)
+          validStep(response._2)
+        else
+          declineTeamCreation(
+            demand
+          )
+    } yield r
   }
 
   private def sendEmail(
@@ -626,7 +659,7 @@ class TeamService(
       )
 
       effectiveMetadata = teamCreation.effectiveMetadata(tenant)
-      
+
       _ <- EitherT.liftF[Future, AppError, Boolean](
         env.dataStore.teamRepo
           .forTenant(tenant.id)

@@ -364,6 +364,7 @@ export const SubscriptionProcessEditor = (props: SubProcessProps) => {
           url: 'https://changeit.io',
           headers: {},
         };
+        //http://step.validation.oto.tools:8080
 
         return openFormModal({
           title: translate('subscription.process.add.httpRequest.step.title'),

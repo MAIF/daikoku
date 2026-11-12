@@ -376,6 +376,7 @@ DELETE  /fakeotoroshi/apis/apim.otoroshi.io/v1/apikeys/:clientId     fr.maif.dai
 PUT     /fakeotoroshi/apis/apim.otoroshi.io/v1/apikeys/:clientId     fr.maif.daikoku.controllers.MockController.updateFakeOtoroshiApiKey(clientId)
 GET     /fakeotoroshi/apis/apim.otoroshi.io/v1/apikeys               fr.maif.daikoku.controllers.MockController.fakeOtoroshiApiKeys()
 POST    /fakeotoroshi/apis/apim.otoroshi.io/v1/apikeys               fr.maif.daikoku.controllers.MockController.createFakeOtoroshiApiKey()
+POST    /fakeotoroshi/apis/process/_validate                         fr.maif.daikoku.controllers.MockController.fakeOtoroshiApiKeyResponse()
 
 GET     /admin-api/swagger.json                      fr.maif.daikoku.controllers.AdminApiSwaggerController.swagger()
 GET     /admin-api/openapi.json                      fr.maif.daikoku.controllers.AdminApiSwaggerController.swagger()
