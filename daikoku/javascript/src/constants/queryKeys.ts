@@ -6,6 +6,7 @@ export const QUERY_KEYS = {
   teamPendingDemands: (teamId: string) => ['team-pending-demands', teamId],
   teamReceivedDemands: (teamId: string) => ['team-received-demands', teamId],
   visibleApiById: (apiId: string) => ['visible-api', apiId] as const,
+  visiblePlan: (apiId: string, planId: string) => ['visible-plan', apiId, planId] as const,
   paymentEnabled: () => ['payment-enabled'] as const,
   remoteCatalogs: (tenantId: string) => ['remote-catalogs', tenantId],
   remoteCatalogSettings: (tenantId: string) => ['remote-catalog-settings', tenantId],

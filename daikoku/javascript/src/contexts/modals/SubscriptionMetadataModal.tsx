@@ -4,6 +4,7 @@ import sortBy from "lodash/sortBy";
 import { useContext, useRef } from "react";
 
 import { Option, Spinner } from "../../components/utils";
+import { QUERY_KEYS } from "../../constants/queryKeys";
 import { I18nContext } from "../../contexts";
 import * as Services from "../../services";
 import { IApi, isError, IUsagePlan } from "../../types";
@@ -38,12 +39,12 @@ export const SubscriptionMetadataModal = (
   const formRef = useRef<FormRef>(undefined);
 
   const apiQuery = useQuery({
-    queryKey: ["api"],
+    queryKey: QUERY_KEYS.visibleApiById(props.api!),
     queryFn: () => Services.getVisibleApiWithId(props.api!),
     enabled: !!props.api,
   });
   const planQuery = useQuery({
-    queryKey: ["plan"],
+    queryKey: QUERY_KEYS.visiblePlan(props.api!, props.plan!),
     queryFn: () => {
       const api = apiQuery.data as IApi;
       return Services.getVisiblePlan(
