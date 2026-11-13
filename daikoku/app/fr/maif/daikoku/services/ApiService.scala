@@ -7,7 +7,7 @@ import fr.maif.daikoku.actions.{ApiActionContext, DaikokuActionContext}
 import fr.maif.daikoku.controllers.AppError.*
 import fr.maif.daikoku.controllers.{AppError, PaymentClient}
 import fr.maif.daikoku.domain.*
-import fr.maif.daikoku.domain.SubscriptionBlockReason.Owner
+import fr.maif.daikoku.domain.SubscriptionBlockReason.{Ended, Owner}
 import fr.maif.daikoku.domain.TeamPermission.Administrator
 import fr.maif.daikoku.domain.json.SeqApiFormat
 import fr.maif.daikoku.env.Env
@@ -35,6 +35,7 @@ import play.api.mvc.{AnyContent, Result}
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try
+import scala.util.control.NonFatal
 
 class ApiService(
     env: Env,
@@ -222,6 +223,30 @@ class ApiService(
     }
   }
 
+  /** A priced plan owes its monthly cost from the first day: recording it at
+    * subscription time lets both teams see the estimate without waiting for
+    * the stats job.
+    */
+  private def recordFirstConsumptionOfPricedPlan(
+      tenant: Tenant,
+      plan: UsagePlan,
+      subscription: ApiSubscription
+  ): Future[Unit] = {
+    if (plan.costPerMonth.isEmpty) {
+      FastFuture.successful(())
+    } else {
+      apiKeyStatsJob
+        .syncForSubscription(subscription, tenant)
+        .map(_ => ())
+        .recover { case NonFatal(error) =>
+          AppLogger.error(
+            s"[subscribeToApi] :: first consumption of subscription ${subscription.id.value} not recorded",
+            error
+          )
+        }
+    }
+  }
+
   def subscribeToApi(
       tenant: Tenant,
       user: User,
@@ -402,6 +427,9 @@ class ApiService(
             env.dataStore.apiSubscriptionRepo
               .forTenant(tenant.id)
               .save(apiSubscription)
+          )
+          _ <- EitherT.right[AppError](
+            recordFirstConsumptionOfPricedPlan(tenant, plan, apiSubscription)
           )
           _ <- EitherT.right[AppError](
             env.dataStore.notificationRepo
@@ -647,9 +675,12 @@ class ApiService(
           _ <- EitherT.right[AppError](
             otoroshiSynchronisator.runSync(updatedSubscription.id, tenant)
           )
-          _ <- paymentClient.toggleStateThirdPartySubscription(
-            updatedSubscription
-          )
+          _ <-
+            if (byOwner) {
+              paymentClient.alignStripePause(tenant, updatedSubscription, plan)
+            } else {
+              EitherT.pure[Future, AppError](())
+            }
           keyring <- EitherT.fromOptionF[Future, AppError, Keyring](
             env.dataStore.keyringRepo
               .forTenant(tenant.id)
@@ -662,6 +693,18 @@ class ApiService(
 
         r.value
     }
+  }
+
+  def endSubscription(
+      tenant: Tenant,
+      subscription: ApiSubscription
+  ): Future[Unit] = {
+    val ended = subscription.copy(blockedBy = subscription.blockedBy + Ended)
+
+    for {
+      _ <- env.dataStore.apiSubscriptionRepo.forTenant(tenant.id).save(ended)
+      _ <- otoroshiSynchronisator.runSync(ended.id, tenant)
+    } yield ()
   }
 
   def regenerateKeyringSecret(
@@ -1276,7 +1319,7 @@ class ApiService(
           val repo = env.dataStore.notificationRepo.forTenant(tenant)
           repo.execute(
             s"UPDATE ${repo.tableName} " +
-              "SET content = jsonb_set(content, '{status}', $2::jsonb) " +
+              "SET content = jsonb_set(content, '{status}', $2::text::jsonb) " +
               "WHERE content->>'_tenant' = $1 " +
               "AND content->'action'->>'type' = 'CheckoutForSubscription' " +
               "AND content->'action'->>'demand' = $3 " +
@@ -1512,7 +1555,7 @@ class ApiService(
       .flatMap {
         // generate notification to checkout
         case (Some(step), demand)
-            if step.step.name == "payment" && demand.steps.size > 1 && step.state.name == "waiting" =>
+            if step.step.name == "payment" && step.state.name == "waiting" =>
           for {
             _ <- EitherT.liftF[Future, AppError, Boolean](
               env.dataStore.notificationRepo
@@ -1573,41 +1616,47 @@ class ApiService(
             title <- EitherT.liftF[Future, AppError, String](
               translator.translate("mail.checkout.title", tenant, Map.empty)
             )
-
-            _ <- EitherT.right[AppError](
-              Future.sequence(
-                recipent
-                  .map(recipient =>
-                    translator
-                      .translate(
-                        "mail.checkout.body",
-                        tenant,
-                        Map(
-                          "api.name" -> JsString(api.name),
-                          "api.plan" -> JsString(
-                            plan.customName
-                          ),
-                          "link" -> JsString(
-                            env.getDaikokuUrl(
-                              tenant,
-                              s"/api/subscription/team/${team.id.value}/demands/${demand.id.value}/_run",
-                              recipient
+            // a single-step demand redirects its requester to Stripe right away
+            _ <- EitherT.liftF[Future, AppError, Unit](
+              if (demand.steps.size > 1) {
+                Future
+                  .sequence(
+                    recipent
+                      .map(recipient =>
+                        translator
+                          .translate(
+                            "mail.checkout.body",
+                            tenant,
+                            Map(
+                              "api.name" -> JsString(api.name),
+                              "api.plan" -> JsString(
+                                plan.customName
+                              ),
+                              "link" -> JsString(
+                                env.getDaikokuUrl(
+                                  tenant,
+                                  s"/api/subscription/team/${team.id.value}/demands/${demand.id.value}/_run",
+                                  recipient
+                                )
+                              ),
+                              "producer_team_data" -> ownerTeam.asJson,
+                              "consumer_team_data" -> team.asJson,
+                              "user_data" -> user.asSimpleJson,
+                              "api_data" -> api.asJson,
+                              "usagePlan_data" -> plan.asJson,
+                              "subscriptionDemand_data" -> demand.asJson
                             )
-                          ),
-                          "producer_team_data" -> ownerTeam.asJson,
-                          "consumer_team_data" -> team.asJson,
-                          "user_data" -> user.asSimpleJson,
-                          "api_data" -> api.asJson,
-                          "usagePlan_data" -> plan.asJson,
-                          "subscriptionDemand_data" -> demand.asJson
-                        )
-                      )
-                      .flatMap(body =>
-                        tenant.mailer
-                          .send(title, Seq(recipient.email), body, tenant)
+                          )
+                          .flatMap(body =>
+                            tenant.mailer
+                              .send(title, Seq(recipient.email), body, tenant)
+                          )
                       )
                   )
-              )
+                  .map(_ => ())
+              } else {
+                FastFuture.successful(())
+              }
             )
           } yield (step.some, demand)
         case tuple =>
@@ -1645,13 +1694,14 @@ class ApiService(
                 .findById(demand.plan),
               AppError.PlanNotFound
             )
-            maybeSubscriptionInformations <-
-              EitherT.liftF(plan.paymentSettings match {
-                case Some(settings) =>
-                  paymentClient
-                    .getSubscription(maybeSessionId, settings, tenant)
-                case None => FastFuture.successful(None)
-              })
+            maybeSubscriptionInformations <- plan.paymentSettings match {
+              case Some(settings) =>
+                paymentClient.getSubscription(maybeSessionId, settings, tenant)
+              case None =>
+                EitherT.pure[Future, AppError](
+                  Option.empty[ThirdPartySubscriptionInformations]
+                )
+            }
             subscription <- EitherT(
               subscribeToApi(
                 tenant = tenant,
@@ -1701,38 +1751,42 @@ class ApiService(
               }
             )
             _ <- EitherT.liftF[Future, AppError, Seq[Unit]](
-              Future.sequence((administrators ++ Seq(from)).map(admin => {
-                implicit val language: String = admin.defaultLanguage
-                  .getOrElse(tenant.defaultLanguage.getOrElse("en"))
-                (for {
-                  title <-
-                    translator.translate("mail.acceptation.title", tenant)
-                  body <- translator.translate(
-                    "mail.api.subscription.acceptation.body",
-                    tenant,
-                    Map(
-                      "user" -> JsString(from.name),
-                      "apiName" -> JsString(api.name),
-                      "link" -> JsString(
-                        env.getDaikokuUrl(
-                          tenant,
-                          s"/${team.humanReadableId}/settings/apikeys/${api.humanReadableId}/${api.currentVersion.value}",
-                          admin
+              Future.sequence(
+                (administrators :+ from)
+                  .distinctBy(_.id)
+                  .map(admin => {
+                    implicit val language: String = admin.defaultLanguage
+                      .getOrElse(tenant.defaultLanguage.getOrElse("en"))
+                    (for {
+                      title <-
+                        translator.translate("mail.acceptation.title", tenant)
+                      body <- translator.translate(
+                        "mail.api.subscription.acceptation.body",
+                        tenant,
+                        Map(
+                          "user" -> JsString(from.name),
+                          "apiName" -> JsString(api.name),
+                          "link" -> JsString(
+                            env.getDaikokuUrl(
+                              tenant,
+                              s"/${ownerTeam.humanReadableId}/${api.humanReadableId}/${api.currentVersion.value}/apikeys?team=${team.id.value}",
+                              admin
+                            )
+                          ),
+                          "team" -> JsString(team.name),
+                          "producer_team_data" -> ownerTeam.asJson,
+                          "consumer_team_data" -> team.asJson,
+                          "user_data" -> from.asSimpleJson,
+                          "api_data" -> api.asJson,
+                          "usagePlan_data" -> plan.asJson,
+                          "subscription_data" -> subscription.asJson
                         )
-                      ), // todo => better url
-                      "team" -> JsString(team.name),
-                      "producer_team_data" -> ownerTeam.asJson,
-                      "consumer_team_data" -> team.asJson,
-                      "user_data" -> from.asSimpleJson,
-                      "api_data" -> api.asJson,
-                      "usagePlan_data" -> plan.asJson,
-                      "subscription_data" -> subscription.asJson
-                    )
-                  )
-                } yield {
-                  tenant.mailer.send(title, Seq(admin.email), body, tenant)
-                }).flatten
-              }))
+                      )
+                    } yield {
+                      tenant.mailer.send(title, Seq(admin.email), body, tenant)
+                    }).flatten
+                  })
+              )
             )
             keyring <- EitherT.fromOptionF[Future, AppError, Keyring](
               env.dataStore.keyringRepo
@@ -1881,6 +1935,13 @@ class ApiService(
               (),
               AppError.SubscriptionAggregationReadOnlyConflict
             )
+            paidPlanInvolved = plan.paymentSettings.isDefined ||
+              memberPlans.exists(_.paymentSettings.isDefined)
+            _ <- EitherT.cond[Future][AppError, Unit](
+              !paidPlanInvolved,
+              (),
+              AppError.SubscriptionAggregationPaymentConflict
+            )
           } yield ()
       }
     }
@@ -1895,10 +1956,16 @@ class ApiService(
         case _ =>
           EitherT(
             env.dataStore.apiSubscriptionRepo
-              .findOneByTeamApiAndPlan(tenant.id, team.id, api.id, plan.id)
-              .map {
-                case Some(_) => Left(AppError.SubscriptionConflict)
-                case None    => Right(())
+              .findByApiTeamAndPlan(tenant.id, api.id, team.id, plan.id)
+              .map { subscriptions =>
+                val ongoing =
+                  subscriptions.filterNot(_.blockedBy.contains(Ended))
+
+                if (ongoing.nonEmpty) {
+                  Left(AppError.SubscriptionConflict)
+                } else {
+                  Right(())
+                }
               }
           )
       }

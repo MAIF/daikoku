@@ -289,6 +289,14 @@ a.navbar-brand,
               color: variables.$companion_text-hover-color;
             }
 
+            // The active sub-entry carries the highlight: its parent only
+            // stays readable as the open group.
+            &.active:not(:hover):has(+ .entry__submenu .submenu__entry__link.active) {
+              background-color: transparent;
+              color: variables.$companion_link-color;
+              font-weight: bold;
+            }
+
             &.disabled {
               opacity: 0.5;
               cursor: default;
@@ -331,7 +339,10 @@ a.navbar-brand,
           }
 
           .entry__submenu {
-            margin-left: 1rem;
+            margin-left: .75rem;
+            margin-bottom: .5rem;
+            padding-left: .25rem;
+            border-left: 2px solid color-mix(in srgb, variables.$companion_link-color 25%, transparent);
             font-size: 14px;
           }
         }

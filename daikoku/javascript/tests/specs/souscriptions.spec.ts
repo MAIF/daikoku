@@ -50,7 +50,7 @@ test('[ASOAPI-10160] - souscrire à une api', async ({ page, context }) => {
     const body = await response.json();
     await route.fulfill({ response, json: { ...body, subscriptions: [] } });
   }, { times: 1 });
-  await page.goto(`${HOME}api-division/api-papier/1.0.0/keyrings?team=${vendeurs}`);
+  await page.goto(`${HOME}api-division/api-papier/1.0.0/apikeys?team=${vendeurs}`);
   const publicPendingCreation = page.locator('.keyring-card-pending');
   await expect(publicPendingCreation).toContainText('Vendeurs');
   await expect(publicPendingCreation).toContainText('Demande en cours');
@@ -1106,7 +1106,7 @@ test("[] - [Consommateur] - les actions d'administration des clés doivent être
 test("[#1086] - une clé d\'API désactivée ne doit pas pouvoir être paramétrée (rotation + réinit. secret grisés)", async ({ page }) => {
   await page.goto(ACCUEIL);
   await loginAs(MICHAEL, page);
-  await page.goto(`http://localhost:${exposedPort}/api-division/api-papier/1.0.0/keyrings`);
+  await page.goto(`http://localhost:${exposedPort}/api-division/api-papier/1.0.0/apikeys`);
 
   const card = page.getByRole('listitem', { name: 'api papier - dev' })
 

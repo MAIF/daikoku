@@ -34,6 +34,7 @@ import {
   IApiPost,
   IApiPostCursor,
   IConsumption,
+  ISubscriptionBillingState,
   IDocDetail,
   IDocPage,
   IDocumentation,
@@ -235,6 +236,17 @@ export const archiveApiKey = (
   enable: boolean
 ): PromiseWithError<ISafeSubscription> =>
   customFetch(`/api/teams/${teamId}/subscriptions/${subscriptionId}/_archive?enabled=${enable}`, {
+    method: 'PUT',
+  });
+
+/** Ends the subscription when the paid period runs out. Passing false takes the
+ * cancellation back, which is possible until that last paid day. */
+export const cancelApiSubscription = (
+  teamId: string,
+  subscriptionId: string,
+  cancel: boolean
+): PromiseWithError<ISafeSubscription> =>
+  customFetch(`/api/teams/${teamId}/subscriptions/${subscriptionId}/_cancel?cancel=${cancel}`, {
     method: 'PUT',
   });
 
@@ -477,6 +489,10 @@ export const allTenants = () => customFetch('/api/tenants');
 export const oneTenant = (tenantId: string): Promise<ResponseError | ITenantFull> =>
   customFetch(`/api/tenants/${tenantId}`);
 
+export const getPaymentEnabled = (): Promise<
+  {} | (ResponseError & { missing?: Array<string> })
+> => customFetch('/api/payment/_enabled');
+
 export const getConsummedQuotasWithSubscriptionId = (
   teamId: string,
   subscriptionId: string
@@ -699,7 +715,8 @@ export const apiSubscriptions = (
 export const archiveSubscriptionByOwner = (
   ownerId: string,
   subscriptionId: string,
-  enabled: boolean
+  enabled: boolean,
+  reason?: string
 ) =>
   customFetch(
     `/api/teams/${ownerId}/subscriptions/${subscriptionId}/_archiveByOwner?enabled=${enabled}`,
@@ -710,6 +727,7 @@ export const archiveSubscriptionByOwner = (
         Accept: 'application/json',
         'Content-Type': 'application/json',
       },
+      body: JSON.stringify({ reason }),
     }
   );
 
@@ -728,12 +746,20 @@ export const getSubscriptionInformations = (
 export const getTeamConsumptions = (teamId: any, from: any, to: any) =>
   customFetch(`/api/teams/${teamId}/consumptions?from=${from}&to=${to}`);
 
+export const getTeamExposedConsumptions = (teamId: string, from: number, to: number) =>
+  customFetch(`/api/teams/${teamId}/exposed-consumptions?from=${from}&to=${to}`);
+
 export const getTeamBillings = (
   teamId: string,
   from: number,
   to: number
 ): Promise<Array<IConsumption> | ResponseError> =>
   customFetch(`/api/teams/${teamId}/billings?from=${from}&to=${to}`);
+
+export const getTeamBillingStates = (
+  teamId: string
+): PromiseWithError<Array<ISubscriptionBillingState>> =>
+  customFetch(`/api/teams/${teamId}/billing/subscriptions`);
 
 /*export const getTeamIncome = (teamId: any, from: any, to: any) =>
   customFetch(`/api/teams/${teamId}/income?from=${from}&to=${to}`);
@@ -1348,6 +1374,7 @@ export const graphql = {
             team { name }
             rotation { enabled rotationEvery gracePeriod pendingRotation }
             subscriptionsCount isRotationLocked environments
+            subscriptions { state }
           }
         }
         total totalFiltered keyringsCount creationsCount
@@ -1362,7 +1389,7 @@ export const graphql = {
           demand { ${keyringDemandFields} }
           subscription {
             _id customName adminCustomName enabled state createdAt validUntil tags lastUsage
-            plan { _id customName }
+            plan { _id customName paymentSettings { thirdPartyPaymentSettingsId } }
             api { _id _humanReadableId name currentVersion team { _humanReadableId } }
           }
         }
@@ -1442,6 +1469,9 @@ export const graphql = {
               }
             }
             aggregationApiKeysSecurity
+            paymentSettings {
+              thirdPartyPaymentSettingsId
+            }
           }
         }
       }
@@ -1541,12 +1571,6 @@ export const graphql = {
             name
           }
           autoRotation
-          billingDuration {
-            ... on BillingDuration {
-              value
-              unit
-            }
-          }
           costPerMonth
           costPerRequest
           currency {
@@ -1557,6 +1581,7 @@ export const graphql = {
           integrationProcess
           maxPerDay
           maxPerMonth
+          includedRequestsPerMonth
           maxPerSecond
           metadata
           otoroshiTarget {
@@ -1654,12 +1679,6 @@ export const graphql = {
             }
           }
           subscriptionProcessChecksum
-          trialPeriod {
-            ... on BillingDuration {
-              value
-              unit
-            }
-          }
           visibility
         }
         total
@@ -1814,14 +1833,17 @@ export const graphql = {
   getTeamIncome: `
   query getTeamIncome ($teamId: String!, $from: Long, $to: Long) {
     teamIncomes (teamId: $teamId, from: $from, to: $to) {
+      _id
       api {
         _id
         name
       }
       plan {
         _id
+        customName
       }
       team {
+        _id
         name
       }
       billing {
@@ -1890,6 +1912,7 @@ export const graphql = {
           customName
           enabled
           state
+          blockedBy
           tags
           metadata
           customMetadata
@@ -1919,6 +1942,7 @@ export const graphql = {
           plan {
             _id
             customName
+            costPerMonth
           }
           team {
             _id
@@ -2394,6 +2418,10 @@ export const graphql = {
                   name
                 }
               }
+              plan {
+                _id
+                customName
+              }
               api {
                 _id
                 name
@@ -2434,6 +2462,75 @@ export const graphql = {
                 }
               }
               motivation
+            }
+            ... on SubscriptionPriceChangeScheduled {
+            __typename
+              api {
+                _id
+                _humanReadableId
+                name
+                currentVersion
+                team {
+                  _humanReadableId
+                }
+              }
+              plan {
+                _id
+                customName
+              }
+              costPerMonth
+              costPerRequest
+              currency {
+                code
+              }
+              effectiveAt
+            }
+            ... on SubscriptionCancellationScheduled {
+            __typename
+              api {
+                _id
+                _humanReadableId
+                name
+                currentVersion
+              }
+              plan {
+                _id
+                customName
+              }
+              effectiveAt
+            }
+            ... on SubscriptionBlockedByOwner {
+              __typename
+              api {
+                _id
+                _humanReadableId
+                name
+                currentVersion
+                team {
+                  _humanReadableId
+                }
+              }
+              plan {
+                _id
+                customName
+              }
+              reason
+            }
+            ... on SubscriptionUnblockedByOwner {
+              __typename
+              api {
+                _id
+                _humanReadableId
+                name
+                currentVersion
+                team {
+                  _humanReadableId
+                }
+              }
+              plan {
+                _id
+                customName
+              }
             }
           }
           date

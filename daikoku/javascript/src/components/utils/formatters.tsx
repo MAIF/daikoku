@@ -13,8 +13,6 @@ import { currencies } from '../../services/currencies';
 import {
   IBaseUsagePlan,
   IFastPlan,
-  isPayPerUse,
-  isQuotasWitoutLimit,
   IUsagePlan, IUsagePlanGQL,
 } from '../../types';
 
@@ -49,20 +47,25 @@ export const getCurrencySymbol = (code: any) => {
   return currency ? currency.symbol : undefined;
 };
 export const renderPricing = (plan: IFastPlan | IUsagePlanGQL , translate: (params: string | TranslateParams) => string) => {
-  let pricing = translate('Free');
-  const req = translate('req.');
-  const month = translate('month');
-
-  if (isQuotasWitoutLimit(plan)) {
-    pricing = `${formatCurrency(plan.costPerMonth)} ${getCurrencySymbol(plan.currency!.code)}/${month} +
-      ${formatCurrency(plan.costPerRequest)} ${getCurrencySymbol(plan.currency!.code)}/${req}`
-  } else if (isPayPerUse(plan)) {
-    pricing = `${formatCurrency(plan.costPerMonth)} ${getCurrencySymbol(plan.currency!.code)}/${month} +
-    ${formatCurrency(plan.costPerRequest)} ${getCurrencySymbol(plan.currency!.code)}/${req}`;
-  } else if (plan.costPerMonth) {
-    pricing = `${formatCurrency(plan.costPerMonth)} ${getCurrencySymbol(plan.currency!.code)}/${month}`;
+  if (!plan.costPerMonth) {
+    return translate('Free');
   }
-  return pricing;
+  const symbol = getCurrencySymbol(plan.currency!.code);
+  const monthly = `${formatCurrency(plan.costPerMonth)} ${symbol}/${translate('month')}`;
+  if (!plan.costPerRequest) {
+    return monthly;
+  }
+  const costPerRequest = `${formatCurrency(plan.costPerRequest)} ${symbol}`;
+  if (plan.includedRequestsPerMonth) {
+    return translate({
+      key: 'api.pricings.pricing.beyond.included.requests',
+      replacements: [monthly, costPerRequest, plan.includedRequestsPerMonth.toLocaleString()],
+    });
+  }
+  return translate({
+    key: 'api.pricings.pricing.every.request',
+    replacements: [monthly, costPerRequest],
+  });
 }
 
 export const renderPlanInfo = (planInfo: IFastPlan | IUsagePlan) => {

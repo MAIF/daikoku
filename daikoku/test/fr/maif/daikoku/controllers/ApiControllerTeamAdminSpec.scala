@@ -1305,8 +1305,6 @@ class ApiControllerTeamAdminSpec() extends ApiControllerSpecBase {
         maxPerMonth = 10000L.some,
         maxPerDay = 10000L.some,
         costPerMonth = BigDecimal(10.0).some,
-        billingDuration = BillingDuration(1, BillingTimeUnit.Month).some,
-        trialPeriod = None,
         currency = Currency("EUR").some,
         customName = "QuotasWithLimits",
         customDescription = None,
@@ -3202,6 +3200,157 @@ class ApiControllerTeamAdminSpec() extends ApiControllerSpecBase {
           .findById(subscriptionDemand.id),
         5.second
       ) mustBe None
+    }
+
+    "not cancel a subscription demand of another team" in {
+      val intruderTeam = teamConsumer.copy(
+        id = TeamId("intruder"),
+        name = "Intruder Team"
+      )
+      val subscriptionDemand = SubscriptionDemand(
+        id = DemandId("test"),
+        tenant = tenant.id,
+        api = defaultApi.api.id,
+        plan = defaultApi.plans.reverse.head.id,
+        steps = Seq(
+          SubscriptionDemandStep(
+            id = SubscriptionDemandStepId("admin"),
+            state = SubscriptionDemandState.Waiting,
+            step = ValidationStep.TeamAdmin(
+              id = IdGenerator.token(10),
+              team = teamOwner.id
+            )
+          )
+        ),
+        state = SubscriptionDemandState.InProgress,
+        team = teamConsumerId,
+        from = user.id,
+        motivation = None
+      )
+
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(userAdmin, user),
+        teams = Seq(teamOwner, teamConsumer, intruderTeam),
+        usagePlans = defaultApi.plans,
+        apis = Seq(defaultApi.api),
+        subscriptionDemands = Seq(subscriptionDemand)
+      )
+      val session = loginWithBlocking(userAdmin, tenant)
+
+      val cancelDemand = httpJsonCallBlocking(
+        path =
+          s"/api/subscription/team/${intruderTeam.id.value}/demands/${subscriptionDemand.id.value}/_cancel",
+        method = "DELETE"
+      )(using tenant, session)
+
+      cancelDemand.status mustBe 403
+      Await.result(
+        daikokuComponents.env.dataStore.subscriptionDemandRepo
+          .forAllTenant()
+          .findById(subscriptionDemand.id),
+        5.second
+      ) mustBe defined
+    }
+
+    "not run the subscription process of a demand of another team" in {
+      val intruderTeam = teamConsumer.copy(
+        id = TeamId("intruder"),
+        name = "Intruder Team"
+      )
+      val subscriptionDemand = SubscriptionDemand(
+        id = DemandId("test"),
+        tenant = tenant.id,
+        api = defaultApi.api.id,
+        plan = defaultApi.plans.reverse.head.id,
+        steps = Seq(
+          SubscriptionDemandStep(
+            id = SubscriptionDemandStepId("admin"),
+            state = SubscriptionDemandState.Waiting,
+            step = ValidationStep.TeamAdmin(
+              id = IdGenerator.token(10),
+              team = teamOwner.id
+            )
+          )
+        ),
+        state = SubscriptionDemandState.InProgress,
+        team = teamConsumerId,
+        from = user.id,
+        motivation = None
+      )
+
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(userAdmin, user),
+        teams = Seq(teamOwner, teamConsumer, intruderTeam),
+        usagePlans = defaultApi.plans,
+        apis = Seq(defaultApi.api),
+        subscriptionDemands = Seq(subscriptionDemand)
+      )
+      val session = loginWithBlocking(userAdmin, tenant)
+
+      val run = httpJsonCallBlocking(
+        path =
+          s"/api/subscription/team/${intruderTeam.id.value}/demands/${subscriptionDemand.id.value}/_run"
+      )(using tenant, session)
+
+      run.status mustBe 403
+      Await.result(
+        daikokuComponents.env.dataStore.notificationRepo
+          .forAllTenant()
+          .findAll(),
+        5.second
+      ) mustBe empty
+    }
+
+    "read a subscription demand from the consumer or the producer team only" in {
+      val otherTeam = teamConsumer.copy(
+        id = TeamId("other"),
+        name = "Other Team"
+      )
+      val subscriptionDemand = SubscriptionDemand(
+        id = DemandId("test"),
+        tenant = tenant.id,
+        api = defaultApi.api.id,
+        plan = defaultApi.plans.reverse.head.id,
+        steps = Seq(
+          SubscriptionDemandStep(
+            id = SubscriptionDemandStepId("admin"),
+            state = SubscriptionDemandState.Waiting,
+            step = ValidationStep.TeamAdmin(
+              id = IdGenerator.token(10),
+              team = teamOwner.id
+            )
+          )
+        ),
+        state = SubscriptionDemandState.InProgress,
+        team = teamConsumerId,
+        from = user.id,
+        motivation = None
+      )
+
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(userAdmin, user),
+        teams = Seq(teamOwner, teamConsumer, otherTeam),
+        usagePlans = defaultApi.plans,
+        apis = Seq(defaultApi.api),
+        subscriptionDemands = Seq(subscriptionDemand)
+      )
+      val session = loginWithBlocking(user, tenant)
+
+      def readDemandAs(teamId: TeamId) =
+        httpJsonCallBlocking(
+          path =
+            s"/api/subscription/team/${teamId.value}/demands/${subscriptionDemand.id.value}"
+        )(using tenant, session)
+
+      val asConsumer = readDemandAs(teamConsumerId)
+      asConsumer.status mustBe 200
+      (asConsumer.json \ "_id").as[String] mustBe subscriptionDemand.id.value
+
+      readDemandAs(teamOwnerId).status mustBe 200
+      readDemandAs(otherTeam.id).status mustBe 404
     }
 
     "refresh clientSecret of a subscription" in {

@@ -1,133 +1,152 @@
+import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query';
+import { createColumnHelper } from '@tanstack/react-table';
 import { endOfMonth, startOfMonth } from 'date-fns';
 import maxBy from 'lodash/maxBy';
+import orderBy from 'lodash/orderBy';
+import sumBy from 'lodash/sumBy';
+import { RefreshCw } from 'lucide-react';
 import { useContext, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
 import { I18nContext, useTeamBackOffice } from '../../../contexts';
 import { GlobalContext } from '../../../contexts/globalContext';
 import * as Services from '../../../services';
-import { IApiAuthoWithCount, isError, ITeamSimple } from '../../../types';
+import { isError, ITeamSimple } from '../../../types';
+import { DynamicTable, DynamicTableFeatures } from '../../inputs';
 import { MonthPicker } from '../../inputs/monthPicker';
-import { api, Can, formatCurrency, formatDate, read, Spinner } from '../../utils';
-import { ApiTotal, NoData, PriceCartridge, TheadBillingContainer } from './components';
-import { CircleArrowLeft, CircleX, RefreshCw } from "lucide-react";
+import { api, Can, formatCurrency, formatDate, getCurrencySymbol, read, Spinner } from '../../utils';
 import { FeedbackButton } from '../../utils/FeedbackButton';
 
-
 type TeamIncomeGql = {
-  api: {
-    _id: string
-  }
+  _id: string;
+  api: { _id: string; name: string };
   plan: {
-    _id: string
-  }
-  team: {
-    name: string
-  }
-  billing: {
-    hits: number,
-    total: number
-  }
-  to: any
-  from: any
+    _id: string;
+    customName: string;
+  } | null;
+  team: { _id: string; name: string };
+  billing: { hits: number; total: number };
+  from: number;
+  to: number;
+};
 
-}
 export const TeamIncome = () => {
   const { isLoading, currentTeam, error } = useTeamBackOffice();
+
   const { translate, Translation } = useContext(I18nContext);
   const { customGraphQLClient } = useContext(GlobalContext);
 
-  const [date, setDate] = useState(new Date())
-  const [state, setState] = useState<{
-    consumptions: Array<TeamIncomeGql>,
-    consumptionsByApi: Array<any>,
-    selectedApi: any,
-    selectedPlan: any,
-    loading: boolean,
-    apis: Array<any>,
-  }>
-    ({
-      consumptions: [],
-      consumptionsByApi: [],
-      selectedApi: undefined,
-      selectedPlan: undefined,
-      loading: false,
-      apis: [],
-    });
+  const [date, setDate] = useState(new Date());
 
+  const queryClient = useQueryClient();
+  const teamId = (currentTeam as ITeamSimple | undefined)?._id;
+
+  const incomesQuery = useQuery({
+    queryKey: ['team-income', teamId, date.getTime()],
+    queryFn: () =>
+      customGraphQLClient
+        .request<{ teamIncomes: Array<TeamIncomeGql> }>(Services.graphql.getTeamIncome, {
+          teamId,
+          from: startOfMonth(date).getTime(),
+          to: endOfMonth(date).getTime(),
+        })
+        .then(({ teamIncomes }) => orderBy(teamIncomes, (i) => i.billing.total, 'desc')),
+    enabled: currentTeam && !isError(currentTeam),
+    placeholderData: keepPreviousData,
+  });
 
   useEffect(() => {
-    if (currentTeam && !isError(currentTeam)) {
-      getBillingData(date);
+    if (currentTeam && !isError(currentTeam))
       document.title = `${currentTeam.name} - ${translate('Income')}`;
-    }
   }, [currentTeam]);
 
-  const getBillingData = (date: Date) => {
-    setState({ ...state, loading: true });
-    Promise.all([
-      customGraphQLClient.request<{ teamIncomes: Array<TeamIncomeGql> }>(
-        Services.graphql.getTeamIncome,
-        {
-          teamId: (currentTeam as ITeamSimple)._id,
-          from: startOfMonth(date).getDate(),
-          to: endOfMonth(date).getDate()
-        }
-      ).then(({ teamIncomes }) => {
-        return teamIncomes
-      }),
-      customGraphQLClient.request<{ visibleApis: IApiAuthoWithCount }>(
-        Services.graphql.myVisibleApis,
-        { teamId: (currentTeam as ITeamSimple)._id },
-      ),
-    ]).then(
-      ([
-        consumptions,
-        { visibleApis: { apis } },
-        ,
-      ]) => {
-        const consumptionsByApi = getConsumptionsByApi(consumptions);
-        setState({
-          ...state,
-          consumptions,
-          consumptionsByApi,
-          apis: apis.map(({
-            api
-          }: any) => api),
-          loading: false,
-        });
-      }
+  const incomes = incomesQuery.data ?? [];
+
+  const sync = () =>
+    Services.syncTeamIncome(teamId!)
+      .then(() => queryClient.invalidateQueries({ queryKey: ['team-income'] }));
+
+  const money = (amount: number) =>
+    `${formatCurrency(amount)} ${getCurrencySymbol('EUR')}`;
+
+  const columnHelper = createColumnHelper<DynamicTableFeatures, TeamIncomeGql>();
+  const columns = [
+    columnHelper.display({
+      id: 'api',
+      meta: { title: translate('billing.table.api'), size: 3 },
+      cell: (info) => info.row.original.api.name,
+    }),
+    columnHelper.display({
+      id: 'plan',
+      meta: { title: translate('billing.table.plan'), size: 2 },
+      cell: (info) => info.row.original.plan?.customName,
+    }),
+    columnHelper.display({
+      id: 'team',
+      meta: { title: translate('billing.table.team'), size: 3 },
+      cell: (info) => info.row.original.team.name,
+    }),
+    columnHelper.display({
+      id: 'calls',
+      meta: { title: translate('billing.table.calls'), size: 2 },
+      cell: (info) => info.row.original.billing.hits,
+    }),
+    columnHelper.display({
+      id: 'total',
+      meta: { title: translate('billing.table.total'), size: 2 },
+      cell: (info) => money(info.row.original.billing.total),
+    }),
+  ];
+
+  const getLastDate = () => {
+    if (!incomes.length) return null;
+
+    const lastDate = formatDate(
+      maxBy(incomes, 'to')!.to,
+      translate('date.locale'),
+      translate('date.format')
+    );
+
+    return (
+      <i className="ms-1">
+        <Translation i18nkey="date.update" replacements={[lastDate]}>
+          upd. {lastDate}
+        </Translation>
+      </i>
     );
   };
 
-  const getConsumptionsByApi = (consumptions: Array<TeamIncomeGql>) => consumptions.reduce((acc: any, consumption: TeamIncomeGql) => {
-    const api = acc.find((item: any) => item.api._id === consumption.api._id);
-    const { hits, total } = api ? api.billing : { hits: 0, total: 0 };
-    const billing = {
-      hits: hits + consumption.billing.hits,
-      total: total + consumption.billing.total,
+  const drawContent = () => {
+    if (incomesQuery.isLoading) return <Spinner />;
+    if (incomesQuery.isError) return <div className="alert alert-danger">{translate('billing.income.error')}</div>;
+    if (!incomes.length) {
+      return <div className="alert alert-info">{translate('billing.income.empty')}</div>;
+    }
+
+    const totalRow = {
+      api: translate('Total'),
+      calls: sumBy(incomes, (income) => income.billing.hits),
+      total: money(sumBy(incomes, (income) => income.billing.total)),
     };
-    const obj = { billing, api: consumption.api };
 
-    return [...acc.filter((item: any) => item.api._id !== consumption.api._id), obj];
-  }, []);
-
-
-
-  const total = state.consumptions
-    .reduce((acc: number, curr: any) => acc + curr.billing.total, 0);
-  const mostRecentConsumption = maxBy(state.consumptions, (c) => c.to);
-  const lastDate = mostRecentConsumption && formatDate(mostRecentConsumption.to, translate('date.locale'), translate('date.format'));
+    return (
+      <div style={incomesQuery.isPlaceholderData ? { opacity: 0.5 } : undefined} className='mt-3'>
+        <DynamicTable<TeamIncomeGql>
+          queryKey={['team-income-table', String(teamId), String(date.getTime()), String(incomesQuery.dataUpdatedAt)]}
+          columns={columns}
+          fetchData={() => Promise.resolve({ items: incomes, total: incomes.length })}
+          getRowId={(income) => income._id}
+          persistFiltersInUrl={false}
+          totalRow={totalRow}
+        />
+      </div>
+    );
+  };
 
   if (isLoading) {
-    return <Spinner />
+    return <Spinner />;
   } else if (currentTeam && !isError(currentTeam)) {
-    const sync = () => {
-      setState({ ...state, loading: true });
-      return Services.syncTeamIncome(currentTeam._id)
-        .then(() => getBillingData(date));
-    };
-
+    const sellsNothing = !currentTeam.sellsPaidPlans;
 
     return (
       <Can I={read} a={api} team={currentTeam} dispatchError={true}>
@@ -136,109 +155,23 @@ export const TeamIncome = () => {
             <h1>
               <Translation i18nkey="Income">Income</Translation>
             </h1>
-            {state.loading && <Spinner />}
-            {!state.loading && (<div className="row">
-              <div className="col apis">
-                <div className="row month__and__total">
-                  <div className="col-12 month__selector d-flex align-items-center gap-2">
-                    <MonthPicker updateDate={(date: Date) => {
-                      setDate(date);
-                      getBillingData(date);
-                    }} value={date} />
-                    <FeedbackButton className="btn --secondary --small --icon-only" onPress={sync}>
-                      <RefreshCw />
-                    </FeedbackButton>
-                    {lastDate ? (<i className="ms-1">
-                      <Translation i18nkey="date.update" replacements={[lastDate]}>
-                        upd. {lastDate}
-                      </Translation>
-                    </i>) : <></>}
-                  </div>
-                </div>
-                <div className="row api__billing__card__container section p-2">
-                  <TheadBillingContainer label={translate('Apis')} total={formatCurrency(total)} />
-                  {!state.consumptionsByApi.length && <NoData />}
-                  {state.consumptionsByApi
-                    .sort((api1: any, api2: any) => api2.billing.total - api1.billing.total)
-                    .map(({ api, billing }: any) => (<ApiTotal key={api._id} handleClick={() => setState({
-                      ...state,
-                      selectedPlan: undefined,
-                      selectedApi: state.apis.find((a: any) => a._id === api._id),
-                    })} api={state.apis.find((a: any) => a._id === api._id)} total={billing.total} />))}
-                  <TheadBillingContainer label={translate('Apis')} total={formatCurrency(total)} />
-                </div>
-              </div>
-              <div className="col apikeys">
-                {state.selectedApi && !state.selectedPlan && (<div className="api-plans-consumptions section p-2">
-                  <div className="api__plans__consumption__header">
-                    <h3 className="api__name">{state.selectedApi.name}</h3>
-                    <button className="--ghost" onClick={() => setState({ ...state, selectedApi: undefined })}>
-                      <CircleX />
-                    </button>
-                  </div>
-                  {(state.consumptions
-                    .filter((c: TeamIncomeGql) => c.api._id === state.selectedApi._id)
-                    .reduce((agg: Array<any>, consumption: TeamIncomeGql) => {
-                      const maybeAggCons = agg.find((c) => c.plan._id === consumption.plan._id);
-                      if (maybeAggCons) {
-                        return [
-                          ...agg.filter((x) => x.plan._id !== consumption.plan._id),
-                          {
-                            ...maybeAggCons,
-                            billing: {
-                              hits: maybeAggCons.billing.hits + consumption.billing.hits,
-                              total: maybeAggCons.billing.total + consumption.billing.total,
-                            },
-                          },
-                        ];
-                      }
-                      else {
-                        return [...agg, consumption];
-                      }
-                    }, []) as any).sort((c1: any, c2: any) => c2.billing.total - c1.billing.total)
-                    .map(({ plan, billing }: any, idx: any) => {
-                      const usagePlan = state.selectedApi.possibleUsagePlans.find((pp: any) => pp._id === plan._id);
-                      return (
-                        <PriceCartridge
-                          key={idx}
-                          label={usagePlan.customName}
-                          total={billing.total}
-                          currency={usagePlan.currency}
-                          handleClick={() => setState({ ...state, selectedPlan: usagePlan })} />
-                      );
-                    })}
-                </div>)}
-                {state.selectedPlan && (<div>
-                  <div className="api__plans__consumption__header">
-                    <h3 className="api__name">
-                      {state.selectedApi.name} -{' '}
-                      {(state.selectedPlan as any).customName}
-                    </h3>
-                    <button className="--ghost" onClick={() => setState({ ...state, selectedPlan: undefined })}>
-                      <CircleArrowLeft />
-                    </button>
-                  </div>
-                  {state.consumptions
-                    .filter((c: TeamIncomeGql) => c.api._id === state.selectedApi._id && c.plan._id === state.selectedPlan._id)
-                    .map((c: any, idx: number) => {
-                      return (
-                        <PriceCartridge
-                          key={idx}
-                          label={c.team.name}
-                          total={c.billing.total}
-                          currency={state.selectedPlan.currency} />
-                      );
-                    })}
-                </div>)}
-              </div>
-            </div>)}
+            {sellsNothing && (
+              <div className="alert alert-info">{translate('billing.income.no.paid.plan')}</div>
+            )}
+            <div className="month__selector d-flex align-items-center gap-2">
+              <MonthPicker updateDate={setDate} value={date} />
+              <FeedbackButton className="btn --secondary --small --icon-only" onPress={sync}>
+                <RefreshCw />
+              </FeedbackButton>
+              {getLastDate()}
+            </div>
+            {drawContent()}
           </div>
         </div>
       </Can>
     );
   } else {
-    toast.error(error?.message || currentTeam?.error)
+    toast.error(error?.message || currentTeam?.error);
     return <></>;
   }
-
 };

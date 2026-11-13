@@ -331,6 +331,36 @@ object NotificationAction {
       step: SubscriptionDemandStepId
   ) extends NotificationAction
 
+  case class SubscriptionPriceChangeScheduled(
+      subscription: ApiSubscriptionId,
+      api: ApiId,
+      plan: UsagePlanId,
+      costPerMonth: BigDecimal,
+      costPerRequest: Option[BigDecimal],
+      currency: Currency,
+      effectiveAt: DateTime
+  ) extends NotificationAction
+
+  case class SubscriptionCancellationScheduled(
+      subscription: ApiSubscriptionId,
+      api: ApiId,
+      plan: UsagePlanId,
+      effectiveAt: DateTime
+  ) extends NotificationAction
+
+  case class SubscriptionBlockedByOwner(
+      subscription: ApiSubscriptionId,
+      api: ApiId,
+      plan: UsagePlanId,
+      reason: Option[String]
+  ) extends NotificationAction
+
+  case class SubscriptionUnblockedByOwner(
+      subscription: ApiSubscriptionId,
+      api: ApiId,
+      plan: UsagePlanId
+  ) extends NotificationAction
+
   case class ApiDepreciationWarning(api: ApiId) extends NotificationAction
 
   case class ApiBlockingWarning(api: ApiId, subscription: ApiSubscriptionId)

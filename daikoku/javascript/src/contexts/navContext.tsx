@@ -171,9 +171,9 @@ export const useApiFrontOffice = (api?: IApi, team?: ITeamSimple, plans?: IUsage
           },
           viewApiKey: canReadApiKey && {
             label: translate({ key: 'navbar.keyrings.label', plural: true }),
-            action: () => navigateTo('keyrings'),
+            action: () => navigateTo('apikeys'),
             className: {
-              active: currentTab === 'keyrings',
+              active: currentTab === 'apikeys',
             },
           }
         },
@@ -304,29 +304,42 @@ export const useTeamBackOffice = () => {
               apikeys: {
                 label: translate({ key: 'API key', plural: true }),
                 action: () => navigateTo('apikeys'),
-                className: { active: ['apikeys', 'consumption'].includes(currentTab) },
+                className: { active: currentTab === 'apikeys' },
+              },
+              consumption: {
+                label: translate('Consumption'),
+                action: () => navigateTo('consumption'),
+                className: { active: ['consumption', 'payments'].includes(currentTab) },
                 childs: {
-                  stats: {
-                    label: translate('Global stats'),
+                  consumption: {
+                    label: translate('billing.usage.title'),
                     action: () => navigateTo('consumption'),
                     className: { active: currentTab === 'consumption' },
                   },
+                  payments: {
+                    label: translate('billing.payments.title'),
+                    action: () => navigateTo('payments'),
+                    className: { active: currentTab === 'payments' },
+                  },
                 },
-              }
-            } : {}),
-            ...(isTeamAdmin ? {
-              billing: {
-                label: translate('Billing'),
-                action: () => navigateTo('billing'),
-                className: { active: ['billing', 'income'].includes(currentTab) },
+              },
+              exposition: {
+                label: translate('team.exposition.title'),
+                action: () => navigateTo('stats'),
+                className: { active: ['stats', 'income'].includes(currentTab) },
                 childs: {
+                  stats: {
+                    label: translate('Global stats'),
+                    action: () => navigateTo('stats'),
+                    className: { active: currentTab === 'stats' },
+                  },
                   income: {
                     label: translate('Income'),
                     action: () => navigateTo('income'),
                     className: { active: currentTab === 'income' },
                   },
                 },
-              }
+              },
             } : {})
           },
         },

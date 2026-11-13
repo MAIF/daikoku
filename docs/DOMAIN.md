@@ -61,8 +61,8 @@ the API key: custom metadata, custom quotas (`customMaxPerSecond/Day/Month`), `c
 custom name. The technical Otoroshi values no longer live here — they live on the keyring.
 
 It also carries its blocking status as `blockedBy: Set[SubscriptionBlockReason]`, where a reason is
-`Owner` (the API producer blocked this individual subscription) and/or `Lifecycle` (the whole API is
-blocked). The subscription's `state` (`active` / `blocked`) is **derived** from it — blocked as soon
+`Owner` (the API producer blocked this individual subscription), `Lifecycle` (the whole API is
+blocked) and/or `Ended` (Stripe cancelled the paid subscription). The subscription's `state` (`active` / `blocked`) is **derived** from it — blocked as soon
 as `blockedBy` is non-empty — so `blockedBy` is the single source of truth. A subscription
 contributes its rights to the keyring key only when `enabled && blockedBy.isEmpty`, where `enabled`
 is the consumer-side archive toggle and `blockedBy` is the producer/lifecycle side.
@@ -105,12 +105,19 @@ lifecycle service (`ApiLifeCycleService`) never patches Otoroshi keys directly �
 - **Blocking a single subscription** (producer action, `PUT .../_archiveByOwner`) toggles the `Owner`
   reason on that one subscription. It is reserved to editors of the *producing* team and is refused
   while the whole API is already blocked.
+- **Ending a paid subscription** (Stripe's `customer.subscription.deleted` webhook) adds the `Ended`
+  reason, which nothing removes: each deblock only takes off its own reason. The team can subscribe
+  to the same plan again, as an ended subscription no longer counts as a conflict.
 
 Because a keyring can aggregate subscriptions from **several** APIs, the synchronizer recomputes each
 keyring key from its still-active members only (`enabled && blockedBy.isEmpty`): a shared keyring
 stays alive for the other APIs, and a key whose members are all blocked is **disabled, not deleted**
 — the subscriptions are kept so the block can be rolled back. `KeyringOtoroshiBinding.Internal`
 keyrings have no Otoroshi key to reconcile and are skipped.
+
+Stripe bills a paid subscription only while its `blockedBy` is empty: any reason pauses the
+collection, the invoices issued meanwhile being voided, and taking off the last reason resumes it.
+The consumer's `enabled` toggle only concerns the key and never reaches Stripe.
 
 ## Otoroshi integration
 

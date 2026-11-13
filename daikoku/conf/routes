@@ -113,8 +113,10 @@ GET     /api/teams/:teamId/apis/:apiId/plan/:planId/consumption fr.maif.daikoku.
 GET     /api/teams/:teamId/apis/:apiId/consumption              fr.maif.daikoku.controllers.ConsumptionController.getApiConsumption(teamId, apiId, from: Option[Long] ?= None, to: Option[Long] ?= None)
 ### maybe deleting this route + change tests that use this links
 GET     /api/teams/:teamId/consumptions                         fr.maif.daikoku.controllers.ConsumptionController.consumptions(teamId, from: Option[Long] ?= None, to: Option[Long] ?= None)
+GET     /api/teams/:teamId/exposed-consumptions                 fr.maif.daikoku.controllers.ConsumptionController.exposedConsumptions(teamId, from: Option[Long] ?= None, to: Option[Long] ?= None)
 GET     /api/teams/:teamId/billings                             fr.maif.daikoku.controllers.ConsumptionController.billings(teamId, from: Option[Long] ?= None, to: Option[Long] ?= None)
 GET     /api/teams/:teamId/apis/:apiId/plan/:planId/invoices    fr.maif.daikoku.controllers.ConsumptionController.invoices(teamId, apiId, planId)
+GET     /api/teams/:teamId/billing/subscriptions                fr.maif.daikoku.controllers.ConsumptionController.billingSubscriptions(teamId)
 GET     /api/teams/:teamId/income                               fr.maif.daikoku.controllers.ConsumptionController.income(teamId, from: Option[Long] ?= None, to: Option[Long] ?= None)
 GET     /api/teams/:teamId/subscription/:subscriptionId/quotas  fr.maif.daikoku.controllers.ConsumptionController.getApiKeyQuotasWithSubscriptionId(teamId, subscriptionId)
 
@@ -124,6 +126,7 @@ POST    /api/apis/:apiId/plan/:planId/team/:teamId/_subscribe           fr.maif.
 GET     /api/apis/:apiId/:version/subscriptions/teams/:teamId           fr.maif.daikoku.controllers.ApiController.getApiSubscriptionsForTeam(apiId, teamId, version, planId: Option[String] ?= None)
 GET     /api/subscription/_validate                                     fr.maif.daikoku.controllers.ApiController.validateProcess()
 GET     /api/subscription/_abort                                        fr.maif.daikoku.controllers.ApiController.abortProcess()
+POST    /api/payment/:settingsId/_webhook                               fr.maif.daikoku.controllers.PaymentWebhookController.webhook(settingsId)
 GET     /api/subscription/_decline                                      fr.maif.daikoku.controllers.ApiController.declineProcess()
 GET     /api/subscription/team/:teamId/demands/:demandId                fr.maif.daikoku.controllers.ApiController.getSubscriptionDemand(teamId, demandId)
 GET     /api/subscription/team/:teamId/demands/:demandId/_run           fr.maif.daikoku.controllers.ApiController.runProcess(teamId, demandId)
@@ -135,6 +138,7 @@ GET     /api/apis/:apiId/pages/:id                              fr.maif.daikoku.
 GET     /api/apis/:apiId/plan/:planId/pages/:pageId             fr.maif.daikoku.controllers.ApiController.getPlanDocumentationPage(apiId, planId, pageId)
 PUT		  /api/teams/:teamId/subscriptions/:id/_archive           fr.maif.daikoku.controllers.ApiController.toggleApiSubscription(teamId, id, enabled: Option[Boolean] ?= Some(false))
 PUT		  /api/teams/:teamId/subscriptions/:id/_archiveByOwner    fr.maif.daikoku.controllers.ApiController.toggleApiSubscriptionByApiOwner(teamId, id, enabled: Option[Boolean] ?= Some(false))
+PUT		  /api/teams/:teamId/subscriptions/:id/_cancel            fr.maif.daikoku.controllers.ApiController.cancelApiSubscription(teamId, id, cancel: Option[Boolean] ?= Some(true))
 GET		  /api/teams/:teamId/subscriptions/:id/_transfer          fr.maif.daikoku.controllers.ApiController.getTransferLink(teamId, id)
 PUT		  /api/teams/:teamId/subscriptions/:id/_retrieve          fr.maif.daikoku.controllers.ApiController.transferSubscription(teamId, id)
 POST	  /api/teams/:teamId/subscriptions/:id/_makeUnique        fr.maif.daikoku.controllers.ApiController.makeUniqueSubscription(teamId, id)
@@ -181,7 +185,6 @@ PUT     /api/teams/:teamId/apis/:apiId/:version/plan/:planId/pages    fr.maif.da
 PUT     /api/teams/:teamId/apis/:apiId/:version/plan/:planId    fr.maif.daikoku.controllers.ApiController.updatePlan(teamId, apiId, version, planId)
 DELETE  /api/teams/:teamId/apis/:apiId/:version/plan/:planId    fr.maif.daikoku.controllers.ApiController.deletePlan(teamId, apiId, version, planId)
 PUT     /api/teams/:teamId/apis/:id/:version/plan/:planId/_payment   fr.maif.daikoku.controllers.ApiController.setupPayment(teamId, id, version, planId)
-DELETE  /api/teams/:teamId/apis/:id/:version/plan/:planId/_payment   fr.maif.daikoku.controllers.ApiController.stopPayment(teamId, id, version, planId)
 DELETE  /api/teams/:teamId/pages/:pageId                        fr.maif.daikoku.controllers.ApiController.deleteDocPage(teamId, pageId)
 PUT     /api/teams/:teamId/pages/:pageId                        fr.maif.daikoku.controllers.ApiController.saveDocPage(teamId, pageId)
 POST    /api/teams/:teamId/pages                                fr.maif.daikoku.controllers.ApiController.createDocPage(teamId)
@@ -269,6 +272,7 @@ POST    /api/tenants/:tenantId/mailers/_test-connection fr.maif.daikoku.controll
 POST    /api/tenants/_names                             fr.maif.daikoku.controllers.TenantController.namesOfTenants()
 PUT     /api/tenants/:tenantId                          fr.maif.daikoku.controllers.TenantController.saveTenant(tenantId)
 GET     /api/tenants/:tenantId                          fr.maif.daikoku.controllers.TenantController.oneTenant(tenantId)
+GET     /api/payment/_enabled                           fr.maif.daikoku.controllers.TenantController.paymentEnabled()
 DELETE  /api/tenants/:tenantId                          fr.maif.daikoku.controllers.TenantController.deleteTenant(tenantId)
 GET     /api/tenants                                    fr.maif.daikoku.controllers.TenantController.allTenants()
 POST    /api/tenants                                    fr.maif.daikoku.controllers.TenantController.createTenant()
@@ -342,6 +346,7 @@ POST    /api/jobs/stats/_sync                           fr.maif.daikoku.controll
 POST    /api/jobs/purge/_sync                           fr.maif.daikoku.controllers.JobsController.auditTrailPurgeRunJob(parallelism: Int ?= 25)
 POST    /api/jobs/audit-trail-purge/_sync               fr.maif.daikoku.controllers.JobsController.auditTrailPurgeRunJob(parallelism: Int ?= 25)
 POST    /api/jobs/notification-purge/_sync              fr.maif.daikoku.controllers.JobsController.notificationsPurgeRunJob(parallelism: Int ?= 25)
+POST    /api/jobs/stripe/_reconcile                     fr.maif.daikoku.controllers.JobsController.stripeReconciliationSyncJob()
 
 POST    /api/_search                                    fr.maif.daikoku.controllers.ApiController.search()
 

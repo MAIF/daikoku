@@ -29,6 +29,7 @@ class ApiKeyStatsJobSpec
   private class TestJob(failedIds: Set[ApiSubscriptionId] = Set.empty)
       extends ApiKeyStatsJob(
         daikokuComponents.otoroshiClient,
+        daikokuComponents.paymentClient,
         daikokuComponents.env
       ) {
     val seen = new ConcurrentLinkedQueue[ApiSubscriptionId]()
@@ -283,7 +284,11 @@ class ApiKeyStatsJobSpec
     "count one collected subscription while storing multiple days and refreshing today in place" in {
       val selected = seedCollection()
       val client = new StatsClient()
-      val job = new ApiKeyStatsJob(client, daikokuComponents.env)
+      val job = new ApiKeyStatsJob(
+        client,
+        daikokuComponents.paymentClient,
+        daikokuComponents.env
+      )
 
       Await.result(job.run(tenant, Runner.Api), 15.seconds) match {
         case JobOutcome.Completed(result) =>
@@ -312,7 +317,11 @@ class ApiKeyStatsJobSpec
       val secondDay = selected.createdAt.plusDays(1).getMillis
       val thirdDay = selected.createdAt.plusDays(2).getMillis
       client.failedFrom = Some(secondDay)
-      val job = new ApiKeyStatsJob(client, daikokuComponents.env)
+      val job = new ApiKeyStatsJob(
+        client,
+        daikokuComponents.paymentClient,
+        daikokuComponents.env
+      )
 
       intercept[IllegalStateException] {
         Await.result(job.syncForSubscription(selected, tenant), 15.seconds)

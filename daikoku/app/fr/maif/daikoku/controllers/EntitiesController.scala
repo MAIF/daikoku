@@ -462,8 +462,6 @@ class EntitiesController(
             maxPerMonth = None,
             costPerMonth = None,
             costPerRequest = None,
-            billingDuration = None,
-            trialPeriod = None,
             currency = None,
             customName = "new usage plan",
             customDescription = None,

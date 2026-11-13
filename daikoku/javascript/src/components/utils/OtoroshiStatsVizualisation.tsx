@@ -17,7 +17,7 @@ import { RefreshCw } from "lucide-react";
   return toString().replace(/(\d)(?=(\d{3})+(?!\d))/g, '');
 };
 
-class Period {
+export class Period {
   from: Date;
   label: string;
   to: Date;
@@ -118,7 +118,7 @@ export function OtoroshiStatsVizualization(props: Iprops) {
   const [state, setState] = useState<State>({
     tab: 0,
     consumptions: [],
-    period: { ...periods(translate).today },
+    period: { ...periods(translate).last7days },
     loading: true,
     error: false,
   });
@@ -219,7 +219,7 @@ export function OtoroshiStatsVizualization(props: Iprops) {
           />
         );
       default:
-        return formatter(state.consumptions);
+        return formatter(state.consumptions, state.period);
     }
   };
 
@@ -257,6 +257,8 @@ export function OtoroshiStatsVizualization(props: Iprops) {
       .catch(() => setState({ ...state, error: true, loading: false }));
   };
 
+  const hasSeveralTabs = props.mappers.length > 1;
+
   return (
     <div>
       <div className="d-flex justify-content-start align-items-center">
@@ -284,9 +286,11 @@ export function OtoroshiStatsVizualization(props: Iprops) {
             {state.error && <div>Oops...</div>}
             {!state.loading &&
               !state.error && [
-                <div key="navbar" className="data__navbar">
-                  {props.mappers.map((tab: any, idx: any) => tabs(idx, tab.label))}
-                </div>,
+                hasSeveralTabs && (
+                  <div key="navbar" className="data__navbar">
+                    {props.mappers.map((tab: any, idx: any) => tabs(idx, tab.label))}
+                  </div>
+                ),
                 <div key="content" className="data__content">
                   {formatValue(props.mappers[state.tab])}
                 </div>,

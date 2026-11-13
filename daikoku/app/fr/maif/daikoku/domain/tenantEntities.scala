@@ -276,14 +276,15 @@ case object ThirdPartyPaymentSettings {
       id: ThirdPartyPaymentSettingsId,
       name: String,
       publicKey: String,
-      secretKey: String
+      secretKey: String,
+      webhookSecret: Option[String] = None
   ) extends ThirdPartyPaymentSettings {
     override def typeName: String = "Stripe"
 
     override def toUiPayload: JsValue =
       json.StripeSettingsFormat.writes(this).as[JsObject] ++ Json.obj(
         "type" -> "Stripe"
-      ) - "publicKey" - "privateKey"
+      ) - "secretKey" - "webhookSecret"
   }
 }
 

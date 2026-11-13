@@ -11,14 +11,16 @@ import {
   TeamApiKeysForApi,
   TeamAssets,
   TeamBilling,
-  TeamConsumption,
+  TeamBillingUsage,
   TeamEdit,
+  TeamExposedApisStats,
   TeamIncome,
   TeamMembers,
 } from "../backoffice";
 import { Can, Spinner, read, manage, api, apikey, asset, stat, team, backoffice } from "../utils";
-import { LastDemands, LastDemandsExt } from "./widgets";
 import { TeamApis } from "./apis/TeamApis";
+import { TeamPendingDemands } from "./widgets/demands/TeamPendingDemands";
+import { TeamReceivedDemands } from "./widgets/demands/TeamReceivedDemands";
 
 const BackOfficeContent = (props: PropsWithChildren) => {
 
@@ -127,8 +129,10 @@ export const TeamBackOffice = () => {
             <Route path={`/edition`} element={<TeamRoute I={manage} a={team}><TeamEdit /></TeamRoute>} />
             <Route path={`/assets`} element={<TeamRoute I={manage} a={asset}><TeamAssets /></TeamRoute>} />
 
-            <Route path={`/consumption`} element={<TeamRoute I={read} a={stat}><TeamConsumption /></TeamRoute>} />
-            <Route path={`/billing`} element={<TeamRoute I={manage} a={team}><TeamBilling /></TeamRoute>} />
+            <Route path={`/consumption`} element={<TeamRoute I={manage} a={team}><TeamBillingUsage /></TeamRoute>} />
+            <Route path={`/payments`} element={<TeamRoute I={manage} a={team}><TeamBilling /></TeamRoute>} />
+            <Route path={`/stats`} element={<TeamRoute I={read} a={stat}><TeamExposedApisStats /></TeamRoute>} />
+            <Route path={`/billing`} element={<Navigate to="../consumption" replace />} />
             <Route path={`/income`} element={<TeamRoute I={manage} a={team}><TeamIncome /></TeamRoute>} />
             <Route
               path={`/apikeys/:apiId/:versionId/subscription/:subscription/consumptions`}
@@ -154,7 +158,7 @@ const ProducerDashboard = (props: ProducerDashboardType) => {
   return (
     <>
       <div className="col-12 mt-5 tbo__dasboard">
-        <LastDemandsExt team={props.currentTeam} />
+        <TeamReceivedDemands team={props.currentTeam} />
         {/* <Revenus size="small" title="My Revenus small" /> */}
       </div>
       {/* <div className="col-12 mt-5 tbo__dasboard">
@@ -168,7 +172,7 @@ type ConsumerDashboardType = { currentTeam: ITeamSimple };
 const ConsumerDashboard = (props: ConsumerDashboardType) => {
   return (
     <div className="col-12 mt-5 tbo__dasboard">
-      <LastDemands team={props.currentTeam} />
+      <TeamPendingDemands team={props.currentTeam} />
     </div>
   );
 };

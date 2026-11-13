@@ -1,0 +1,10 @@
+version: "0.5"
+
+# Overrides process-compose-test-stripe.yaml for `mise run demo:billing`: the same
+# stack, but it plays the monthly billing scenario only and stays up afterwards, so
+# the billed state can be looked at in the UI.
+processes:
+  Tests:
+    # The base file ends the whole stack when Tests exits, and an override cannot
+    # switch that off (a `false` is dropped by the merge): the process never exits.
+    command: "mise run demo:billing:run; tail -f /dev/null"

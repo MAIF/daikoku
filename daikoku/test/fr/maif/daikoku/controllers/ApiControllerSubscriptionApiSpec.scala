@@ -42,8 +42,6 @@ class ApiControllerSubscriptionApiSpec() extends ApiControllerSpecBase {
         maxPerDay = 10000L.some,
         maxPerMonth = 10000L.some,
         costPerMonth = BigDecimal(10.0).some,
-        billingDuration = BillingDuration(1, BillingTimeUnit.Month).some,
-        trialPeriod = None,
         currency = Currency("EUR").some,
         customName = "QuotasWithLimits",
         customDescription = None,
@@ -142,6 +140,53 @@ class ApiControllerSubscriptionApiSpec() extends ApiControllerSpecBase {
       val resultAsSubscriptions = respSubs.json.as[Seq[JsObject]]
 
       resultAsSubscriptions.length mustBe 1
+    }
+
+    "be possible again once the previous subscription has ended" in {
+      val keyring = Keyring(
+        id = KeyringId("ended-keyring"),
+        tenant = tenant.id,
+        team = teamConsumerId,
+        apiKey = OtoroshiApiKey("ended", "ended-id", "ended-secret"),
+        otoroshiSettings =
+          KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        createdAt = DateTime.now(),
+        customName = "ended",
+        integrationToken = "ended"
+      )
+      val ended = ApiSubscription(
+        id = ApiSubscriptionId("ended"),
+        tenant = tenant.id,
+        plan = UsagePlanId("1"),
+        createdAt = DateTime.now(),
+        team = teamConsumerId,
+        api = defaultApi.api.id,
+        by = userTeamAdminId,
+        customName = None,
+        keyring = keyring.id,
+        blockedBy = Set(SubscriptionBlockReason.Ended)
+      )
+
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(userAdmin),
+        teams = Seq(teamOwner, teamConsumer),
+        usagePlans = defaultApi.plans,
+        apis = Seq(defaultApi.api),
+        subscriptions = Seq(ended),
+        keyrings = Seq(keyring)
+      )
+
+      val session = loginWithBlocking(userAdmin, tenant)
+      val resp = httpJsonCallBlocking(
+        path =
+          s"/api/apis/${defaultApi.api.id.value}/plan/1/team/${teamConsumerId.value}/_subscribe",
+        method = "POST",
+        body = Json.obj().some
+      )(using tenant, session)
+
+      resp.status mustBe 200
+      (resp.json \ "creation").as[String] mustBe "done"
     }
 
     "be possible many times if the option is ok" in {
@@ -588,8 +633,6 @@ class ApiControllerSubscriptionApiSpec() extends ApiControllerSpecBase {
         tenant = tenant.id,
         costPerMonth = BigDecimal(10.0).some,
         costPerRequest = BigDecimal(0.02).some,
-        billingDuration = BillingDuration(1, BillingTimeUnit.Month).some,
-        trialPeriod = None,
         currency = Currency("EUR").some,
         customName = "PayPerUse",
         customDescription = None,
@@ -642,8 +685,6 @@ class ApiControllerSubscriptionApiSpec() extends ApiControllerSpecBase {
         tenant = tenant.id,
         costPerMonth = BigDecimal(10.0).some,
         costPerRequest = BigDecimal(0.02).some,
-        billingDuration = BillingDuration(1, BillingTimeUnit.Month).some,
-        trialPeriod = None,
         currency = Currency("EUR").some,
         customName = "PayPerUse",
         customDescription = None,
@@ -697,8 +738,6 @@ class ApiControllerSubscriptionApiSpec() extends ApiControllerSpecBase {
         tenant = tenant.id,
         costPerMonth = BigDecimal(10.0).some,
         costPerRequest = BigDecimal(0.02).some,
-        billingDuration = BillingDuration(1, BillingTimeUnit.Month).some,
-        trialPeriod = None,
         currency = Currency("EUR").some,
         customName = "PayPerUse",
         customDescription = None,
@@ -752,8 +791,6 @@ class ApiControllerSubscriptionApiSpec() extends ApiControllerSpecBase {
         tenant = tenant.id,
         costPerMonth = BigDecimal(10.0).some,
         costPerRequest = BigDecimal(0.02).some,
-        billingDuration = BillingDuration(1, BillingTimeUnit.Month).some,
-        trialPeriod = None,
         currency = Currency("EUR").some,
         customName = "PayPerUse",
         customDescription = None,
@@ -800,8 +837,6 @@ class ApiControllerSubscriptionApiSpec() extends ApiControllerSpecBase {
         tenant = tenant.id,
         costPerMonth = BigDecimal(10.0).some,
         costPerRequest = BigDecimal(0.02).some,
-        billingDuration = BillingDuration(1, BillingTimeUnit.Month).some,
-        trialPeriod = None,
         currency = Currency("EUR").some,
         customName = "PayPerUse",
         customDescription = None,

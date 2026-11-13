@@ -95,6 +95,39 @@ export const findAndGoToTeam = async (team: string, page: Page) => {
   await page.locator('#portal-root').getByRole('link', { name: team }).click();
 }
 
+export const openApiKeyCard = async (
+  page: Page,
+  teamName: string,
+  apiName: string,
+  planName: string
+) => {
+  await findAndGoToTeam(teamName, page);
+  await page.getByText("Clés d'API").click();
+  await page.getByRole('listitem', { name: apiName }).getByLabel("Voir les clés d'API").click();
+
+  return page.getByRole('listitem', { name: `Clé d'API ${apiName} - ${planName}` });
+};
+
+/** Needs the clipboard permissions granted on the context. */
+export const readSubscriptionApiKey = async (
+  page: Page,
+  teamName: string,
+  apiName: string,
+  planName: string
+) => {
+  const apiKeyCard = await openApiKeyCard(page, teamName, apiName, planName);
+
+  await apiKeyCard.getByRole('button', { name: 'Copier le clientId et le clientSecret' }).click();
+
+  const apikey = await page.evaluate(() => navigator.clipboard.readText());
+  const [clientId, clientSecret] = apikey.split(':', 2);
+
+  return {
+    clientId,
+    clientSecret,
+  };
+};
+
 
 export const updateUserRightForTeam = async (params: { userId: string, teamId: string, right: "Administrator" | "ApiEditor" | "User" }) => {
   const { userId, teamId, right } = params
@@ -123,6 +156,32 @@ export const updateUserRightForTeam = async (params: { userId: string, teamId: s
   });
 
 }
+
+export const adminApi = (path: string, init: RequestInit = {}) =>
+  fetch(`http://localhost:${exposedPort}/admin-api${path}`, {
+    ...init,
+    headers: {
+      Authorization: `Basic ${btoa(adminApikeyId + ':' + adminApikeySecret)}`,
+      'Content-Type': 'application/json',
+      ...(init.headers ?? {}),
+    },
+  });
+
+export const paperApiCall = (page: Page, clientId: string, clientSecret: string) =>
+  page.request.get('http://paper.oto.tools:8080/', {
+    headers: {
+      'Otoroshi-Client-Id': clientId,
+      'Otoroshi-Client-Secret': clientSecret,
+    },
+  });
+
+export const triggerTeamBillingSync = async (page: Page, teamId: string) => {
+  const res = await page.request.post(
+    `http://localhost:${exposedPort}/api/teams/${teamId}/billing/_sync`,
+    { timeout: 60_000 }
+  );
+  expect(res.ok(), `billing sync failed: ${await res.text()}`).toBeTruthy();
+};
 
 // Deleting a subscription or a keyring removes the Daikoku rows in the request
 // transaction and hands the Otoroshi cleanup to the deletion queue, so the

@@ -1,11 +1,13 @@
 import { constraints, format, Schema, type } from '@maif/react-forms';
-import { UseMutationResult, useQueryClient } from '@tanstack/react-query';
+import { UseMutationResult, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createColumnHelper } from '@tanstack/react-table';
 import { nanoid } from 'nanoid';
 import { useContext, useEffect } from 'react';
 
+import { QUERY_KEYS } from '../../../../constants/queryKeys';
 import { I18nContext, ModalContext } from '../../../../contexts';
-import { ITenantFull, IThirdPartyPaymentSettings, ThirdPartyPaymentType } from '../../../../types';
+import * as Services from '../../../../services';
+import { isError, ITenantFull, IThirdPartyPaymentSettings, ResponseError, ThirdPartyPaymentType } from '../../../../types';
 import { clientFetchData, DynamicTable, DynamicTableFeatures } from '../../../inputs';
 import { Can, manage, tenant as TENANT } from '../../../utils';
 import { Edit, Trash2 } from "lucide-react";
@@ -15,6 +17,15 @@ export const ThirdPartyPaymentForm = (props: { tenant: ITenantFull, updateTenant
   const { openFormModal, confirm } = useContext(ModalContext);
 
   const queryClient = useQueryClient();
+
+  const paymentEnabledQuery = useQuery({
+    queryKey: QUERY_KEYS.paymentEnabled(),
+    queryFn: () => Services.getPaymentEnabled(),
+  });
+  const paymentNotEnabled: (ResponseError & { missing?: Array<string> }) | undefined =
+    paymentEnabledQuery.data && isError(paymentEnabledQuery.data)
+      ? paymentEnabledQuery.data
+      : undefined;
 
   const queryKey = ['third-party-payment-settings', props.tenant._id];
 
@@ -133,6 +144,11 @@ export const ThirdPartyPaymentForm = (props: { tenant: ITenantFull, updateTenant
             constraints: [
               constraints.required()
             ]
+          },
+          webhookSecret: {
+            type: type.string,
+            label: translate('Webhook secret'),
+            help: translate('third-party.payment.webhook.secret.help')
           }
         })
     }
@@ -155,16 +171,25 @@ export const ThirdPartyPaymentForm = (props: { tenant: ITenantFull, updateTenant
 
   const editSettings = (paymentType: ThirdPartyPaymentType, paymentSetttings?: IThirdPartyPaymentSettings) => {
     const schema = getSettingsSchema(paymentType);
+    // known before saving: Stripe asks for the endpoint URL before it hands out the signing secret
+    const settingsId = paymentSetttings?._id ?? nanoid(32);
+    const webhookUrl = `${window.location.origin}/api/payment/${settingsId}/_webhook`;
 
     openFormModal<IThirdPartyPaymentSettings>({
       title: translate('Creation'),
       schema: schema,
       value: paymentSetttings,
+      description: (
+        <div className="mb-3">
+          <label className="form-label">{translate('third-party.payment.webhook.url')}</label>
+          <input className="form-control" readOnly value={webhookUrl} onFocus={(e) => e.target.select()} />
+        </div>
+      ),
       onSubmit: (data) => {
         const thirdPartyPaymentSettings = !paymentSetttings ?
           [
             ...props.tenant.thirdPartyPaymentSettings,
-            { ...data, type: paymentType, _id: nanoid(32) }
+            { ...data, type: paymentType, _id: settingsId }
           ] :
           [
             ...props.tenant.thirdPartyPaymentSettings.filter(s => s._id !== data._id),
@@ -198,6 +223,18 @@ export const ThirdPartyPaymentForm = (props: { tenant: ITenantFull, updateTenant
   return (
     <Can I={manage} a={TENANT} dispatchError>
       <div>
+        {paymentNotEnabled && (
+          <div className="alert alert-warning mt-3" role="alert">
+            <p>{translate('third-party.payment.not.enabled')}</p>
+            <ul className="mb-0">
+              {paymentNotEnabled.missing?.map((variable) => (
+                <li key={variable}>
+                  <code>{variable}</code>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
         <button
           type="button"
           className="btn --primary m-1"

@@ -1,0 +1,6 @@
+{
+  "id": "prod_test123",
+  "object": "product",
+  "active": true,
+  "name": "default::1.0.0/Quotas Without Limits"
+}

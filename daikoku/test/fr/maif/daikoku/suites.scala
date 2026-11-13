@@ -30,6 +30,7 @@ import fr.maif.daikoku.services.CmsPage
 import java.io.File
 import java.nio.charset.StandardCharsets
 import java.nio.file.{Files, StandardCopyOption}
+import java.util.Base64
 import java.util.concurrent.TimeUnit
 import scala.concurrent.duration.*
 import scala.concurrent.impl.Promise
@@ -1048,6 +1049,13 @@ object testUtils {
         .execute()
     }
 
+    def adminApiAuthorization: Map[String, String] =
+      Map(
+        "Authorization" -> s"Basic ${Base64.getEncoder.encodeToString(
+            s"${adminApiKeyring.apiKey.clientId}:${adminApiKeyring.apiKey.clientSecret}".getBytes()
+          )}"
+      )
+
     def cleanOtoroshiServer(
         otoroshiPort: Int,
         apks: Seq[JsValue] = Seq(
@@ -1538,7 +1546,6 @@ object testUtils {
         UsagePlan(
           id = UsagePlanId("1"),
           tenant = tenant,
-          billingDuration = None,
           currency = None,
           customName = "Free without quotas",
           customDescription = None,
@@ -1563,7 +1570,6 @@ object testUtils {
           maxPerSecond = 2000L.some,
           maxPerDay = 2000L.some,
           maxPerMonth = 2000L.some,
-          billingDuration = None,
           currency = None,
           customName = "Free with quotas",
           customDescription = None,
@@ -1589,8 +1595,6 @@ object testUtils {
           maxPerDay = 10000L.some,
           maxPerMonth = 10000L.some,
           costPerMonth = BigDecimal(10.0).some,
-          billingDuration = BillingDuration(1, BillingTimeUnit.Month).some,
-          trialPeriod = None,
           currency = Currency("EUR").some,
           customName = "Quotas With Limits",
           customDescription = None,
@@ -1617,8 +1621,6 @@ object testUtils {
           maxPerMonth = 10000L.some,
           costPerRequest = BigDecimal(0.015).some,
           costPerMonth = BigDecimal(10.0).some,
-          billingDuration = BillingDuration(1, BillingTimeUnit.Month).some,
-          trialPeriod = None,
           currency = Currency("EUR").some,
           customName = "Quotas Without Limits",
           customDescription = None,
@@ -1642,8 +1644,6 @@ object testUtils {
           tenant = tenant,
           costPerRequest = BigDecimal(10.0).some,
           costPerMonth = BigDecimal(0.02).some,
-          billingDuration = BillingDuration(1, BillingTimeUnit.Month).some,
-          trialPeriod = None,
           currency = Currency("EUR").some,
           customName = "Pay Per Use",
           customDescription = None,

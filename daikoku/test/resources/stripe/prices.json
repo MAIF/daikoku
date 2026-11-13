@@ -1,0 +1,6 @@
+{
+  "id": "price_test123",
+  "object": "price",
+  "active": true,
+  "currency": "eur"
+}

@@ -3757,8 +3757,6 @@ class AdminApiControllerSpec
           tenant = tenant.id,
           costPerRequest = BigDecimal(10.0).some,
           costPerMonth = BigDecimal(0.02).some,
-          billingDuration = BillingDuration(1, BillingTimeUnit.Month).some,
-          trialPeriod = None,
           currency = Currency("EUR").some,
           customName = "PayPerUse",
           customDescription = None,
@@ -3833,7 +3831,9 @@ class AdminApiControllerSpec
                   productId = "1234",
                   priceIds = StripePriceIds(
                     basePriceId = "1234",
-                    additionalPriceId = None
+                    additionalPriceId = "5678",
+                    meterId = "mtr_1234",
+                    meterEventName = "daikoku_usage_1234"
                   )
                 )
                 .some
@@ -3852,8 +3852,6 @@ class AdminApiControllerSpec
           tenant = tenant.id,
           costPerRequest = BigDecimal(10.0).some,
           costPerMonth = BigDecimal(0.02).some,
-          billingDuration = BillingDuration(1, BillingTimeUnit.Month).some,
-          trialPeriod = None,
           currency = Currency("EUR").some,
           customName = "PayPerUse",
           customDescription = None,
@@ -3914,8 +3912,6 @@ class AdminApiControllerSpec
           tenant = tenant.id,
           costPerRequest = BigDecimal(10.0).some,
           costPerMonth = BigDecimal(0.02).some,
-          billingDuration = BillingDuration(1, BillingTimeUnit.Month).some,
-          trialPeriod = None,
           currency = Currency("EUR").some,
           customName = "PayPerUse",
           customDescription = None,
@@ -3959,8 +3955,6 @@ class AdminApiControllerSpec
           tenant = tenant.id,
           costPerRequest = BigDecimal(10.0).some,
           costPerMonth = BigDecimal(0.02).some,
-          billingDuration = BillingDuration(1, BillingTimeUnit.Month).some,
-          trialPeriod = None,
           currency = Currency("EUR").some,
           customName = "PayPerUse",
           customDescription = None,
@@ -4012,8 +4006,6 @@ class AdminApiControllerSpec
           tenant = tenant.id,
           costPerRequest = BigDecimal(10.0).some,
           costPerMonth = BigDecimal(0.02).some,
-          billingDuration = BillingDuration(1, BillingTimeUnit.Month).some,
-          trialPeriod = None,
           currency = Currency("EUR").some,
           customName = "PayPerUse",
           customDescription = None,
@@ -4065,8 +4057,6 @@ class AdminApiControllerSpec
           tenant = tenant.id,
           costPerRequest = BigDecimal(10.0).some,
           costPerMonth = BigDecimal(0.02).some,
-          billingDuration = BillingDuration(1, BillingTimeUnit.Month).some,
-          trialPeriod = None,
           currency = Currency("EUR").some,
           customName = "PayPerUse",
           customDescription = None,
