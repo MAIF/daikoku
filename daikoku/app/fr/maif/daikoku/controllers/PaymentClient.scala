@@ -155,6 +155,26 @@ class PaymentClient(
     ) amount.longValue.toString
     else (amount * 100).longValue.toString
 
+  /** A price per request often sits below the smallest unit of the currency,
+    * which `unit_amount` cannot carry: it is an integer, so 0.001 € would be
+    * truncated to 0 and the usage billed nothing. `unit_amount_decimal` takes
+    * the same unit with decimals.
+    */
+  private def toStripeUnitAmountDecimal(
+      amount: BigDecimal,
+      currency: Option[Currency]
+  ): String = {
+    val inSmallestUnit =
+      if (
+        zeroDecimalCurrencies.contains(
+          currency.getOrElse(defaultCurrency).code.toUpperCase
+        )
+      ) amount
+      else amount * 100
+
+    inSmallestUnit.bigDecimal.stripTrailingZeros.toPlainString
+  }
+
   def fromStripeAmount(amount: Long, currency: Option[Currency]): BigDecimal =
     if (
       zeroDecimalCurrencies.contains(
@@ -431,7 +451,7 @@ class PaymentClient(
           "recurring[usage_type]" -> "metered"
         )
 
-        val costPerRequest = toStripeAmount(
+        val costPerRequest = toStripeUnitAmountDecimal(
           plan.costPerRequest.getOrElse(BigDecimal(0)),
           plan.currency
         )
@@ -444,10 +464,11 @@ class PaymentClient(
                 "billing_scheme" -> "tiered",
                 "tiers[0][unit_amount]" -> "0",
                 "tiers[0][up_to]" -> includedRequests.toString,
-                "tiers[1][unit_amount]" -> costPerRequest,
+                "tiers[1][unit_amount_decimal]" -> costPerRequest,
                 "tiers[1][up_to]" -> "inf"
               )
-            case None => meteredBody + ("unit_amount" -> costPerRequest)
+            case None =>
+              meteredBody + ("unit_amount_decimal" -> costPerRequest)
           }
 
         for {
@@ -936,9 +957,11 @@ class PaymentClient(
       case _ => FastFuture.successful(Right[AppError, Long](0L))
     }
 
-  /** Moves a subscription onto the prices its plan now carries. Items are
-    * updated in place: a second item sitting on the same meter would have
-    * Stripe read the same usage twice. Answers whether anything was swapped.
+  /** Moves a subscription onto the prices its plan now carries, as soon as each
+    * item may move (see `swappableNow`): the flat fee at once, the usage from
+    * the first period started under its new price. Items are updated in place:
+    * a second item sitting on the same meter would have Stripe read the same
+    * usage twice. Answers whether anything was swapped.
     */
   def applyPlanPricesToSubscription(
       tenant: Tenant,
@@ -965,27 +988,78 @@ class PaymentClient(
       case _ => EitherT.pure[Future, AppError](false)
     }
 
+  private case class OutdatedItem(
+      itemId: String,
+      currentPrice: String,
+      metered: Boolean,
+      periodStart: Option[Long]
+  )
+
   /** The items of a Stripe subscription whose price is no longer the one of the
-    * plan, paired with the price they should carry. A metered item is the one
-    * whose price reads a meter; the other one is the flat monthly subscription.
+    * plan. A metered item is the one whose price reads a meter; the other one
+    * is the flat monthly subscription.
     */
   private def outdatedItems(
       items: Seq[JsValue],
       settings: PaymentSettings.Stripe
-  ): Seq[(String, String)] =
+  ): Seq[OutdatedItem] =
     items.flatMap { item =>
-      val itemId = (item \ "id").as[String]
       val priceId = (item \ "price" \ "id").as[String]
-      val metered = (item \ "price" \ "recurring" \ "meter").asOpt[String]
-      val expected =
-        if (metered.isDefined) {
+      val metered =
+        (item \ "price" \ "recurring" \ "meter").asOpt[String].isDefined
+      val currentPrice =
+        if (metered) {
           settings.priceIds.additionalPriceId
         } else {
           settings.priceIds.basePriceId
         }
 
-      Option.when(expected != priceId)(itemId -> expected)
+      Option.when(currentPrice != priceId)(
+        OutdatedItem(
+          itemId = (item \ "id").as[String],
+          currentPrice = currentPrice,
+          metered = metered,
+          periodStart = (item \ "current_period_start").asOpt[Long]
+        )
+      )
     }
+
+  private def creationOfPrice(priceId: String)(implicit
+      stripeSettings: StripeSettings
+  ): Future[Option[Long]] =
+    retryingOn429(stripeClient(s"/v1/prices/$priceId").get()).map {
+      case res if res.status == 200 => (res.json \ "created").asOpt[Long]
+      case _                        => None
+    }
+
+  /** The flat fee is billed in advance, the usage in arrears. A flat fee item
+    * moves to the new price at once: the running month is already paid and the
+    * next one is charged at the new amount. A usage item waits for a period
+    * that started after its new price was created, or the usage already made
+    * in the running period would be billed at the new price.
+    */
+  private def swappableNow(outdated: Seq[OutdatedItem])(implicit
+      stripeSettings: StripeSettings
+  ): Future[Seq[OutdatedItem]] =
+    Future
+      .sequence(outdated.map { item =>
+        if (!item.metered) {
+          FastFuture.successful(item.some)
+        } else {
+          creationOfPrice(item.currentPrice).map { priceCreatedAt =>
+            // Stripe sends both dates; without them, the former behaviour applies
+            val periodStartedUnderNewPrice =
+              (item.periodStart, priceCreatedAt) match {
+                case (Some(periodStart), Some(createdAt)) =>
+                  periodStart >= createdAt
+                case _ => true
+              }
+
+            Option.when(periodStartedUnderNewPrice)(item)
+          }
+        }
+      })
+      .map(_.flatten)
 
   private def swapStripePrices(
       stripeSubscriptionId: String,
@@ -1021,24 +1095,27 @@ class PaymentClient(
                   (invoice.json \ "status").asOpt[String].contains("draft")
                 )
           }
+      toSwap <-
+        if (changes.isEmpty || onDraft)
+          EitherT.pure[Future, AppError](Seq.empty[OutdatedItem])
+        else EitherT.liftF[Future, AppError, Seq[OutdatedItem]](swappableNow(changes))
       swapped <-
-        if (changes.isEmpty || onDraft) EitherT.pure[Future, AppError](false)
+        if (toSwap.isEmpty) EitherT.pure[Future, AppError](false)
         else
           EitherT(
             retryingOn429(
               stripeClient(
                 s"/v1/subscriptions/$stripeSubscriptionId",
-                s"swap-$stripeSubscriptionId-${changes.map(_._2).mkString("-")}".some
+                s"swap-$stripeSubscriptionId-${toSwap.map(_.currentPrice).mkString("-")}".some
               ).post(
-                changes.zipWithIndex.flatMap {
-                  case ((itemId, priceId), index) =>
-                    Map(
-                      s"items[$index][id]" -> itemId,
-                      s"items[$index][price]" -> priceId
-                    )
+                toSwap.zipWithIndex.flatMap { case (item, index) =>
+                  Map(
+                    s"items[$index][id]" -> item.itemId,
+                    s"items[$index][price]" -> item.currentPrice
+                  )
                 }.toMap ++
-                  // the swap happens right after the period closed, so there is
-                  // nothing to prorate and Stripe must not invent a line
+                  // the running period keeps the amount already billed for it,
+                  // so Stripe must not invent a prorated line
                   Map("proration_behavior" -> "none")
               )
             ).map {

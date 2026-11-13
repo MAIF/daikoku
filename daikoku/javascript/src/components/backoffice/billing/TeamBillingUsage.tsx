@@ -262,6 +262,7 @@ export const TeamBillingUsage = () => {
             <div className="month__selector d-flex align-items-center gap-2">
               <MonthPicker updateDate={setDate} value={date} />
               <FeedbackButton
+                title={translate('billing.usage.sync')}
                 className="btn --secondary --small --icon-only" onPress={sync}>
                 <RefreshCw />
               </FeedbackButton>

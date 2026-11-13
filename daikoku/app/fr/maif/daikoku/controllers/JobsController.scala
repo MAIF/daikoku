@@ -127,13 +127,21 @@ class JobsController(
     }
 
   def stripeReconciliationSyncJob(): Action[AnyContent] =
-    Action.async { req =>
-      if (env.config.stripeReconciliationByCron) {
-        stripeReconciliationJob
-          .reconcile()
-          .map(_ => Ok(Json.obj("done" -> true)))
-      } else {
-        FastFuture.successful(NotFound(Json.obj("error" -> "API not found")))
+    Action.async { ctx =>
+      ctx
+        .getQueryString("access_key")
+        .orElse(ctx.getQueryString("key")) match {
+        case Some(key) if env.config.stripeReconciliationKey == key =>
+          if (env.config.stripeReconciliationByCron) {
+            stripeReconciliationJob
+              .reconcile()
+              .map(_ => Ok(Json.obj("done" -> true)))
+          } else {
+            FastFuture.successful(
+              NotFound(Json.obj("error" -> "API not found"))
+            )
+          }
+        case _ => AppError.Unauthorized.renderF()
       }
     }
 

@@ -464,6 +464,10 @@ class Config(val underlying: Configuration) {
     .getOptional[Boolean]("daikoku.stripe.reconciliation.cron")
     .getOrElse(false)
 
+  lazy val stripeReconciliationKey: String = underlying
+    .getOptional[String]("daikoku.stripe.reconciliation.key")
+    .getOrElse("secret")
+
   lazy val stripeReconciliationInterval: FiniteDuration = underlying
     .getOptional[FiniteDuration]("daikoku.stripe.reconciliation.interval")
     .getOrElse(24 hours)

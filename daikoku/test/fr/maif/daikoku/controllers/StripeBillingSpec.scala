@@ -341,17 +341,24 @@ class StripeBillingSpec()
       .id
       .value
 
-  private def payCheckout(demandId: String = pendingDemandId()): WSResponse = {
+  private def payCheckout(demandId: String = pendingDemandId()): WSResponse =
+    deliverStripeEvent(
+      "checkout.session.completed",
+      Json.obj(
+        "id" -> checkoutSessionId,
+        "metadata" -> Json.obj("subscription_demand" -> demandId)
+      )
+    )
+
+  private def deliverStripeEvent(
+      eventType: String,
+      stripeObject: JsObject
+  ): WSResponse = {
     val body = Json.stringify(
       Json.obj(
         "id" -> s"evt_${IdGenerator.token(16)}",
-        "type" -> "checkout.session.completed",
-        "data" -> Json.obj(
-          "object" -> Json.obj(
-            "id" -> checkoutSessionId,
-            "metadata" -> Json.obj("subscription_demand" -> demandId)
-          )
-        )
+        "type" -> eventType,
+        "data" -> Json.obj("object" -> stripeObject)
       )
     )
     val at = System.currentTimeMillis() / 1000
@@ -1056,6 +1063,21 @@ class StripeBillingSpec()
       (asProducer.json \ "missing").toOption mustBe None
     }
 
+    "only run the reconciliation on demand for a caller holding its key" in {
+      startupSeedingSettled
+
+      def reconcile(query: String): WSResponse =
+        httpJsonCallWithoutSessionBlocking(
+          path = s"/api/jobs/stripe/_reconcile$query",
+          method = "POST"
+        )(using stripeTenant)
+
+      reconcile("").status mustBe 401
+      reconcile("?key=not-the-key").status mustBe 401
+      // The reconciliation cron is off in the test configuration
+      reconcile("?key=secret").status mustBe 404
+    }
+
     "price a plan only through a payment account of the tenant" in {
       setupTenantWithStripeAccount(withAdminApi = true)
 
@@ -1119,7 +1141,7 @@ class StripeBillingSpec()
       usagePrice().get("tiers[0][up_to]") mustBe Some("1000")
       usagePrice().get("tiers[0][unit_amount]") mustBe Some("0")
       usagePrice().get("tiers[1][up_to]") mustBe Some("inf")
-      usagePrice().get("tiers[1][unit_amount]") mustBe Some("2")
+      usagePrice().get("tiers[1][unit_amount_decimal]") mustBe Some("2")
     }
 
     "price the usage at zero rather than leave it out, so a cost per request can come later" in {
@@ -1128,7 +1150,15 @@ class StripeBillingSpec()
       makePlanPayable(pricing = Json.obj("costPerRequest" -> JsNull))
 
       requestsTo("/v1/billing/meters").size mustBe 1
-      usagePrice().get("unit_amount") mustBe Some("0")
+      usagePrice().get("unit_amount_decimal") mustBe Some("0")
+    }
+
+    "bill a price per request below the cent rather than truncate it to zero" in {
+      setupTenantWithStripeAccount()
+      stubOtoroshi(hits = 0)
+      makePlanPayable(pricing = Json.obj("costPerRequest" -> 0.001))
+
+      usagePrice().get("unit_amount_decimal") mustBe Some("0.1")
     }
 
     "keep the included requests within the monthly limit" in {
@@ -1185,6 +1215,90 @@ class StripeBillingSpec()
       withClue(raised.body) { raised.status mustBe 200 }
 
       requestsTo("/v1/prices/price_test123") mustBe empty
+    }
+  }
+
+  "changing the price of a subscribed plan" must {
+    // every price the stubbed Stripe creates is price_test123
+    val newPriceCreatedAt = 1790000000L
+    val oneDay = 86400L
+
+    def subscriptionOnFormerPrices(periodStart: Long): JsObject =
+      stripeSubscription() ++ Json.obj(
+        "items" -> Json.obj(
+          "data" -> Json.arr(
+            Json.obj(
+              "id" -> "si_base",
+              "price" -> Json.obj("id" -> "price_former_base"),
+              "current_period_start" -> periodStart,
+              "current_period_end" -> periodEnd
+            ),
+            Json.obj(
+              "id" -> "si_usage",
+              "price" -> Json.obj(
+                "id" -> "price_former_usage",
+                "recurring" -> Json.obj("meter" -> meterId)
+              ),
+              "current_period_start" -> periodStart,
+              "current_period_end" -> periodEnd
+            )
+          )
+        )
+      )
+
+    def newPriceIsCreated(): Unit =
+      stubFor(
+        get(urlEqualTo("/v1/prices/price_test123")).willReturn(
+          okJson(
+            Json.stringify(
+              Json.obj("id" -> "price_test123", "created" -> newPriceCreatedAt)
+            )
+          )
+        )
+      )
+
+    def priceSwaps(): Seq[Map[String, String]] =
+      formBodies(s"/v1/subscriptions/$subscriptionId")
+        .filter(_.contains("items[0][id]"))
+
+    "move the flat fee onto the new price at once, but bill the usage of the running month at the former one" in {
+      subscribeAndPay()
+      newPriceIsCreated()
+      stripeSubscriptionIs(
+        subscriptionOnFormerPrices(periodStart = newPriceCreatedAt - oneDay)
+      )
+
+      val raised = saveProducerPlan(producerPlan() ++ Json.obj("costPerMonth" -> 42))
+      withClue(raised.body) { raised.status mustBe 200 }
+
+      val swaps = priceSwaps()
+      swaps.map(_.get("items[0][id]")) mustBe Seq(Some("si_base"))
+      swaps.head.get("items[0][price]") mustBe Some("price_test123")
+      swaps.head.get("items[1][id]") mustBe None
+      swaps.head.get("proration_behavior") mustBe Some("none")
+    }
+
+    "move the usage onto the new price once a period started under it" in {
+      subscribeAndPay()
+      newPriceIsCreated()
+      stripeSubscriptionIs(
+        subscriptionOnFormerPrices(periodStart = newPriceCreatedAt + oneDay)
+      )
+
+      deliverStripeEvent(
+        "invoice.finalized",
+        Json.obj(
+          "id" -> "in_test123",
+          "parent" -> Json.obj(
+            "subscription_details" -> Json.obj("subscription" -> subscriptionId)
+          )
+        )
+      ).status mustBe 200
+
+      val swaps = priceSwaps()
+      swaps.map(swap =>
+        Seq(swap.get("items[0][id]"), swap.get("items[1][id]")).flatten
+      ) mustBe Seq(Seq("si_base", "si_usage"))
     }
   }
 

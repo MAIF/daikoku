@@ -66,7 +66,7 @@ processes:
       elif [[ $MODE = "local" ]] ;
       then DAIKOKU_INIT_DATA_FROM=../dev/config/daikoku_state_local.ndjson sbt $sbt_args $sbt_params ;
       elif [[ $MODE = "stripe" ]] ;
-      then ../scripts/dev-stripe-seed.sh && DAIKOKU_APIKEYS_STATS_JOB_ENABLED=true DAIKOKU_STRIPE_RECONCILIATION_CRON=true DAIKOKU_INIT_DATA_FROM=target/daikoku_state_stripe.ndjson sbt $sbt_args $sbt_params ;
+      then ../scripts/dev-stripe-seed.sh && DAIKOKU_APIKEYS_STATS_JOB_ENABLED=true DAIKOKU_APIKEYS_STATS_JOB_INTERVAL=60000 DAIKOKU_STRIPE_RECONCILIATION_CRON=true DAIKOKU_INIT_DATA_FROM=target/daikoku_state_stripe.ndjson sbt $sbt_args $sbt_params ;
       elif [[ $MODE = "oidc" ]] ;
       then DAIKOKU_INIT_DATA_FROM=../dev/config/daikoku_state_oidc.ndjson sbt $sbt_args $sbt_params ;
       elif [[ $MODE = "empty" ]] ;

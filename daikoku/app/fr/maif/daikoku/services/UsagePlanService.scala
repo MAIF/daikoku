@@ -6,6 +6,7 @@ import fr.maif.daikoku.controllers.{AppError, PaymentClient}
 import fr.maif.daikoku.domain.*
 import fr.maif.daikoku.env.Env
 import fr.maif.daikoku.jobs.OtoroshiSynchronizerJob
+import fr.maif.daikoku.logger.AppLogger
 import fr.maif.daikoku.utils.{IdGenerator, Translator}
 import org.apache.pekko.stream.Materializer
 import org.apache.pekko.stream.scaladsl.{Sink, Source}
@@ -91,6 +92,7 @@ class UsagePlanService(
       _ <- EitherT.liftF(
         otoroshiSynchronisator.runSync(updatedPlan.id, tenant)
       )
+      _ <- moveSubscribersToNewPrices(tenant, oldPlan, updatedPlan, api)
       _ <- notifyPriceChange(tenant, oldPlan, updatedPlan, api)
       _ <- runDemandUpdate(tenant, user, oldPlan, updatedPlan, api)
       // FIXME: attention, peut etre il y en a qui sont blocked de base
@@ -203,6 +205,46 @@ class UsagePlanService(
     * Current subscribers keep paying the old one until the 1st, when the cycle
     * turns, so they are told the date rather than the change.
     */
+  /** The flat fee of each subscriber moves to the new price at once, so the
+    * next month is charged at the announced amount. Its usage price follows on
+    * its own, from the first period started under the new price.
+    */
+  private def moveSubscribersToNewPrices(
+      tenant: Tenant,
+      oldPlan: UsagePlan,
+      updatedPlan: UsagePlan,
+      api: Api
+  ): EitherT[Future, AppError, Unit] =
+    if (
+      updatedPlan.paymentSettings.isEmpty ||
+      !amountsChanged(oldPlan, updatedPlan)
+    ) EitherT.pure[Future, AppError](())
+    else
+      EitherT.liftF(
+        env.dataStore.apiSubscriptionRepo
+          .findByApiAndPlan(tenant.id, api.id, updatedPlan.id)
+          .flatMap(subscriptions =>
+            Future.sequence(
+              subscriptions
+                .filterNot(_.blockedBy.contains(SubscriptionBlockReason.Ended))
+                .map(subscription =>
+                  paymentClient
+                    .applyPlanPricesToSubscription(tenant, subscription, updatedPlan)
+                    .value
+                    .map(_.left.map(_.getErrorMessage()))
+                    .recover { case error => Left(error.getMessage) }
+                    // the nightly reconciliation moves it on its next pass
+                    .map(_.left.foreach(message =>
+                      AppLogger.error(
+                        s"[stripe] subscription ${subscription.id.value} not moved onto the new prices: $message"
+                      )
+                    ))
+                )
+            )
+          )
+          .map(_ => ())
+      )
+
   private def notifyPriceChange(
       tenant: Tenant,
       oldPlan: UsagePlan,

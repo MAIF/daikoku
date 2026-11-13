@@ -324,11 +324,17 @@ test.describe('Stripe metered billing (dev only, real Stripe test mode)', () => 
     );
     log(`plan now priced by ${after.paymentSettings.priceIds.basePriceId}`);
 
-    // 11. The subscriber has not moved: their items still carry the old prices.
+    // 11. The flat fee of the subscriber moved at once, so next month is charged at
+    //     the new amount; its usage of the running month stays on the old price.
     const subId = await findStripeSubscriptionId(cus);
     const priceIdsOnStripe = async () =>
       (await stripeSubscription(subId)).items.data.map((i: any) => i.price.id).sort();
-    expect(await priceIdsOnStripe()).toContain(before.paymentSettings.priceIds.basePriceId);
+    expect(await priceIdsOnStripe()).toEqual(
+      [
+        after.paymentSettings.priceIds.basePriceId,
+        before.paymentSettings.priceIds.additionalPriceId,
+      ].sort()
+    );
 
     // 12. Advance the clock past the end of the period: Stripe really closes it,
     //     aggregates the meter, issues the invoice and finalises it.
@@ -572,5 +578,16 @@ test.describe('Stripe metered billing (dev only, real Stripe test mode)', () => 
     const resumedSessionId = page.url().match(/cs_test_[A-Za-z0-9]+/)?.[0];
     expect(resumedSessionId).toBeTruthy();
     expect(resumedSessionId).not.toBe(firstSessionId);
+
+    // The pending demands of the team offer the same way back to the payment
+    await page.goto('/vendeurs/settings/dashboard');
+    const pendingRow = page.getByRole('listitem', { name: `${api.name} - ${plan.customName}` });
+    await expect(pendingRow).toContainText('Paiement en attente');
+    await pendingRow.getByRole('button', { name: 'Reprendre le paiement' }).click();
+
+    await page.waitForURL(/checkout\.stripe\.com/, { timeout: 30_000 });
+    const fromDashboardSessionId = page.url().match(/cs_test_[A-Za-z0-9]+/)?.[0];
+    expect(fromDashboardSessionId).toBeTruthy();
+    expect([firstSessionId, resumedSessionId]).not.toContain(fromDashboardSessionId);
   });
 });

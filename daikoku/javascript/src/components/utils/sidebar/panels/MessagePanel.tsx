@@ -58,7 +58,7 @@ export const MessagePanel = () => {
   const dialog = MessageEvents.fromMessagesToDialog(messages);
 
   return (
-    <div className="ms-3 mt-2 col-8 d-flex flex-column panel">
+    <div className="flex-grow-1 mx-4 d-flex flex-column panel">
       <div className="mb-3 panel__title">
         <h3>{translate('Discuss with an admin')}</h3>
       </div>
