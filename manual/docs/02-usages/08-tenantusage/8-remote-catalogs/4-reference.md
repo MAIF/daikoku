@@ -61,12 +61,6 @@ costPerMonth: 49
 costPerRequest: 0.001
 currency:
   code: EUR
-billingDuration:
-  value: 1
-  unit: Month
-trialPeriod:
-  value: 14
-  unit: Day
 allowMultipleKeys: false
 autoRotation: false
 integrationProcess: ApiKey
@@ -118,8 +112,7 @@ metadata:
 
 - `visibility`: `Public`, or `Private` to show the plan to the `authorizedTeams` only.
 - `maxPerSecond`, `maxPerDay`, `maxPerMonth`: the quotas of the API keys.
-- `costPerMonth`, `costPerRequest`, `currency`, `billingDuration`, `trialPeriod`: the price shown with
-  the plan. Units: `Hour`, `Day`, `Month`, `Year`.
+- `costPerMonth`, `costPerRequest`, `currency`: the price shown with the plan.
 - `integrationProcess`: `ApiKey` shows the API key to every member of the consumer team, `Automatic`
   to its administrators only.
 - `otoroshiTarget`: where the API keys are created: the Otoroshi settings, the groups, services and

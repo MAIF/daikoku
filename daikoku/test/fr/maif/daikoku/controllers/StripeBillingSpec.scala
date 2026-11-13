@@ -858,6 +858,17 @@ class StripeBillingSpec()
       currentConsumption().lastReportedHits mustBe 250
     }
 
+    "date the usage inside the window it was consumed in, so a late report cannot bill it on the next month" in {
+      subscribeAndPay()
+
+      consume(hits = 250)
+
+      val lastSecondOfWindow =
+        currentConsumption().to.minusSeconds(1).getMillis / 1000
+      formBodies("/v1/billing/meter_events").head("timestamp") mustBe
+        lastSecondOfWindow.toString
+    }
+
     "stay silent when nothing new was consumed" in {
       subscribeAndPay()
 

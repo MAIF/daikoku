@@ -771,6 +771,19 @@ class PaymentClient(
     }
   }
 
+  /** Stripe bills a meter event in the period holding its timestamp. Usage is
+    * therefore dated inside the window it was consumed in, not when it is
+    * reported: a sync running just after midnight on the 1st would otherwise
+    * bill the last calls of a month on the next one. The end of a window is
+    * exclusive, and Stripe refuses a timestamp in the future.
+    */
+  private def lastInstantOf(windowEnd: DateTime): DateTime = {
+    val lastInstant = windowEnd.minusSeconds(1)
+
+    if (lastInstant.isAfterNow) DateTime.now()
+    else lastInstant
+  }
+
   /** `identifier` is what makes a redelivery harmless: Stripe keeps the first
     * event carrying it and rejects the next ones with a 400 that has no error
     * code, only this message.
@@ -779,7 +792,8 @@ class PaymentClient(
       eventName: String,
       customerId: String,
       value: Long,
-      identifier: String
+      identifier: String,
+      occurredAt: DateTime
   )(implicit
       stripeSettings: StripeSettings
   ): Future[Either[AppError, Unit]] = {
@@ -788,7 +802,7 @@ class PaymentClient(
       "identifier" -> identifier,
       "payload[value]" -> value.toString,
       "payload[stripe_customer_id]" -> customerId,
-      "timestamp" -> (System.currentTimeMillis() / 1000).toString
+      "timestamp" -> (occurredAt.getMillis / 1000).toString
     )
 
     retryingOn429(stripeClient("/v1/billing/meter_events").post(body))
@@ -825,7 +839,8 @@ class PaymentClient(
         settings.priceIds.meterEventName,
         informations.customerId,
         delta,
-        s"${consumption.id.value}-${consumption.lastReportedHits}"
+        s"${consumption.id.value}-${consumption.lastReportedHits}",
+        lastInstantOf(consumption.to)
       )
     }
   }
@@ -911,7 +926,8 @@ class PaymentClient(
                       p.priceIds.meterEventName,
                       i.customerId,
                       missing,
-                      s"reconcile-${i.subscriptionId}-${from.toString("yyyyMM")}-$reportedHits"
+                      s"reconcile-${i.subscriptionId}-${from.toString("yyyyMM")}-$reportedHits",
+                      lastInstantOf(to)
                     )
                   )
                 }
