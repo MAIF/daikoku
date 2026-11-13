@@ -207,6 +207,7 @@ type SubProcessProps = {
   process: Array<IValidationStep>;
   team: string;
   tenant: ITenant;
+  allowFormStep?: boolean;
   documentation?: React.ComponentType<{ close: () => void, updateProcess: (process: IValidationStep[]) => void }>
 };
 type IValidationStepEmail = IValidationStep & { type: 'email' };
@@ -306,6 +307,7 @@ export const SubscriptionProcessEditor = (props: SubProcessProps) => {
           actionLabel: translate('Create'),
         });
       case 'form': {
+        if (props.allowFormStep === false) return;
         const step: IValidationStepForm = {
           type: 'form',
           id: nanoid(32),
@@ -329,7 +331,7 @@ export const SubscriptionProcessEditor = (props: SubProcessProps) => {
           id: nanoid(32),
           title: 'Admin',
         };
-        if (draft.some(e => e.type === 'form')) {
+        if (props.allowFormStep === false || draft.some(e => e.type === 'form')) {
           setDraft(current => insertArrayIndex(step, current, index))
         } else {
           const formStep: IValidationStepForm = {
@@ -492,7 +494,7 @@ export const SubscriptionProcessEditor = (props: SubProcessProps) => {
       getTitle: step => step.title,
       Content: FormCard,
       onEdit: editFormStep,
-      canAdd: !draft.some(step => step.type === 'form'),
+      canAdd: props.allowFormStep !== false && !draft.some(step => step.type === 'form'),
       unavailableReason: translate('subscription.process.palette.form.exists'),
       canMove: false,
       canDelete: false,

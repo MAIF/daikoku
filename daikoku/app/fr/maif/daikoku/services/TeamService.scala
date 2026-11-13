@@ -309,7 +309,9 @@ class TeamService(
       messagesApi: MessagesApi
   ): EitherT[Future, AppError, Result] = {
 
-    def declineTeamCreation(demand:TeamCreation ): EitherT[Future, AppError, Result] = {
+    def declineTeamCreation(
+        demand: TeamCreation
+    ): EitherT[Future, AppError, Result] = {
       val language = tenant.defaultLanguage.getOrElse("en")
       for {
         _ <- EitherT.right[AppError](
@@ -366,12 +368,17 @@ class TeamService(
           .validateOpt(using json.SeqTeamAuthorizedEntitiesFormat) match {
           case JsSuccess(value, _) => Right(value)
           case JsError(errors) =>
-            Left(AppError.BadRequestError(Json.stringify(JsError.toJson(errors))))
+            Left(
+              AppError.BadRequestError(Json.stringify(JsError.toJson(errors)))
+            )
         }
-      val apisCreationPermission = (js \ "apisCreationPermission").asOpt[Boolean]
+      val apisCreationPermission =
+        (js \ "apisCreationPermission").asOpt[Boolean]
 
       for {
-        authorizedEntities <- EitherT.fromEither[Future](authorizedEntitiesResult)
+        authorizedEntities <- EitherT.fromEither[Future](
+          authorizedEntitiesResult
+        )
         _ <- _step.check()
         updatedDemand = demand.copy(
           steps = demand.steps.map(s =>
@@ -388,7 +395,7 @@ class TeamService(
               metadata = demand.metadata,
               removedMetadataKeys = Set.empty,
               authorizedOtoroshiEntities = authorizedEntities,
-              creationSecurity = demand.creationSecurity,
+              creationSecurity = demand.creationSecurity
             )
           )
         )
@@ -553,19 +560,20 @@ class TeamService(
         AppError.EntityNotFound("tenant Admin team")
       )
       motivationAsString =
-        motivationPattern
-          .findAllMatchIn(
-            formStep.formatter.getOrElse("[[motivation]]")
-          ) // FIXME: get the real default formatter
-          .foldLeft(formStep.formatter.getOrElse("[[motivation]]"))(
-            (motivation, rgxMatch) => {
-              val key = rgxMatch.group(1)
-              val replacement = (teamCreation.value \ key)
-                .asOpt[String]
-                .getOrElse(s"-- $key --")
-              motivation.replace(s"[[$key]]", replacement)
+        tenant.teamCreationProcess
+          .collectFirst { case s: ValidationStep.Form => s }
+          .map { formStep =>
+            val formatter = formStep.formatter.getOrElse("[[motivation]]")
+            motivationPattern.findAllMatchIn(formatter).foldLeft(formatter) {
+              (motivation, rgxMatch) =>
+                val key = rgxMatch.group(1)
+                val replacement = (teamCreation.value \ key)
+                  .asOpt[String]
+                  .getOrElse(s"-- $key --")
+                motivation.replace(s"[[$key]]", replacement)
             }
-          )
+          }
+          .getOrElse("")
       notification = Notification(
         id = NotificationId(IdGenerator.token(32)),
         tenant = tenant.id,

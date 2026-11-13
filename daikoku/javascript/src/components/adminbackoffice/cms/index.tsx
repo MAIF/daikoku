@@ -134,7 +134,7 @@ export const CMSOffice = () => {
 
   return (
     <Can I={manage} a={tenant} dispatchError>
-      <div className="p-3">
+      <div>
         <div className="d-flex flex-row align-items-center justify-content-between mb-2">
           <h1 className="mb-0">Pages</h1>
         </div>

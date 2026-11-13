@@ -11,6 +11,8 @@ import { SubscriptionProcessEditor } from '../../../backoffice/apis/Subscription
 import { Spinner } from '../../../utils';
 import { OtoroshiEntitiesSelector } from '../../teams/TeamList';
 import { toast } from 'sonner';
+import { DiagramFlowHorizontal } from "lucide-react";
+
 
 export const SecurityForm = (props: {
   tenant: ITenantFull;
@@ -51,21 +53,25 @@ export const SecurityForm = (props: {
     isPrivate: {
       type: type.bool,
       label: translate('Private tenant'),
+      className: 'tenant-security-toggle',
     },
     creationSecurity: {
       type: type.bool,
       label: translate('API creation security'),
       help: translate('creation.security.help'),
+      className: 'tenant-security-toggle',
     },
     teamCreationSecurity: {
       type: type.bool,
-      label: translate('team creation security'),
-      help: translate('team.creation.security.help'),
+      label: translate('tenant.security.team.creation.label'),
+      help: translate('tenant.security.team.creation.security.help'),
+      className: 'tenant-security-toggle',
     },
     subscriptionSecurity: {
       type: type.bool,
       label: translate('subscription security'),
       help: translate('subscription.security.help'),
+      className: 'tenant-security-toggle',
     },
     aggregationApiKeysSecurity: {
       type: type.bool,
@@ -78,13 +84,15 @@ export const SecurityForm = (props: {
           });
         }
       },
+      className: 'tenant-security-toggle',
     },
     environmentAggregationApiKeysSecurity: {
       type: type.bool,
       label: translate('aggregation api keys security for environment mode'),
       help: translate('aggregation.environment.api_key.security.notification'),
       deps: ['aggregationApiKeysSecurity'],
-      visible: ({ rawValues }) => rawValues.aggregationApiKeysSecurity && rawValues.display === Display.environment
+      visible: ({ rawValues }) => rawValues.aggregationApiKeysSecurity && rawValues.display === Display.environment,
+      className: 'tenant-security-toggle',
     },
     keyringQuotaConflictStrategy: {
       type: type.string,
@@ -96,11 +104,13 @@ export const SecurityForm = (props: {
         { value: 'HighestValue', label: translate('tenant.keyringQuotaConflictStrategy.highest') },
       ],
       defaultValue: 'LowestValue',
+      className: 'tenant-security-toggle',
     },
     apiReferenceHideForGuest: {
       type: type.bool,
       label: translate('API reference visibility'),
       help: translate('api.reference.visibility.help'),
+      className: 'tenant-security-toggle',
     }
   }
 
@@ -218,33 +228,7 @@ export const SecurityForm = (props: {
 
   const TeamCreationProcessDocumentation = (props: { close: () => void, updateProcess: (process: IValidationStep[]) => void }) => {
     const defaultWorkflow: IValidationStep[] = [
-      {
-        id: nanoid(32),
-        type: 'form',
-        title: 'form',
-        schema: {
-          name: {
-            type: type.string,
-            label: "Name",
-            constraints: [{
-              "type": "required",
-              "message": "Your name is required"
-            }]
-          },
-          email: {
-            type: type.string,
-            label: "Email",
-            constraints: [{
-              "type": "required",
-              "message": "Your email is required"
-            }, {
-              "type": "email",
-              "message": "Your email needs to be an email"
-            }]
-          },
-        },
-        formatter: ''
-      }, {
+     {
         id: nanoid(32),
         type: 'email',
         title: 'confirmation email',
@@ -305,7 +289,8 @@ export const SecurityForm = (props: {
         team={teamQuery.data!._id}
         tenant={props.tenant as ITenant}
         documentation={AccountCreationProcessDocumentation}
-      />
+      />,
+      defaultSize: 90
     })
   }
 
@@ -318,7 +303,9 @@ export const SecurityForm = (props: {
         team={teamQuery.data!._id}
         tenant={props.tenant as ITenant}
         documentation={TeamCreationProcessDocumentation}
-      />
+        allowFormStep={false}
+      />,
+      defaultSize: 90
     })
   }
 
@@ -411,6 +398,7 @@ export const SecurityForm = (props: {
     return (
       <div className='d-flex flex-column gap-2'>
         <Form
+          className="tenant-security-form"
           schema={schema}
           onSubmit={(updatedTenant) =>
             props.updateTenant.mutateAsync(updatedTenant)
@@ -423,10 +411,10 @@ export const SecurityForm = (props: {
           }}
         />
         <div>
-          {tenant.authProvider === 'Local' && <button className='btn --secondary' onClick={() => editAccountProcess()}>{translate("tenant.security.account.creation.process.button.label")}</button>}
+          {tenant.authProvider === 'Local' && <button className='btn --secondary' onClick={() => editAccountProcess()}><DiagramFlowHorizontal size={16}/>{translate("tenant.security.account.creation.process.button.label")}</button>}
         </div>
          <div>
-          {tenant.authProvider === 'Local' && <button className='btn --secondary' onClick={() => editTeamProcess()}>{translate("tenant.security.team.creation.process.button.label")}</button>}
+          {tenant.authProvider === 'Local' && <button className='btn --secondary' onClick={() => editTeamProcess()}><DiagramFlowHorizontal size={16}/>{translate("tenant.security.team.creation.process.button.label")}</button>}
         </div>
         <div>
           <button onClick={() => openModal(otoroshis)} className='btn --secondary'>{translate('tenant.security.configure.default.auth.otoroshi.entities.button.label')}</button>

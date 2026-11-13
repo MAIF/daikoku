@@ -14,3 +14,15 @@
   color: #1f2937;
   font-size: 0.7rem;
 }
+
+.flow-editor .card-summary dd {
+  min-width: 0;
+  flex: 1 1 0%;
+}
+
+.flow-editor .card-summary code {
+  max-width: 100%;
+  min-width: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}

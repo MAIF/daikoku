@@ -263,7 +263,7 @@ export const DaikokuApp = () => {
                   path="/settings/messages"
                   element={
                     <RouteWithTitle title={`${tenant.title} - ${translate({ key: 'Message', plural: true })}`}>
-                      <AdminMessages />
+                      <TenantSettingsPage><AdminMessages /></TenantSettingsPage>
                     </RouteWithTitle>
                   }
                 />
@@ -271,7 +271,7 @@ export const DaikokuApp = () => {
                   path="/settings/otoroshis/:otoroshiId"
                   element={
                     <RouteWithTitle title={`${tenant.title} - ${translate('Otoroshi')}`}>
-                      <TenantOtoroshi />
+                      <TenantSettingsPage><TenantOtoroshi /></TenantSettingsPage>
                     </RouteWithTitle>
                   }
                 />
@@ -281,7 +281,7 @@ export const DaikokuApp = () => {
                     <RouteWithTitle
                       title={`${tenant.title} - ${translate({ key: 'Otoroshis', plural: true })}`}
                     >
-                      <TenantOtoroshis />
+                      <TenantSettingsPage><TenantOtoroshis /></TenantSettingsPage>
                     </RouteWithTitle>
                   }
                 />
@@ -291,7 +291,7 @@ export const DaikokuApp = () => {
                     <RouteWithTitle
                       title={`${tenant.title} - ${translate({ key: 'Tenant edit', plural: true })}`}
                     >
-                      <TenantEdit />
+                      <TenantSettingsPage><TenantEdit /></TenantSettingsPage>
                     </RouteWithTitle>
                   }
                 />
@@ -331,7 +331,7 @@ export const DaikokuApp = () => {
                   path="/settings/audit"
                   element={
                     <RouteWithTitle title={`${tenant.title} - ${translate('Audit trail')}`}>
-                      <AuditTrailList />
+                      <TenantSettingsPage><AuditTrailList /></TenantSettingsPage>
                     </RouteWithTitle>
                   }
                 />
@@ -383,16 +383,16 @@ export const DaikokuApp = () => {
                   path="/settings/teams"
                   element={
                     <RouteWithTitle title={`${tenant.title} - ${translate('Teams')}`}>
-                      <TeamList />
+                      <TenantSettingsPage><TeamList /></TenantSettingsPage>
                     </RouteWithTitle>
                   }
                 />
-                <Route path="/settings/assets" element={<TenantAssets />} />
+                <Route path="/settings/assets" element={<TenantSettingsPage><TenantAssets /></TenantSettingsPage>} />
                 <Route
                   path="/settings/admins"
                   element={
                     <RouteWithTitle title={`${tenant.title} - ${translate('Admins')}`}>
-                      <TenantAdminList />
+                      <TenantSettingsPage><TenantAdminList /></TenantSettingsPage>
                     </RouteWithTitle>
                   }
                 />
@@ -402,7 +402,7 @@ export const DaikokuApp = () => {
                     <RouteWithTitle
                       title={`${tenant.title} - ${translate('daikokuapp.pages_title')}`}
                     >
-                      <CMSOffice />
+                      <TenantSettingsPage><CMSOffice /></TenantSettingsPage>
                     </RouteWithTitle>
                   }
                 />
@@ -415,7 +415,7 @@ export const DaikokuApp = () => {
                         <RouteWithTitle
                           title={`${tenant.title} - ${translate('Internalization')}`}
                         >
-                          <MailingInternalization />
+                          <TenantSettingsPage><MailingInternalization /></TenantSettingsPage>
                         </RouteWithTitle>
                       }
                     />
@@ -463,6 +463,10 @@ const RouteWithTitle = (props: PropsWithChildren<{ title?: string }>) => {
 
   return props.children;
 };
+
+const TenantSettingsPage = (props: PropsWithChildren) => (
+  <div className="p-3">{props.children}</div>
+);
 
 const UnauthenticatedRoute = (props: PropsWithChildren<{ title: string, header: string }>) => {
   const { connectedUser, tenant } = useContext(GlobalContext)

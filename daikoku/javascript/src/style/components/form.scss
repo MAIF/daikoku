@@ -19,6 +19,34 @@
   min-height: 0px;
 }
 
+.tenant-security-form .mrf-mt_10:has(> input.tenant-security-toggle) {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  align-items: center;
+  column-gap: 1rem;
+  row-gap: 0.25rem;
+}
+
+.tenant-security-form .mrf-mt_10:has(> input.tenant-security-toggle) > label {
+  grid-column: 2;
+  grid-row: 1;
+  align-self: center;
+  min-width: 0;
+  margin: 0;
+}
+
+.tenant-security-form .mrf-mt_10:has(> input.tenant-security-toggle) > input.tenant-security-toggle {
+  grid-column: 1;
+  grid-row: 1;
+  align-self: center;
+  justify-self: start;
+  margin: 0;
+}
+
+.tenant-security-form .mrf-mt_10:has(> input.tenant-security-toggle) > .mrf-feedback {
+  grid-column: 1 / -1;
+}
+
 .usage-plan-form-panel-content {
   display: grid;
   grid-template-rows: auto 70px;
