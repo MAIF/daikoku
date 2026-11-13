@@ -21,6 +21,8 @@ export const FlowEditor = <Card extends FlowEditorCard>({
   labels = defaultLabels,
   start,
   end,
+  canInsertAt,
+  canMoveTo
 }: FlowEditorProps<Card>) => {
   const [selectedType, setSelectedType] = useState<Card['type'] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -68,6 +70,10 @@ export const FlowEditor = <Card extends FlowEditorCard>({
       setError(definition.unavailableReason ?? labels.unavailable);
       return;
     }
+    if (canInsertAt && !canInsertAt(type, index)) {
+      setError('Le step form doit rester en première position.');
+      return;
+    }
     setSelectedType(null);
     setError(null);
     onAdd(type, index);
@@ -80,7 +86,12 @@ export const FlowEditor = <Card extends FlowEditorCard>({
       return;
     }
     if (definitionFor(card.type)?.canMove === false) return;
+
     const destination = insertionIndex > from ? insertionIndex - 1 : insertionIndex;
+    if (canMoveTo && !canMoveTo(card, destination)) {
+      setError('Le step form doit rester en première position.');
+      return;
+    }
     if (destination === from) return;
     const next = value.filter((_, index) => index !== from);
     next.splice(destination, 0, card);
@@ -99,9 +110,30 @@ export const FlowEditor = <Card extends FlowEditorCard>({
     setDropAt(null);
   };
 
+  const canDropAt = (index: number) => {
+    const source = dragSource.current;
+    if (!source) return false;
+
+    if (source.kind === 'type') {
+      return !canInsertAt || canInsertAt(source.type, index);
+    }
+
+    const card = value[source.index];
+    if (!card) return false;
+
+    const destination = index > source.index ? index - 1 : index;
+    return !canMoveTo || canMoveTo(card, destination);
+  };
+
   const dropCard = (event: DragEvent, index: number) => {
     if (!isOwnDrag(event)) return;
     event.preventDefault();
+
+    if (!canDropAt(index)) {
+      endDrag();
+      return;
+    }
+
     const source = dragSource.current;
     endDrag();
     if (source?.kind === 'type') {
@@ -116,11 +148,15 @@ export const FlowEditor = <Card extends FlowEditorCard>({
   };
 
   const renderSlot = (index: number) => {
+    const canInsertSelectedType =
+      activeType !== null && (!canInsertAt || canInsertAt(activeType, index));
+    const canDropDraggedCard = dragging && canDropAt(index);
+
     return (
       <div
         className={`flow-editor__slot position-relative d-grid${dropAt === index ? ' flow-editor__slot--over' : ''}`}
         onDragOver={(event) => {
-          if (isOwnDrag(event)) {
+          if (isOwnDrag(event) && canDropAt(index)) {
             event.preventDefault();
             event.dataTransfer.dropEffect = dragSource.current?.kind === 'type' ? 'copy' : 'move';
             setDropAt(index);
@@ -135,7 +171,7 @@ export const FlowEditor = <Card extends FlowEditorCard>({
           className="flow-editor__connector position-absolute top-50 start-0 end-0 pe-none"
           aria-hidden="true"
         />
-        {(activeType !== null || dragging) && (
+        {(canInsertSelectedType || canDropDraggedCard) && (
           <button
             className="position-relative rounded-circle p-0"
             type="button"
@@ -212,10 +248,11 @@ export const FlowEditor = <Card extends FlowEditorCard>({
           </p>
         )}
         <footer className="flow-editor__actions d-flex flex-wrap gap-1 justify-content-between p-2">
+          {definition?.canDelete !== false &&
           <button
             className="d-inline-flex align-items-center fw-medium"
             type="button"
-            disabled={invalidId || definition?.canDelete === false}
+            disabled={invalidId}
             aria-label={`Supprimer la carte ${index + 1}`}
             onClick={() => {
               onChange(value.filter((_, position) => position !== index));
@@ -224,19 +261,20 @@ export const FlowEditor = <Card extends FlowEditorCard>({
           >
             <Trash stroke="#29438d" size={18} aria-hidden="true" />
             Supprimer
-          </button>
-          <button
-            className="d-inline-flex align-items-center fw-medium"
-            type="button"
-            disabled={invalidId || !Content || (!definition?.onEdit && !onEdit)}
-            onClick={() => {
-              if (definition?.onEdit) definition.onEdit(card);
-              else onEdit?.(card);
-            }}
-          >
-            <Pencil stroke="#29438d" size={18} aria-hidden="true" />
-            Modifier
-          </button>
+          </button>}
+          {definition?.canEdit !== false &&
+            <button
+              className="d-inline-flex align-items-center fw-medium"
+              type="button"
+              disabled={invalidId || !Content || (!definition?.onEdit && !onEdit)}
+              onClick={() => {
+                if (definition?.onEdit) definition.onEdit(card);
+                else onEdit?.(card);
+              }}
+            >
+              <Pencil stroke="#29438d" size={18} aria-hidden="true" />
+              Modifier
+            </button>}
         </footer>
       </article>
     );

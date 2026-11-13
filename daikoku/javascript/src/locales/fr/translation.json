@@ -1076,7 +1076,7 @@
   "navbar.environments.label": "Environnements",
   "pricing.clone.env.btn.label": "Dupliquer",
   "pricing.delete.env.btn.label": "Supprimer",
-  "pricing.edit.process.btn.label": "Modifier le process",
+  "pricing.edit.process.btn.label": "Modifier le processus de souscription",
   "Alert": "Alerte",
   "constraints.plan.custom-name.one-of.environment": "Le nom du plan doit correspondre à l'un des environnements disponibles",
   "apisubscription.lastUsage.label": "Dernier usage",

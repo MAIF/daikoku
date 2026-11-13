@@ -351,7 +351,7 @@ test('configurer un environnement', async ({ page }) => {
   await page
     .getByRole('listitem', { name: 'dev' })
     .getByRole('menu')
-    .getByRole('button', { name: 'Modifier le process' }).click();
+    .getByRole('button', { name: 'Modifier le processus de souscription' }).click();
     await page.getByRole('button', { name: 'Admin. équipe' }).click();
     await page.getByRole('button', { name: 'Insérer en position' }).click();
   await page.getByRole('button', { name: 'save' }).click();

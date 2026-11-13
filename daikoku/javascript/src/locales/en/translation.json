@@ -1558,7 +1558,7 @@
   "api.pricings.name.table.actions": "Actions",
   "api.pricings.creation.plan.button.label": "Create a plan",
   "api.pricings.creation.environment.button.label": "Create an environment",
-  "pricing.edit.process.btn.label": "Update process",
+  "pricing.edit.process.btn.label": "Update subscription process",
   "api.home.config.api.documentation.btn.label": "Documentation settings",
   "notifications.page.filters.type.AccountCreationAttempt.label": "Account creation demand",
   "notifications.page.filters.type.ApiBlockingWarning.label": "Blocked API",

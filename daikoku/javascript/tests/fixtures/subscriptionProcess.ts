@@ -81,7 +81,7 @@ export const test = base.extend<{
     await page.getByText('Environnements', { exact: true }).click();
     await use(async () => {
       await page.getByRole('button', { name: "Configurer l'environnement", exact: true }).click();
-      await page.getByRole('button', { name: 'Modifier le process', exact: true }).click();
+      await page.getByRole('button', { name: 'Modifier le processus de souscription', exact: true }).click();
       await expect(page.getByRole('region', { name: 'Éditeur de processus' })).toBeVisible();
     });
   },

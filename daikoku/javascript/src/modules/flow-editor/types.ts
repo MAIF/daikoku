@@ -15,6 +15,7 @@ export type CardTypeDefinition<Data> = {
   unavailableReason?: string;
   canMove?: boolean;
   canDelete?: boolean;
+  canEdit?: boolean;
 };
 
 export type CardTypeCatalog<Card extends FlowEditorCard> = {
@@ -35,4 +36,6 @@ export type FlowEditorProps<Card extends FlowEditorCard> = {
   };
   start: ReactNode;
   end: ReactNode;
+  canInsertAt?: (type: Card['type'], index: number) => boolean;
+  canMoveTo?: (card: Card, destination: number) => boolean;
 };

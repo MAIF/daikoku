@@ -143,7 +143,7 @@ const MotivationForm = (props: MotivationFormProps) => {
                     }
                   }}
                   onSubmit={d => {
-                      setFormKeysToMetadata(d.formKeysToMetadata);
+                    setFormKeysToMetadata(d.formKeysToMetadata);
                   }}
                   value={{ formKeysToMetadata: formKeysToMetadata }}
                   options={{ autosubmit: true, actions: { submit: { display: false } } }}
@@ -218,7 +218,16 @@ export const SubscriptionProcessEditor = (props: SubProcessProps) => {
   const { translate } = useContext(I18nContext);
   const { openCustomModal, openFormModal, close } = useContext(ModalContext);
 
-  const [draft, setDraft] = useState(props.process)
+  const [draft, setDraft] = useState(() => {
+    const formIndex = props.process.findIndex(step => step.type === 'form');
+    if (formIndex <= 0) return props.process;
+
+    return [
+      props.process[formIndex],
+      ...props.process.slice(0, formIndex),
+      ...props.process.slice(formIndex + 1),
+    ];
+  });
   const [showDocumentation, setShowDocumentation] = useState(false);
 
   const editProcess = (name: IValidationStep['type'], index: number) => {
@@ -338,8 +347,11 @@ export const SubscriptionProcessEditor = (props: SubProcessProps) => {
           };
           toast.info('on a ajouté un step form, obligatoire pour le bon fonctionnement du step admin')
           setDraft(current => [
-            ...current.slice(0, index), formStep, step, ...current.slice(index),
-          ])
+            formStep,
+            ...current.slice(0, index),
+            step,
+            ...current.slice(index),
+          ]);
         }
         return close();
       }
@@ -430,6 +442,7 @@ export const SubscriptionProcessEditor = (props: SubProcessProps) => {
         },
         headers: {
           type: type.object,
+          defaultValue: {},
         },
       },
       onSubmit: (data: IValidationStepHttpRequest) => {
@@ -488,6 +501,7 @@ export const SubscriptionProcessEditor = (props: SubProcessProps) => {
       icon: <ShieldCheck size={20} />,
       getTitle: step => step.title,
       Content: ValidationCard,
+      canEdit: false,
       canAdd: !draft.some(step => step.type === 'teamAdmin'),
       unavailableReason: translate('subscription.process.palette.admin.exists'),
     },
@@ -531,10 +545,20 @@ export const SubscriptionProcessEditor = (props: SubProcessProps) => {
         end={<span className="badge rounded-pill bg-light text-dark border p-2">
           <KeyRound size={15} aria-hidden="true" /> {translate('subscription.process.end')}
         </span>}
+        canInsertAt={(type, index) => {
+          const hasForm = draft.some(step => step.type === 'form');
+          return type === 'form'
+            ? !hasForm && index === 0
+            : !hasForm || index > 0;
+        }}
+        canMoveTo={(card, destination) => {
+          if (!draft.some(step => step.type === 'form')) return true;
+          return card.type === 'form' ? destination === 0 : destination > 0;
+        }}
       />
       {showDocumentation && <Documentation close={() => setShowDocumentation(false)} updateProcess={(steps) => setDraft(steps)} />}
       {(!!draft.length || !!props.process.length) && (
-        <button className='btn --primary' onClick={() => props.save(draft)}>save</button>
+        <button className='btn --primary' onClick={() => props.save(draft)}>{translate("Save")}</button>
       )}
     </div>
   );
