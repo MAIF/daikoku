@@ -839,8 +839,10 @@ test('[ASOAPI-10603] - [Consommateur] - supprimer une clé avec extension en cas
   await page.waitForResponse(r => r.request().method() === 'DELETE' && r.status() === 200);
   // 2) supprimer la dernière souscription (API papier/dev) -> clé d'API vide -> le
   // backend supprime la clé d'API et sa clé Otoroshi
+  await page.getByRole('button', { name: 'Close toast' }).click();
+
   await page
-    .getByRole('listitem', { name: 'api papier - dev' })
+    .getByRole('listitem', { name: 'API Papier - dev' })
     .getByRole('listitem').filter({ hasText: 'API papier' })
     .getByRole('button', { name: 'Actions de la souscription' })
     .click();
@@ -853,10 +855,10 @@ test('[ASOAPI-10603] - [Consommateur] - supprimer une clé avec extension en cas
   await page.getByRole('button', { name: 'Confirmation' }).
     click();
   await page.waitForResponse(r => r.request().method() === 'DELETE' && r.status() === 200);
-
   //plus aucune carte -> clé d'API supprimée
   await expect(page.locator('.keyring-card')).toBeHidden();
   await expectOtoroshiApiKeyGone(vendeursPapierExtendedDevApiKeyId);
+
 })
 
 

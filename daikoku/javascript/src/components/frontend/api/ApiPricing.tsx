@@ -53,6 +53,13 @@ import {
 } from '../../utils';
 import { useExportEntity } from '../../utils/useExportEntity';
 import { CmsViewerByPath } from "../CmsViewer";
+import { SubscriptionHelp } from './SubscriptionHelp';
+import {
+  getOtoroshiTargetReason,
+  getSubscriptionHelp,
+  getVisibleSubscriptionBlockers,
+  isSubscriptionDisabled,
+} from './subscriptionHelpReasons';
 
 type Option = {
   type: 'group' | 'route';
@@ -1866,6 +1873,16 @@ export const ApiPricing = (props: ApiPricingProps) => {
         meta: { className: "otoroshi-cible-cell", title: translate('api.pricings.otoroshi.target.table.title'), size: 7, hidden: !CanIDoActionForOneOfTeams(connectedUser, manage, API, [props.ownerTeam]) },
         cell: (info) => {
           const plan: IUsagePlanGQL = info.cell.row.original
+          const targetReason = getOtoroshiTargetReason(props.api, plan);
+          if (targetReason) {
+            return (
+              <SubscriptionHelp help={{ blockers: [targetReason] }}>
+                <span className="badge bg-danger cursor-forbidden">
+                  {translate('api.pricings.otoroshi.target.value.none')}
+                </span>
+              </SubscriptionHelp>
+            );
+          }
           return (
             <span className='feature__description'>
               {plan.otoroshiTarget?.otoroshiSettings && (tenant.otoroshiSettings.find(o => o._id === plan.otoroshiTarget?.otoroshiSettings)?.url)}
@@ -1904,25 +1921,38 @@ export const ApiPricing = (props: ApiPricingProps) => {
             isAutomaticProcess
           } = otoroshiTargetColumn(plan, props.api.name)
 
+          const subscriptionHelp = getSubscriptionHelp({
+            api: props.api,
+            plan,
+            isGuest: connectedUser.isGuest,
+          });
+          const subscriptionDisabled = isSubscriptionDisabled(subscriptionHelp);
+
           return (
             <div className="d-flex flex-row align-items-center justify-content-end">
 
               <div className="p-2">
                 {
-                  !connectedUser.isGuest &&
-                  (!otoroshiTargetIsDefined || !otoroshiEntitiesIsDefined || !isPublish(props.api)) &&
-                  props.api.visibility !== 'AdminOnly' && props.api.state !== 'blocked' &&
+                  subscriptionDisabled &&
                   (
-                    <button
-                      type="button"
-                      aria-label={translate("Get API key")}
-                      className="btn --tertiary --small --icon-only"
-                    >
-                      <KeyRound size={16} />
-                    </button>
+                    <Can I={manage} a={API} team={props.ownerTeam}>
+                      <span className="d-inline-flex cursor-forbidden">
+                      <SubscriptionHelp help={{ blockers: getVisibleSubscriptionBlockers(subscriptionHelp) }}>
+                        <button
+                          type="button"
+                          disabled
+                          aria-label={isAutomaticProcess ? translate("Get API key") : translate('Request API key')}
+                          className="btn --primary --small --icon-only"
+                        >
+                          <KeyRound size={16} />
+                        </button>
+                      </SubscriptionHelp>
+                      </span>
+                    </Can>
                   )
                 }
                 {
+                  !subscriptionDisabled &&
                   ((otoroshiTargetIsDefined && otoroshiEntitiesIsDefined) ||
                     props.api.visibility === 'AdminOnly') &&
                   (!isAccepted || props.api.visibility === 'AdminOnly') &&

@@ -8,6 +8,27 @@ Just click the `subscribe` button. If you are member of several teams, please ch
 If the plan has no process of subscription, a green message appears to inform you that the subscription is successful.
 Otherwise, the process is followed step by step until the subscription is generated (it could take a few moment).
 
+### Subscription requirements
+
+When an API is blocked or unpublished, or a plan has no Otoroshi target or authorized entities,
+the initial subscription button is hidden from consumers. Users with permission to manage the
+API keep a disabled button: Daikoku administrators, administrators of the owning team and its API
+editors. Being a tenant administrator alone does not grant this display permission.
+
+Hover over the disabled **Get API key** or **Request API key** button to read the API's blocked
+or unpublished status. Otoroshi configuration problems are shown separately in the **Otoroshi
+target** column, whose visibility is unchanged: a red **None** label replaces the target URL when
+the target is absent or has no authorized group, service or route. Hover over the label to read
+the corresponding explanation. Move the pointer away to close either tooltip.
+
+AdminOnly APIs remain exempt from the Otoroshi configuration requirement. Other team eligibility,
+pending-request, subscription, payment, instance and metadata checks are not added to this initial
+button calculation or explained by these tooltips. Existing authorization checks, team selection
+and server-side validation still apply.
+
+This behavior covers the initial per-plan subscription action, not multi-plan subscription or
+compatibility with an existing keyring. Guests still use the button to sign in or register.
+
 ### Payment Process
 
 When a user reaches the payment step in the subscription process, Daikoku facilitates the transition to the payment gateway to collect payment information and process the transaction. Here's how it works:
