@@ -737,6 +737,7 @@ export const KeyringCard = ({ api, keyring, currentTeam, pendingCount = 0 }: Key
           if (row.demand) return null;
           const sub = row.subscription;
           const rowPending = pendingActions.has(`subscription:${sub._id}`);
+          const isBilledByStripe = !!sub.plan?.paymentSettings;
 
           return (
             <span>
@@ -799,7 +800,7 @@ export const KeyringCard = ({ api, keyring, currentTeam, pendingCount = 0 }: Key
                       </button>
                     )}
                     <div className="dropdown-divider" />
-                    {!!sub.plan?.costPerMonth && (
+                    {isBilledByStripe && (
                       <button
                         className="dropdown-item cursor-pointer danger"
                         onClick={() => cancelSubscription(sub, () => invalidateSubscriptions())}

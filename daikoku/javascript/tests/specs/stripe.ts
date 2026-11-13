@@ -94,7 +94,7 @@ export const openStripeCheckout = async (
   await page.getByRole('button', { name: "Demander une clé d'API" }).click();
   await page.getByText(opts.teamName).click();
   await page
-    .getByRole('dialog', { name: 'Choisissez le nom du trousseau' })
+    .getByRole('dialog', { name: "Choisissez le nom de la clé d'API" })
     .getByRole('button', { name: 'Envoyer' })
     .click();
 
@@ -105,14 +105,16 @@ export const openStripeCheckout = async (
   return sessionId!;
 };
 
-export const subscribeViaStripeCheckout = async (
-  page: Page,
-  opts: { apiName: string; teamName: string; settingsId: string }
-) => {
-  const sessionId = await openStripeCheckout(page, opts);
+const payClassicCheckout = async (page: Page) => {
+  const cardNumber = page.locator('#cardNumber');
 
-  await page.getByRole('radio', { name: 'Carte' }).check({ force: true });
-  await page.locator('#cardNumber').fill('4242 4242 4242 4242');
+  // The card row can be folded behind a cover button that animates in, so it
+  // is opened by its event rather than by a pointer click
+  if (!(await cardNumber.isVisible())) {
+    await page.getByTestId('card-accordion-item-button').dispatchEvent('click');
+  }
+
+  await cardNumber.fill('4242 4242 4242 4242');
   await page.locator('#cardExpiry').fill('02 / 42');
   await page.locator('#cardCvc').fill('123');
   await page.locator('#billingName').fill('Jim Halpert');
@@ -120,6 +122,58 @@ export const subscribeViaStripeCheckout = async (
   await page.locator('#billingPostalCode').fill('75002');
   await page.locator('#billingLocality').fill('Paris');
   await page.getByTestId('hosted-payment-submit-button').click();
+};
+
+const embeddedCheckoutForm = (page: Page) => page.locator('iframe').first().contentFrame();
+
+const payEmbeddedCheckout = async (page: Page) => {
+  const checkoutForm = embeddedCheckoutForm(page);
+  const addressLine = checkoutForm.locator('#billingAddress-addressLine1Input');
+
+  await checkoutForm.getByRole('button', { name: 'Carte bancaire' }).click();
+  await checkoutForm.locator('#payment-numberInput').fill('4242 4242 4242 4242');
+  await checkoutForm.locator('#payment-expiryInput').fill('02 / 42');
+  await checkoutForm.locator('#payment-cvcInput').fill('123');
+  await checkoutForm.locator('#billingAddress-nameInput').fill('Jim Halpert');
+  await addressLine.fill('1 rue de la Paix');
+  // Closes the address suggestions, which cover the next fields
+  await addressLine.press('Escape');
+  await checkoutForm.locator('#billingAddress-postalCodeInput').fill('75002');
+
+  const locality = checkoutForm.locator('#billingAddress-localityInput');
+  await locality.fill('Paris');
+  // A click on the pay button sends no confirmation in this layout, Enter does
+  await locality.press('Enter');
+};
+
+/** Stripe serves its Checkout in two layouts: the card fields in the page, or
+ * a Payment Element holding the whole form in an iframe. */
+const payStripeCheckout = async (page: Page) => {
+  const classicCardFields = page.locator('#cardNumber, [data-testid="card-accordion-item-button"]');
+  const embeddedCardTab = embeddedCheckoutForm(page).getByRole('button', {
+    name: 'Carte bancaire',
+  });
+
+  await expect
+    .poll(async () => (await classicCardFields.count()) + (await embeddedCardTab.count()), {
+      timeout: 30_000,
+    })
+    .toBeGreaterThan(0);
+
+  if (await classicCardFields.count()) {
+    await payClassicCheckout(page);
+  } else {
+    await payEmbeddedCheckout(page);
+  }
+};
+
+export const subscribeViaStripeCheckout = async (
+  page: Page,
+  opts: { apiName: string; teamName: string; settingsId: string }
+) => {
+  const sessionId = await openStripeCheckout(page, opts);
+
+  await payStripeCheckout(page);
   await page.waitForURL(new RegExp(`localhost:${exposedPort}`), { timeout: 60_000 });
   await expect(page.getByRole('heading', { name: 'Paiement reçu' })).toBeVisible();
 
@@ -172,6 +226,32 @@ export const advanceTestClock = async (clockId: string, to: Date): Promise<void>
 export const deleteTestClock = (clockId: string) =>
   stripe(`/v1/test_helpers/test_clocks/${clockId}`, { method: 'DELETE' });
 
+const searchStripeCustomersOf = async (daikokuId: string): Promise<Array<any>> => {
+  const query = `/v1/customers/search?query=${encodeURIComponent(
+    `metadata['daikoku_id']:'${daikokuId}'`
+  )}`;
+  const result = await stripe(query).then((r) => r.json());
+
+  return result.data ?? [];
+};
+
+/** Daikoku bills the first customer its search returns, and the state reset
+ * keeps team ids, so customers left by earlier runs would take the
+ * subscription off the test clock. Deleting a clock deletes its customers. */
+export const deleteStripeCustomersOf = async (daikokuId: string) => {
+  const customers = await searchStripeCustomersOf(daikokuId);
+
+  await Promise.all(
+    customers.map((customer) => {
+      if (customer.test_clock) {
+        return stripe(`/v1/test_helpers/test_clocks/${customer.test_clock}`, { method: 'DELETE' });
+      }
+
+      return stripe(`/v1/customers/${customer.id}`, { method: 'DELETE' });
+    })
+  );
+};
+
 /** Created before the checkout, carrying the metadata Daikoku searches on, so
  * the subscription flow reuses this customer instead of creating a clock-less
  * one. A clock can only be attached at customer creation. */
@@ -190,7 +270,31 @@ export const createClockedCustomer = async (
   });
   const customer = await res.json();
   expect(res.ok, `create clocked customer failed: ${JSON.stringify(customer)}`).toBeTruthy();
+
+  await expect
+    .poll(async () => (await searchStripeCustomersOf(daikokuId)).map((found) => found.id), {
+      timeout: 120_000,
+      intervals: [3_000],
+    })
+    .toEqual([customer.id]);
+
   return customer.id;
+};
+
+const priceOfInvoiceLine = (line: any): string | undefined =>
+  line.pricing?.price_details?.price ?? line.price?.id;
+
+/** A graduated price (the included requests) is billed on one line per tier,
+ * so the lines of the price are added up. */
+export const invoicedForPrice = (invoice: any, priceId: string) => {
+  const linesOfPrice = invoice.lines.data.filter(
+    (line: any) => priceOfInvoiceLine(line) === priceId
+  );
+
+  return {
+    quantity: linesOfPrice.reduce((total: number, line: any) => total + (line.quantity ?? 0), 0),
+    amount: linesOfPrice.reduce((total: number, line: any) => total + line.amount, 0),
+  };
 };
 
 export const stripeSubscription = (subscriptionId: string) =>

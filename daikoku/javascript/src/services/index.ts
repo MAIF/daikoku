@@ -1389,7 +1389,7 @@ export const graphql = {
           demand { ${keyringDemandFields} }
           subscription {
             _id customName adminCustomName enabled state createdAt validUntil tags lastUsage
-            plan { _id customName }
+            plan { _id customName paymentSettings { thirdPartyPaymentSettingsId } }
             api { _id _humanReadableId name currentVersion team { _humanReadableId } }
           }
         }

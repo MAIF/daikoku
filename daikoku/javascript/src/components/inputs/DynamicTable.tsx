@@ -232,6 +232,8 @@ export type DynamicTableProps<T extends RowData> = {
   /** Cells of a closing total row, by column id. The caller computes it over all
    * its data, so it stays the same on every page. */
   totalRow?: Partial<Record<string, ReactNode>>;
+  /** Shown instead of the rows and the pagination when the query returns no row at all. */
+  emptyState?: ReactNode;
   rowSelection?: RowSelectionState;
   setRowSelection?: OnChangeFn<RowSelectionState>;
   onSelectionChange?: (selected: T[]) => void;
@@ -259,6 +261,7 @@ export function DynamicTable<T extends RowData>({
   countLabelKey,
   tableClassName,
   totalRow,
+  emptyState,
   onSelectionChange,
   rowSelection: controlledRowSelection,
   setRowSelection: controlledSetRowSelection,
@@ -772,6 +775,9 @@ export function DynamicTable<T extends RowData>({
     };
   });
 
+  const showsEmptyState = !!dataQuery.data && total === 0 && emptyState !== undefined;
+  const showsRows = !!dataQuery.data && !showsEmptyState;
+
   return (
     <div className={classNames('flex-grow-1 dynamic-table', tableClassName)}>
       <div className="table-header">
@@ -795,7 +801,9 @@ export function DynamicTable<T extends RowData>({
 
       {dataQuery.isLoading && <Spinner />}
 
-      {dataQuery.data && (
+      {showsEmptyState && emptyState}
+
+      {showsRows && (
         <>
           <div
             className={classNames('dynamic-table__data', dataClassName)}

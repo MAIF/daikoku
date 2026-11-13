@@ -95,6 +95,39 @@ export const findAndGoToTeam = async (team: string, page: Page) => {
   await page.locator('#portal-root').getByRole('link', { name: team }).click();
 }
 
+export const openApiKeyCard = async (
+  page: Page,
+  teamName: string,
+  apiName: string,
+  planName: string
+) => {
+  await findAndGoToTeam(teamName, page);
+  await page.getByText("Clés d'API").click();
+  await page.getByRole('listitem', { name: apiName }).getByLabel("Voir les clés d'API").click();
+
+  return page.getByRole('listitem', { name: `Clé d'API ${apiName} - ${planName}` });
+};
+
+/** Needs the clipboard permissions granted on the context. */
+export const readSubscriptionApiKey = async (
+  page: Page,
+  teamName: string,
+  apiName: string,
+  planName: string
+) => {
+  const apiKeyCard = await openApiKeyCard(page, teamName, apiName, planName);
+
+  await apiKeyCard.getByRole('button', { name: 'Copier le clientId et le clientSecret' }).click();
+
+  const apikey = await page.evaluate(() => navigator.clipboard.readText());
+  const [clientId, clientSecret] = apikey.split(':', 2);
+
+  return {
+    clientId,
+    clientSecret,
+  };
+};
+
 
 export const updateUserRightForTeam = async (params: { userId: string, teamId: string, right: "Administrator" | "ApiEditor" | "User" }) => {
   const { userId, teamId, right } = params

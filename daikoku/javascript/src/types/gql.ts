@@ -192,7 +192,9 @@ export interface IKeyringSubscriptionGql {
     _id: string;
     customName: string;
     isRotationLocked?: boolean;
-    costPerMonth?: number;
+    paymentSettings?: {
+      thirdPartyPaymentSettingsId: string;
+    } | null;
   };
   api: {
     _id: string;

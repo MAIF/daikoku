@@ -78,32 +78,32 @@ appellerait le vrai Stripe.
 - [x] Passer le plan « dev » d'API papier en payant. Vérifier la modale « Facturer ce plan via Stripe ? »,
       le message d'attente et le champ « Compte de paiement ». Aucun choix de devise n'apparaît. Le
       message « ne peut plus redevenir gratuit » s'affiche ensuite.
-- [ ] « Requêtes incluses par mois » refuse une valeur au-delà de la limite mensuelle. L'onglet quotas
+- [x] « Requêtes incluses par mois » refuse une valeur au-delà de la limite mensuelle. L'onglet quotas
       refuse une limite inférieure aux requêtes incluses.
-- [ ] Sur le plan « prod » (formulaire, puis validation), l'étape paiement arrive en dernier et ne peut
+- [x] Sur le plan « prod » (formulaire, puis validation), l'étape paiement arrive en dernier et ne peut
       pas être déplacée.
-- [ ] Sur la page de l'API, le texte du tarif dit « dès la première requête » ou « au-delà de N requêtes
+- [x] Sur la page de l'API, le texte du tarif dit « dès la première requête » ou « au-delà de N requêtes
       par mois », selon le plan.
-- [ ] Changer le prix affiche « Création des nouveaux prix… ». Jim reçoit « Changement de tarif à
+- [x] Changer le prix affiche « Création des nouveaux prix… ». Jim reçoit « Changement de tarif à
       venir » et un mail, et « Voir le nouveau tarif » ouvre le plan.
-- [ ] Bloquer une souscription ouvre une modale avec un motif facultatif. Jim reçoit une notification et
+- [x] Bloquer une souscription ouvre une modale avec un motif facultatif. Jim reçoit une notification et
       un mail avec le motif, et sa clé ne passe plus. Au déblocage, il reçoit une notification et un mail
       « rétablie ».
-- [ ] Une souscription « Terminée » ne peut pas être réactivée.
+- [x] Une souscription « Terminée » ne peut pas être réactivée.
 - [ ] L'écran Revenus affiche une ligne par équipe abonnée, avec des montants marqués comme estimés.
 
 ### Consommateur (Jim)
 
-- [ ] Sur un plan à étapes, Jim remplit le formulaire et Michael valide. Jim reçoit « attend votre
+- [x] Sur un plan à étapes, Jim remplit le formulaire et Michael valide. Jim reçoit « attend votre
       paiement » et un mail, paie, puis arrive sur « Souscription active ».
-- [ ] Ouvrir le Checkout, puis fermer l'onglet sans payer. La notification permet de reprendre le
+- [x] Ouvrir le Checkout, puis fermer l'onglet sans payer. La notification permet de reprendre le
       paiement.
-- [ ] L'écran Facturation affiche les badges Active, Résiliation programmée, Suspendue et Terminée. Il
+- [x] L'écran Facturation affiche les badges Active, Résiliation programmée, Suspendue et Terminée. Il
       affiche « Prochain prélèvement … (estimé) le … », et « Nouveau tarif à partir du … » après un
       changement de prix. « Voir les factures » ouvre le portail Stripe.
-- [ ] Avec une mauvaise clé secrète sur le tenant, le badge passe à « Indisponible ». Le lien des
+- [x] Avec une mauvaise clé secrète sur le tenant, le badge passe à « Indisponible ». Le lien des
       factures affiche l'erreur au lieu d'ouvrir `/undefined`.
-- [ ] L'écran Consommation affiche les indicateurs, les onglets Évolution, Par jour et Par plan, le
+- [x] L'écran Consommation affiche les indicateurs, les onglets Évolution, Par jour et Par plan, le
       filtre par API et le bouton de synchro.
 - [ ] Dans Clés d'API, « Résilier l'abonnement » demande une confirmation et affiche un toast, puis
       « Résiliation programmée, prend fin le … ». « Conserver la souscription » annule la résiliation.
@@ -113,8 +113,8 @@ appellerait le vrai Stripe.
 
 ### Tenant
 
-- [ ] Le formulaire Stripe affiche l'URL du webhook et l'aide sur le secret.
-- [ ] En `mise run dev` (mode local, jobs coupés), l'admin du tenant voit les variables à activer.
+- [x] Le formulaire Stripe affiche l'URL du webhook et l'aide sur le secret.
+- [x] En `mise run dev` (mode local, jobs coupés), l'admin du tenant voit les variables à activer.
       Michael voit « Le paiement n'est pas disponible sur ce tenant ».
 
 ## Cycle mensuel avec une horloge de test Stripe

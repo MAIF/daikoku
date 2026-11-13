@@ -18,8 +18,9 @@ import {
   TeamMembers,
 } from "../backoffice";
 import { Can, Spinner, read, manage, api, apikey, asset, stat, team, backoffice } from "../utils";
-import { LastDemands, LastDemandsExt } from "./widgets";
 import { TeamApis } from "./apis/TeamApis";
+import { TeamPendingDemands } from "./widgets/demands/TeamPendingDemands";
+import { TeamReceivedDemands } from "./widgets/demands/TeamReceivedDemands";
 
 const BackOfficeContent = (props: PropsWithChildren) => {
 
@@ -157,7 +158,7 @@ const ProducerDashboard = (props: ProducerDashboardType) => {
   return (
     <>
       <div className="col-12 mt-5 tbo__dasboard">
-        <LastDemandsExt team={props.currentTeam} />
+        <TeamReceivedDemands team={props.currentTeam} />
         {/* <Revenus size="small" title="My Revenus small" /> */}
       </div>
       {/* <div className="col-12 mt-5 tbo__dasboard">
@@ -171,7 +172,7 @@ type ConsumerDashboardType = { currentTeam: ITeamSimple };
 const ConsumerDashboard = (props: ConsumerDashboardType) => {
   return (
     <div className="col-12 mt-5 tbo__dasboard">
-      <LastDemands team={props.currentTeam} />
+      <TeamPendingDemands team={props.currentTeam} />
     </div>
   );
 };

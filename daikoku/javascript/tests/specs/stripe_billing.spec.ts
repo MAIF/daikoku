@@ -1,4 +1,6 @@
-import test, { expect } from '@playwright/test';
+import test, { expect, Page } from '@playwright/test';
+import { format } from 'date-fns';
+import { fr } from 'date-fns/locale';
 import { nanoid } from 'nanoid';
 
 import otoroshi_data from '../config/otoroshi/otoroshi-state-es.json';
@@ -8,11 +10,13 @@ import {
   ACCUEIL,
   adminApi,
   apiDivision,
-  findAndGoToTeam,
   loginAs,
+  logout,
+  openApiKeyCard,
   otoroshiAdminApikeyId,
   otoroshiAdminApikeySecret,
   paperApiCall,
+  readSubscriptionApiKey,
   tenant,
   triggerTeamBillingSync,
   vendeurs,
@@ -22,10 +26,12 @@ import {
   configureTenantStripe,
   createClockedCustomer,
   createTestClock,
+  deleteStripeCustomersOf,
   deleteTestClock,
   deliverWebhook,
   findStripeCustomerId,
   findStripeSubscriptionId,
+  invoicedForPrice,
   openStripeCheckout,
   setupStripePaymentOnPlan,
   stripe,
@@ -36,6 +42,93 @@ import {
   subscribeViaStripeCheckout,
   updatePlanAsProducer,
 } from './stripe';
+
+/** A paid plan of API Division, subscribed by Vendeurs through the real
+ * Checkout, on a Stripe customer attached to a fresh test clock: the billing
+ * cycle can then be moved forward at will. */
+const subscribeOnTestClock = async (page: Page, apiName: string) => {
+  const settingsId = 'stripe-e2e';
+  await configureTenantStripe(tenant, settingsId);
+
+  await deleteStripeCustomersOf(vendeurs);
+  const clockId = await createTestClock(new Date());
+  const customerId = await createClockedCustomer(clockId, vendeurs, 'jim@daikoku.io');
+
+  const planId = nanoid(32);
+  const pricing = {
+    costPerMonth: 5,
+    costPerRequest: 0.01,
+    includedRequestsPerMonth: 2,
+  };
+  // The tenant displays environments: a plan has to be named after one of them
+  const plan = generatePlan({
+    _id: planId,
+    customName: 'prod',
+    ...pricing,
+    maxPerMonth: 10000,
+  });
+  const api = generateApi({
+    name: apiName,
+    team: apiDivision,
+    possibleUsagePlans: [planId],
+  });
+  expect((await savePlan(plan)).ok).toBeTruthy();
+  expect((await saveApi(api as any)).ok).toBeTruthy();
+
+  await page.goto(ACCUEIL);
+  await page
+    .getByRole('img', { name: 'user menu' })
+    .waitFor({ state: 'visible', timeout: 60_000 });
+  await loginAs(MICHAEL, page);
+  const meterId = await setupStripePaymentOnPlan(page, apiDivision, api, planId, plan, settingsId);
+  const { priceIds } = (await adminApi(`/usage-plans/${planId}`).then((r) => r.json()))
+    .paymentSettings;
+
+  await logout(page);
+  await loginAs(JIM, page);
+  await subscribeViaStripeCheckout(page, {
+    apiName: api.name,
+    teamName: 'Vendeurs',
+    settingsId,
+  });
+
+  const subscriptionId = await findStripeSubscriptionId(customerId);
+
+  return {
+    settingsId,
+    clockId,
+    customerId,
+    subscriptionId,
+    plan,
+    pricing,
+    api,
+    meterId,
+    priceIds,
+  };
+};
+
+// Two hours past the end: Stripe keeps the renewal invoice as a draft for about an hour
+const advancePastPeriodEnd = async (clockId: string, subscriptionId: string) => {
+  const periodEnd: number = (await stripeSubscription(subscriptionId)).items.data[0]
+    .current_period_end;
+
+  await advanceTestClock(clockId, new Date((periodEnd + 2 * 3600) * 1000));
+};
+
+const openProducerSubscriptionRow = async (page: Page, apiName: string, teamName: string) => {
+  await page.goto(ACCUEIL);
+  await page.getByRole('link', { name: apiName }).click();
+  await expect(page.locator('.api__header')).toBeAttached();
+  await page.getByText('Souscriptions', { exact: true }).click();
+
+  return page.locator('.table-row', { hasText: teamName });
+};
+
+const openPaymentRow = async (page: Page, apiName: string) => {
+  await page.goto('/vendeurs/settings/payments');
+
+  return page.locator('.table-row', { hasText: apiName });
+};
 
 test.describe('Stripe metered billing (dev only, real Stripe test mode)', () => {
   test.skip(!stripeConfigured(), 'set STRIPE_TEST_SECRET_KEY to run this test');
@@ -74,16 +167,19 @@ test.describe('Stripe metered billing (dev only, real Stripe test mode)', () => 
     // 1b. A test clock, and the consumer team's customer attached to it. A clock
     //     can only be attached at customer creation, and Daikoku looks a customer
     //     up by metadata['daikoku_id'] before creating one, so the checkout below
-    //     reuses this one and the whole billing cycle becomes controllable.
+    //     reuses this one and the whole billing cycle becomes controllable. The
+    //     customers of earlier runs go first, or Daikoku could pick one of them.
     log('creating the stripe test clock and the clocked customer');
+    await deleteStripeCustomersOf(vendeurs);
     const clockId = await createTestClock(new Date());
     await createClockedCustomer(clockId, vendeurs, 'jim@daikoku.io');
 
     // 2. Seed a pay-per-use plan + an API owned by the producer team (apiDivision).
     const planId = nanoid(32);
+    // The tenant displays environments: a plan has to be named after one of them
     const plan = generatePlan({
       _id: planId,
-      customName: 'metered',
+      customName: 'prod',
       costPerRequest: 0.01,
       costPerMonth: 5,
       maxPerMonth: 10000,
@@ -134,21 +230,18 @@ test.describe('Stripe metered billing (dev only, real Stripe test mode)', () => 
     // 4b. The paid subscription shows on Consommation > Paiements, active on Stripe.
     log('reading the payment state of the subscription');
     await page.goto(`/vendeurs/settings/payments`);
-    const paymentRow = page.locator('.table-row', { hasText: 'metered' });
+    const paymentRow = page.locator('.table-row', { hasText: api.name });
     await expect(paymentRow).toContainText('Active', { timeout: 30_000 });
     await expect(paymentRow).toContainText('Prochain prélèvement');
 
     // 5. Read the subscription's Otoroshi key (prod_paper_route -> paper.oto.tools).
     log('reading the Otoroshi apikey of the subscription from the UI');
-    await findAndGoToTeam('Vendeurs', page);
-    await page.getByText("Clés d'API").click();
-    await page.getByRole('listitem', { name: api.name }).getByLabel("Voir les clés d'API").click();
-    await page
-      .locator('.api-subscription', { hasText: 'metered' })
-      .getByRole('button', { name: 'Copier le clientId et le clientSecret' })
-      .click();
-    const apikey = await page.evaluate(() => navigator.clipboard.readText());
-    const [clientId, clientSecret] = apikey.split(':', 2);
+    const { clientId, clientSecret } = await readSubscriptionApiKey(
+      page,
+      'Vendeurs',
+      api.name,
+      plan.customName
+    );
 
     const makeCalls = async (n: number) => {
       for (let i = 0; i < n; i++) {
@@ -211,8 +304,8 @@ test.describe('Stripe metered billing (dev only, real Stripe test mode)', () => 
     //     product and the same meter, so usage keeps being reported to the counter
     //     that has been accumulating.
     log('logging back in as the producer and raising the price');
-    await page.getByRole('img', { name: 'user menu' }).click();
-    await page.getByRole('link', { name: 'Déconnexion' }).click();
+    // Logging out from a team page raises an "Unauthorized" toast over the user menu
+    await logout(page);
     await loginAs(MICHAEL, page);
 
     const before: any = await adminApi(`/usage-plans/${planId}`).then((r) => r.json());
@@ -268,6 +361,168 @@ test.describe('Stripe metered billing (dev only, real Stripe test mode)', () => 
     await deleteTestClock(clockId);
   });
 
+  test('bills the usage of a closed month and shows the next period to the subscriber', async ({
+    page,
+    context,
+  }) => {
+    test.setTimeout(600_000);
+    await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+
+    const { clockId, customerId, subscriptionId, plan, pricing, api, meterId, priceIds } =
+      await subscribeOnTestClock(page, 'Stripe monthly API');
+
+    const { clientId, clientSecret } = await readSubscriptionApiKey(
+      page,
+      'Vendeurs',
+      api.name,
+      plan.customName
+    );
+    await expect
+      .poll(async () => (await paperApiCall(page, clientId, clientSecret)).status(), {
+        timeout: 30_000,
+      })
+      .toBe(200);
+
+    const callsMade = 5;
+
+    for (let call = 0; call < callsMade; call++) {
+      const response = await paperApiCall(page, clientId, clientSecret);
+      expect(response.ok(), `paper api call failed: ${await response.text()}`).toBeTruthy();
+    }
+
+    const syncAndReadMeter = async () => {
+      await triggerTeamBillingSync(page, vendeurs);
+
+      return stripeMeterTotal(meterId, customerId);
+    };
+
+    // The call that found the key live in Otoroshi went through too
+    await expect
+      .poll(syncAndReadMeter, { timeout: 180_000, intervals: [10_000] })
+      .toBeGreaterThanOrEqual(callsMade + 1);
+    await page.waitForTimeout(20_000);
+    const reported = await syncAndReadMeter();
+
+    await advancePastPeriodEnd(clockId, subscriptionId);
+
+    const invoice = await stripeInvoice((await stripeSubscription(subscriptionId)).latest_invoice);
+    expect(invoice.billing_reason).toBe('subscription_cycle');
+    expect(invoice.status).toBe('paid');
+
+    const toCents = (euros: number) => Math.round(euros * 100);
+    const usage = invoicedForPrice(invoice, priceIds.additionalPriceId);
+    expect(usage.quantity).toBe(reported);
+    expect(usage.amount).toBe(
+      toCents((reported - pricing.includedRequestsPerMonth) * pricing.costPerRequest)
+    );
+    expect(invoicedForPrice(invoice, priceIds.basePriceId).amount).toBe(
+      toCents(pricing.costPerMonth)
+    );
+
+    const nextPeriodEnd: number = (await stripeSubscription(subscriptionId)).items.data[0]
+      .current_period_end;
+    const paymentRow = await openPaymentRow(page, api.name);
+    await expect(paymentRow).toContainText('Active', { timeout: 30_000 });
+    await expect(paymentRow).toContainText(
+      format(new Date(nextPeriodEnd * 1000), 'dd MMM yyyy', { locale: fr })
+    );
+
+    // No clock cleanup: the next run deletes it with the customers of Vendeurs, and the
+    // billed state stays in place meanwhile, to be looked at in the UI
+  });
+
+  test('ends a cancelled subscription at the end of its paid period', async ({ page }) => {
+    test.setTimeout(600_000);
+
+    const { settingsId, clockId, subscriptionId, plan, api } = await subscribeOnTestClock(
+      page,
+      'Stripe cancelled API'
+    );
+
+    const scheduleCancellation = async () => {
+      const apiKeyCard = await openApiKeyCard(page, 'Vendeurs', api.name, plan.customName);
+
+      // The subscriptions of a key are listed once its card is unfolded
+      await apiKeyCard.getByRole('button', { name: "Contenu de la clé d'API" }).click();
+      await apiKeyCard.getByRole('button', { name: 'Actions de la souscription' }).click();
+      await apiKeyCard.getByRole('button', { name: "Résilier l'abonnement" }).click();
+      await page.getByRole('button', { name: 'Résilier', exact: true }).click();
+      await expect(
+        page.getByText("L'abonnement prendra fin à l'issue de la période payée")
+      ).toBeVisible();
+    };
+
+    const cancelsAtPeriodEnd = async () =>
+      (await stripeSubscription(subscriptionId)).cancel_at_period_end;
+
+    await scheduleCancellation();
+    await expect.poll(cancelsAtPeriodEnd, { timeout: 30_000 }).toBe(true);
+
+    const scheduledRow = await openPaymentRow(page, api.name);
+    await expect(scheduledRow).toContainText('Résiliation programmée', { timeout: 30_000 });
+
+    await scheduledRow.getByRole('button', { name: 'Conserver la souscription' }).click();
+    await expect(scheduledRow).toContainText('Active', { timeout: 30_000 });
+    await expect.poll(cancelsAtPeriodEnd, { timeout: 30_000 }).toBe(false);
+
+    await scheduleCancellation();
+    await expect.poll(cancelsAtPeriodEnd, { timeout: 30_000 }).toBe(true);
+
+    await advancePastPeriodEnd(clockId, subscriptionId);
+    const endedSubscription = await stripeSubscription(subscriptionId);
+    expect(endedSubscription.status).toBe('canceled');
+
+    // No `stripe listen` in the test stack: the end reaches Daikoku through its webhook
+    const delivery = await deliverWebhook(
+      settingsId,
+      'customer.subscription.deleted',
+      endedSubscription
+    );
+    expect(delivery.ok, `webhook refused: ${await delivery.text()}`).toBeTruthy();
+
+    const endedRow = await openPaymentRow(page, api.name);
+    await expect(endedRow).toContainText('Terminée', { timeout: 30_000 });
+  });
+
+  test('voids the invoice of a period blocked by the producer, then resumes billing', async ({
+    page,
+  }) => {
+    test.setTimeout(600_000);
+
+    const { clockId, subscriptionId, api } = await subscribeOnTestClock(page, 'Stripe blocked API');
+
+    const collectionPause = async () =>
+      (await stripeSubscription(subscriptionId)).pause_collection?.behavior ?? null;
+
+    await logout(page);
+    await loginAs(MICHAEL, page);
+    const blockedRow = await openProducerSubscriptionRow(page, api.name, 'Vendeurs');
+    await blockedRow.getByRole('button', { name: 'Actions de la souscription' }).click();
+    await blockedRow.getByRole('button', { name: 'Désactiver la souscription' }).click();
+    await page.getByLabel("Motif (facultatif), transmis à l'équipe abonnée").fill('Facture impayée');
+    await page.getByRole('button', { name: 'Bloquer', exact: true }).click();
+    await expect(blockedRow).toContainText('Bloquée');
+    await expect.poll(collectionPause, { timeout: 30_000 }).toBe('void');
+
+    await logout(page);
+    await loginAs(JIM, page);
+    const suspendedRow = await openPaymentRow(page, api.name);
+    await expect(suspendedRow).toContainText('Suspendue', { timeout: 30_000 });
+
+    await advancePastPeriodEnd(clockId, subscriptionId);
+    const invoice = await stripeInvoice((await stripeSubscription(subscriptionId)).latest_invoice);
+    expect(invoice.billing_reason).toBe('subscription_cycle');
+    expect(invoice.status).toBe('void');
+
+    await logout(page);
+    await loginAs(MICHAEL, page);
+    const unblockedRow = await openProducerSubscriptionRow(page, api.name, 'Vendeurs');
+    await unblockedRow.getByRole('button', { name: 'Actions de la souscription' }).click();
+    await unblockedRow.getByRole('button', { name: 'Activer la souscription' }).click();
+    await expect(unblockedRow).toContainText('Activée');
+    await expect.poll(collectionPause, { timeout: 30_000 }).toBeNull();
+  });
+
   test('lets the subscriber resume an abandoned payment', async ({ page }) => {
     test.setTimeout(180_000);
 
@@ -275,9 +530,10 @@ test.describe('Stripe metered billing (dev only, real Stripe test mode)', () => 
     await configureTenantStripe(tenant, settingsId);
 
     const planId = nanoid(32);
+    // The tenant displays environments: a plan has to be named after one of them
     const plan = generatePlan({
       _id: planId,
-      customName: 'abandoned',
+      customName: 'prod',
       costPerRequest: 0.01,
       costPerMonth: 5,
     });

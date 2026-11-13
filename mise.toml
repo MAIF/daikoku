@@ -167,6 +167,24 @@ run = "[ -f ../.env.stripe ] && . ../.env.stripe; FORCE_COLOR=1 npx playwright t
 description="Run the Stripe billing e2e against real Stripe test mode."
 run = "process-compose -f ./dev/process-compose-test-stripe.yaml -p 9999 -t=false"
 
+# --- A billed month to look at in the UI (dev only, same needs as test:stripe) ---
+# Plays the monthly cycle scenario (paid subscription, calls, one month forward
+# on a Stripe test clock, invoice), then leaves the stack up.
+[tasks."demo:billing:run"]
+dir = "daikoku/javascript"
+tools.node = "22"
+run = '''
+[ -f ../.env.stripe ] && . ../.env.stripe
+FORCE_COLOR=1 npx playwright test stripe_billing -g "closed month" --workers 1 --reporter=list --config ./tests/playwright.config.js
+echo ""
+echo "A month has been billed. Open http://localhost:5173 and log in as jim.halpert@dundermifflin.com / password,"
+echo "then go to Vendeurs > Consommation > Paiements (and Utilisation). Quit with F10."
+'''
+
+[tasks."demo:billing"]
+description="Start the Stripe test stack, bill a full month on a test clock, and leave the app up to look at it."
+run = "process-compose -f ./dev/process-compose-test-stripe.yaml -f ./dev/process-compose-demo-billing.yaml -p 9999"
+
 # --- Consumption pipeline (Otoroshi -> ES -> Daikoku), no Stripe ---
 [tasks."test:consumption:run"]
 dir = "daikoku/javascript"
