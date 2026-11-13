@@ -183,6 +183,10 @@ const useModal = () => {
   }
 
   const openRightPanel = (p: IRightPanelProps) => {
+    if (p.defaultSize !== undefined &&
+      (!Number.isFinite(p.defaultSize) || p.defaultSize < 35 || p.defaultSize > 100)) {
+      throw new RangeError('Right panel defaultSize must be a percentage between 35 and 100');
+    }
     setRightPanelContent(p)
   }
 

@@ -926,7 +926,11 @@ object SchemaDefinition {
         ),
         ReplaceField(
           "headers",
-          Field("headers", MapType, resolve = _.value.headers)
+          Field(
+            "headers",
+            JsonType,
+            resolve = ctx => Json.toJson(ctx.value.headers)
+          )
         ),
         AddFields(
           Field(

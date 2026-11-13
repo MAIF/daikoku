@@ -1,0 +1,16 @@
+.flow-editor .card-summary {
+  gap: 0.1rem;
+  font-size: 12px;
+}
+
+.flow-editor .card-summary dt {
+  flex: 0 0 5.5rem;
+  color: #6b7280;
+}
+
+.flow-editor .card-summary code {
+  padding: 0.2rem 0.6rem;
+  background: #f1f3f5;
+  color: #1f2937;
+  font-size: 0.7rem;
+}

@@ -529,7 +529,7 @@ const QuotasForm = (props: { ownerTeam: ITeamSimple, plan: IUsagePlanGQL, savePl
       />}
       {!quotasDisplayed && (
         <div className='mrf-flex mrf-jc_end mrf-mt_5'>
-          <button className='btn --secondary'
+          <button className='btn primary'
             type='button'
             onClick={() => props.savePlan(convertIUsagePlanGQLToIUsagePlan({
               ...props.plan,
@@ -537,7 +537,7 @@ const QuotasForm = (props: { ownerTeam: ITeamSimple, plan: IUsagePlanGQL, savePl
               maxPerSecond: undefined,
               maxPerMonth: undefined
             }))}>
-            Save
+            {translate("Save")}
           </button>
         </div>
       )}
@@ -731,7 +731,7 @@ const BillingForm = (props: { ownerTeam: ITeamSimple, plan: IUsagePlanGQL, saveP
       />}
       {!billingDisplayed && (
         <div className='mrf-flex mrf-jc_end mrf-mt_5'>
-          <button className='mrf-btn mrf-btn_green mrf-ml_10'
+          <button className='btn --primary'
             type='button'
             disabled={!isPaymentDefined}
             onClick={() => props.savePlan({
@@ -743,7 +743,7 @@ const BillingForm = (props: { ownerTeam: ITeamSimple, plan: IUsagePlanGQL, saveP
               billingDuration: undefined,
               paymentSettings: undefined
             })}>
-            Save
+            {translate("Save")}
           </button>
         </div>
       )}
@@ -1746,6 +1746,15 @@ export const ApiPricing = (props: ApiPricingProps) => {
         content: <Form
           schema={otoroshiSchema(plan)}
           value={plan.otoroshiTarget}
+          footer={({ valid }) => {
+            return (
+              <div className="d-flex justify-content-end gap-2">
+                <button className="btn --primary" onClick={valid}>
+                  {translate("Save")}
+                </button>
+              </div>
+            );
+          }}
           onSubmit={(otoroshiTarget) => {
             savePlan(convertIUsagePlanGQLToIUsagePlan({ ...plan, otoroshiTarget }))
           }}
@@ -1761,7 +1770,8 @@ export const ApiPricing = (props: ApiPricingProps) => {
             process={plan.subscriptionProcess}
             team={props.ownerTeam._id}
             tenant={tenant}
-          />
+          />,
+          defaultSize:95
         })
       }
     }

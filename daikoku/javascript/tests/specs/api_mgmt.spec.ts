@@ -351,11 +351,10 @@ test('configurer un environnement', async ({ page }) => {
   await page
     .getByRole('listitem', { name: 'dev' })
     .getByRole('menu')
-    .getByRole('button', { name: 'Modifier le process' }).click();
-  await page.getByRole('button', { name: 'Ajouter une première étape de' }).click();
-  await page.getByRole('button', { name: 'Admin. équipe' }).click();
-  await page.getByRole('button', { name: 'Créer', exact: true }).click();
-  await page.getByRole('button', { name: 'save' }).click();
+    .getByRole('button', { name: 'Modifier le processus de souscription' }).click();
+    await page.getByRole('button', { name: 'Admin. équipe' }).click();
+    await page.getByRole('button', { name: 'Insérer en position' }).click();
+  await page.getByRole('button', { name: 'Enregistrer' }).click();
   await expect(page
     .getByRole('listitem', { name: 'dev' })
     .getByText('2 étapes')).toBeVisible();
