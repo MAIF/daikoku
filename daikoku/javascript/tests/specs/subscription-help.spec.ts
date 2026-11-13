@@ -31,33 +31,41 @@ test('configured published and deprecated plans have no blockers', () => {
   }
 });
 
-test('reports API lifecycle on the button and Otoroshi configuration separately', () => {
+test('reports API lifecycle and missing target as button blockers', () => {
   const data = input();
   data.api.state = 'blocked';
   data.plan.otoroshiTarget = undefined;
   const help = getSubscriptionHelp(data);
   expect(help.blockers).toEqual([{ reason: 'blocked' }, { reason: 'target' }]);
   expect(isSubscriptionDisabled(help)).toBe(true);
-  expect(getVisibleSubscriptionBlockers(help)).toEqual([{ reason: 'blocked' }]);
+  expect(getVisibleSubscriptionBlockers(help)).toEqual([
+    { reason: 'blocked' },
+    { reason: 'target' },
+  ]);
   expect(getOtoroshiTargetReason(data.api, data.plan)).toEqual({ reason: 'target' });
   data.api.state = 'created';
   expect(getVisibleSubscriptionBlockers(getSubscriptionHelp(data))).toEqual([
     { reason: 'unpublished' },
+    { reason: 'target' },
   ]);
 });
 
-test('missing target disables subscription without a button explanation', () => {
+test('missing target disables subscription and explains the blocker on the button', () => {
   const data = input();
   data.plan.otoroshiTarget = undefined;
   const help = getSubscriptionHelp(data);
+  expect(help.blockers).toEqual([{ reason: 'target' }]);
   expect(isSubscriptionDisabled(help)).toBe(true);
-  expect(getVisibleSubscriptionBlockers(help)).toEqual([]);
+  expect(getVisibleSubscriptionBlockers(help)).toEqual([{ reason: 'target' }]);
 });
 
 test('empty or missing authorized entities are Otoroshi configuration blockers', () => {
   const data = input();
   for (const authorizedEntities of [undefined, { groups: [], services: [], routes: [] }]) {
-    data.plan.otoroshiTarget = { otoroshiSettings: 'gateway', authorizedEntities };
+    data.plan.otoroshiTarget = {
+      otoroshiSettings: 'gateway',
+      ...(authorizedEntities ? { authorizedEntities } : {}),
+    };
     expect(getOtoroshiTargetReason(data.api, data.plan)).toEqual({ reason: 'entities' });
     expect(isSubscriptionDisabled(getSubscriptionHelp(data))).toBe(true);
     expect(getVisibleSubscriptionBlockers(getSubscriptionHelp(data))).toEqual([]);
