@@ -28,9 +28,9 @@ test('selecting a step shows insertion points and clicking elsewhere cancels', a
 
   await email.click();
   await expect(email).toHaveAttribute('aria-pressed', 'true');
-  await expect(insertionPoints).toHaveCount(6);
+  await expect(insertionPoints).toHaveCount(5);
 
-  await palette.getByText('Glissez une étape', { exact: false }).click();
+  await editor.getByRole('heading').first().click();
 
   await expect(email).toHaveAttribute('aria-pressed', 'false');
   await expect(insertionPoints).toHaveCount(0);
@@ -109,7 +109,7 @@ test.describe('creating a process from scratch', () => {
       .toEqual(['form', 'teamAdmin']);
   });
 
-  test('dragging a form from the palette inserts it after an existing HTTP step', async ({
+  test('dragging a form from the palette inserts it at the beginning of the workflow', async ({
     page,
     openProcessEditor,
     saveProcess,
@@ -131,13 +131,14 @@ test.describe('creating a process from scratch', () => {
 
     await editor
       .getByRole('button', { name: 'Formulaire', exact: true })
-      .dragTo(editor.locator('.flow-editor__slot').last());
+      .dragTo(editor.locator('.flow-editor__slot').first());
 
     await expect(editor.getByRole('article')).toHaveCount(2);
-    await expect(editor.getByRole('article').last()).toHaveAccessibleName('Formulaire');
+    await expect(editor.getByRole('article').first()).toHaveAccessibleName('Formulaire');
+    await expect(editor.getByRole('article').last()).toHaveAccessibleName('Requête HTTP');
     await saveProcess();
     await expect
       .poll(async () => (await readSavedProcess()).map((step) => step.type))
-      .toEqual(['httpRequest', 'form']);
+      .toEqual(['form', 'httpRequest']);
   });
 });

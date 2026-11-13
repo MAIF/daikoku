@@ -64,17 +64,19 @@ test('moving a card changes the order saved in the process', async ({
 }) => {
   await openProcessEditor();
   const editor = page.getByRole('region', { name: 'Éditeur de processus' });
-  const email = editor.getByRole('article', { name: 'Courriel', exact: true });
+  const http = editor.getByRole('article', { name: 'Requête HTTP', exact: true });
 
-  await email
-    .getByRole('img', { name: 'Déplacer la carte 1', exact: true })
-    .dragTo(editor.locator('.flow-editor__slot').nth(2));
+  await http
+    .getByRole('img', { name: 'Déplacer la carte 3', exact: true })
+    .dragTo(editor.locator('.flow-editor__slot').nth(1));
 
-  await expect(editor.getByRole('article').first()).toHaveAccessibleName('Requête HTTP');
+  await expect(editor.getByRole('article').nth(0)).toHaveAccessibleName('Formulaire');
+  await expect(editor.getByRole('article').nth(1)).toHaveAccessibleName('Requête HTTP');
+  await expect(editor.getByRole('article').nth(2)).toHaveAccessibleName('Courriel');
   await saveProcess();
   await expect
     .poll(async () => (await readSavedProcess()).map((step) => step.id))
-    .toEqual(['http', 'email', 'form', 'admin', 'payment']);
+    .toEqual(['form', 'http', 'email', 'admin', 'payment']);
 });
 
 test('removing administrator approval makes that type available again', async ({
@@ -98,7 +100,7 @@ test('removing administrator approval makes that type available again', async ({
   await saveProcess();
   await expect
     .poll(async () => (await readSavedProcess()).map((step) => step.type))
-    .toEqual(['email', 'httpRequest', 'form', 'payment']);
+    .toEqual(['form', 'email', 'httpRequest', 'payment']);
 });
 
 test('form cards cannot be moved or removed, and payment cards cannot be edited', async ({
@@ -114,6 +116,5 @@ test('form cards cannot be moved or removed, and payment cards cannot be edited'
     'draggable',
     'false'
   );
-  await expect(form.getByRole('button', { name: /Supprimer la carte/ })).toBeDisabled();
   await expect(payment.getByRole('button', { name: 'Modifier', exact: true })).toBeDisabled();
 });

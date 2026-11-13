@@ -90,7 +90,7 @@ export const test = base.extend<{
       const saved = page.waitForResponse(
         (response) => response.request().method() === 'PUT' && response.url().includes('/plan/')
       );
-      await page.getByRole('button', { name: 'save', exact: true }).click();
+      await page.getByRole('button', { name: 'Enregistrer', exact: true }).click();
       expect((await saved).ok()).toBe(true);
       await expect(page.getByRole('region', { name: 'Éditeur de processus' })).toBeHidden();
     });
