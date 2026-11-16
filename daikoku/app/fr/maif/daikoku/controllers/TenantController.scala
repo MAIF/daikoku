@@ -205,12 +205,15 @@ class TenantController(
             ctx.setCtxValue("tenant.name", tenant.name)
             ctx.setCtxValue("tenant.id", tenant.id)
 
-            TenantHelper.validateDomains(tenant)
-              .flatMap(x => tenantService
-                .createTenant(tenant)
-                .map(tenantForCreation =>
-                  Created(tenantForCreation.asJsonWithJwt)
-                ))
+            TenantHelper
+              .validateDomains(tenant)
+              .flatMap(x =>
+                tenantService
+                  .createTenant(tenant)
+                  .map(tenantForCreation =>
+                    Created(tenantForCreation.asJsonWithJwt)
+                  )
+              )
               .leftMap(_.render())
               .merge
           }

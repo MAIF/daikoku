@@ -72,7 +72,8 @@ class RemoteCatalogHttpSourceSpec
 
   private def httpCatalog(id: String, url: String): RemoteCatalog =
     RemoteCatalog(
-      id = id,
+      id = RemoteCatalogId(id),
+      tenant = tenant.id,
       name = "http test catalog",
       source = RemoteCatalogSource(config = Json.obj("url" -> url)),
       scheduling = RemoteCatalogScheduling(enabled = true),
@@ -114,15 +115,15 @@ class RemoteCatalogHttpSourceSpec
     "sync entities served over HTTP through the job" in {
       val url = servedFixtureUrl("catalog.json")
 
-      val t = tenant.copy(remoteCatalogs = Seq(httpCatalog("cat-http", url)))
       setupEnvBlocking(
-        tenants = Seq(t),
+        tenants = Seq(tenant),
         teams = Seq(defaultAdminTeam),
         subscriptions = Seq(adminApiSubscription),
-        keyrings = Seq(adminApiKeyring)
+        keyrings = Seq(adminApiKeyring),
+        remoteCatalogs = Seq(httpCatalog("cat-http", url))
       )
 
-      syncAndExpectCompleted(t)
+      syncAndExpectCompleted(tenant)
 
       val get = getTeam("team-http")
       get.status mustBe 200
@@ -131,28 +132,55 @@ class RemoteCatalogHttpSourceSpec
         .as[String] mustBe "remote_catalog=cat-http"
     }
 
+    "refuse a host outside the instance allowlist without touching the database" in {
+      val url =
+        servedFixtureUrl("catalog.json").replace("localhost", "127.0.0.1")
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        teams = Seq(defaultAdminTeam),
+        subscriptions = Seq(adminApiSubscription),
+        keyrings = Seq(adminApiKeyring),
+        remoteCatalogs = Seq(httpCatalog("cat-http", url))
+      )
+
+      Await.result(job.run(tenant, Runner.Scheduler), 15.seconds) match {
+        case JobOutcome.PartiallyCompleted(r) =>
+          r.failures.map(_.itemId) mustBe Seq("cat-http")
+          r.failures.head.error must include(
+            "Host '127.0.0.1' is not allowed on this instance"
+          )
+        case other => fail(s"expected PartiallyCompleted, got $other")
+      }
+      getTeam("team-http").status mustBe 404
+    }
+
     "re-sync updated content over HTTP and reflect the change" in {
       val v1 =
         servedFixtureUrl("catalog-v1.json")
-      val t1 = tenant.copy(remoteCatalogs = Seq(httpCatalog("cat-http", v1)))
       setupEnvBlocking(
-        tenants = Seq(t1),
+        tenants = Seq(tenant),
         teams = Seq(defaultAdminTeam),
         subscriptions = Seq(adminApiSubscription),
-        keyrings = Seq(adminApiKeyring)
+        keyrings = Seq(adminApiKeyring),
+        remoteCatalogs = Seq(httpCatalog("cat-http", v1))
       )
 
-      syncAndExpectCompleted(t1)
+      syncAndExpectCompleted(tenant)
       (getTeam("team-http").json \ "name").as[String] mustBe "Http Team"
 
       // A fresh file (not an in-place overwrite) served at a new URL: the bind
       // mount would otherwise serve stale content on Docker Desktop. The catalog
       // id is unchanged, so the same team is matched and updated, not recreated.
-      // job.run reads the catalog off the passed tenant, so no DB re-seed needed.
       val v2 = servedFixtureUrl("catalog-v2.json")
-      val t2 = tenant.copy(remoteCatalogs = Seq(httpCatalog("cat-http", v2)))
+      val update = httpJsonCallWithoutSessionBlocking(
+        path = "/admin-api/remote-catalogs/cat-http",
+        method = "PUT",
+        headers = adminHeader,
+        body = Some(httpCatalog("cat-http", v2).asJson)
+      )(using tenant)
+      update.status mustBe 204
 
-      syncAndExpectCompleted(t2)
+      syncAndExpectCompleted(tenant)
       (getTeam("team-http").json \ "name").as[String] mustBe "Http Team Renamed"
     }
   }

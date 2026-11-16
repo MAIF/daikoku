@@ -521,6 +521,23 @@ class Config(val underlying: Configuration) {
     .flatMap(SchedulingMode.fromValue)
     .getOrElse(Interval)
 
+  lazy val apikeysStatsJobKey: String = underlying
+    .getOptional[String]("daikoku.apikeysStatsJob.key")
+    .getOrElse("secret")
+  lazy val apikeysStatsJobEnabled: Boolean = underlying
+    .getOptional[Boolean]("daikoku.apikeysStatsJob.enabled")
+    .getOrElse(false)
+  lazy val apikeysStatsJobCronExpr: Option[String] = underlying
+    .getOptional[String]("daikoku.apikeysStatsJob.cronExpression")
+  lazy val apikeysStatsJobInterval: FiniteDuration = underlying
+    .getOptional[Long]("daikoku.apikeysStatsJob.interval")
+    .map(v => v.millis)
+    .getOrElse(1.hour)
+  lazy val apikeysStatsJobSchedulingMode: SchedulingMode = underlying
+    .getOptional[String]("daikoku.apikeysStatsJob.mode")
+    .flatMap(SchedulingMode.fromValue)
+    .getOrElse(Interval)
+
   lazy val keyringExpirationJobEnabled: Boolean = underlying
     .getOptional[Boolean]("daikoku.keyringExpirationJob.enabled")
     .getOrElse(false)
@@ -551,6 +568,23 @@ class Config(val underlying: Configuration) {
     .getOptional[String]("daikoku.remoteCatalogJob.mode")
     .flatMap(SchedulingMode.fromValue)
     .getOrElse(SchedulingMode.Interval)
+  lazy val remoteCatalogAllowFileSource: Boolean = underlying
+    .getOptional[Boolean]("daikoku.remoteCatalogJob.allowFileSource")
+    .getOrElse(false)
+  lazy val remoteCatalogAllowPreCommand: Boolean = underlying
+    .getOptional[Boolean]("daikoku.remoteCatalogJob.allowPreCommand")
+    .getOrElse(false)
+  lazy val remoteCatalogAllowedHosts: Seq[String] = {
+    val key = "daikoku.remoteCatalogJob.allowedHosts"
+    val hosts = scala.util
+      .Try(underlying.getOptional[Seq[String]](key))
+      .getOrElse(underlying.getOptional[String](key).map(_.split(",").toSeq))
+
+    hosts
+      .getOrElse(Seq.empty)
+      .map(_.trim.toLowerCase)
+      .filter(_.nonEmpty)
+  }
 
   lazy val subscriptionBatchReservationDuration: FiniteDuration = underlying
     .getOptional[Long]("daikoku.subscriptionBatch.reservationDuration")
@@ -576,17 +610,6 @@ class Config(val underlying: Configuration) {
     underlying.getOptional[String]("daikoku.otoroshi.groups.namePrefix")
   lazy val otoroshiGroupIdPrefix: Option[String] =
     underlying.getOptional[String]("daikoku.otoroshi.groups.idPrefix")
-
-  lazy val apikeysStatsByCron: Boolean =
-    underlying.getOptional[Boolean]("daikoku.stats.sync.cron").getOrElse(false)
-  lazy val apikeysStatsSyncInterval: FiniteDuration = underlying
-    .getOptional[Long]("daikoku.stats.sync.interval")
-    .map(v => v.millis)
-    .getOrElse(1.hour)
-  lazy val apikeysStatsCallInterval: FiniteDuration = underlying
-    .getOptional[Long]("daikoku.stats.call.interval")
-    .map(v => v.millis)
-    .getOrElse(10.minutes)
 
   lazy val auditTrailPurgeJobKey: String = underlying
     .getOptional[String]("daikoku.auditTrailPurgeJob.key")

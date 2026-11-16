@@ -3723,6 +3723,34 @@ class AdminApiControllerSpec
         resp.status mustBe 409
       }
 
+      "POST :: Conflict :: custom name is not an environment of the tenant" in {
+        val plan = defaultApi.plans.head.copy(customName = "staging")
+
+        setupEnvBlocking(
+          tenants = Seq(tenantEnvMode),
+          subscriptions = Seq(adminApiSubscription),
+          keyrings = Seq(adminApiKeyring),
+          apis = Seq(defaultApi.api),
+          usagePlans = Seq()
+        )
+
+        val resp = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/usage-plans",
+          method = "POST",
+          headers = getAdminApiHeader(adminApiKeyring),
+          body = plan.asJson.some
+        )(using tenantEnvMode)
+
+        resp.status mustBe 409
+
+        val verif = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/usage-plans/${plan.id.value}",
+          headers = getAdminApiHeader(adminApiKeyring)
+        )(using tenantEnvMode)
+
+        verif.status mustBe 404
+      }
+
       "POST :: BadRequest" in {
         val plan = UsagePlan(
           id = UsagePlanId(IdGenerator.token(10)),

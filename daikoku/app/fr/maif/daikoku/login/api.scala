@@ -80,8 +80,8 @@ object TenantHelper {
   }
 
   def validateDomains(tenant: Tenant)(implicit
-                                      env: Env,
-                                      ec: ExecutionContext
+      env: Env,
+      ec: ExecutionContext
   ): EitherT[Future, AppError, Tenant] = {
     val selfDuplicate = tenant.additionalDomains.contains(tenant.domain)
 
@@ -91,12 +91,19 @@ object TenantHelper {
       )
     } else {
       val conflictExists: Future[Boolean] =
-        Future.traverse(tenant.allDomains)(d => env.dataStore.tenantRepo.existsAnotherWithDomain(tenant.id, d))
+        Future
+          .traverse(tenant.allDomains)(d =>
+            env.dataStore.tenantRepo.existsAnotherWithDomain(tenant.id, d)
+          )
           .map(_.exists(identity))
 
       EitherT(
         conflictExists.map { conflict =>
-          Either.cond(!conflict, tenant, AppError.ParsingPayloadError("tenant.domain already used"))
+          Either.cond(
+            !conflict,
+            tenant,
+            AppError.ParsingPayloadError("tenant.domain already used")
+          )
         }
       )
     }
@@ -323,6 +330,7 @@ class LoginFilter(env: Env)(implicit
       case "/daikoku.home.min.js.map"   => "/"
       case "/daikoku.login.min.js.map"  => "/"
       case r"/assets/.*"                => "/"
+      case r"/_/customization.*"        => "/"
       case _                            => uri
     }
   }

@@ -61,10 +61,10 @@
 
   --card_header-bg-color: #404040;
   --card_header-text-color: #fff;
-  --card_bg-color: #282828;
-  --card_text-color: #fff;
-  --card_link-color: #ffe1a7;
-  --card_link-hover-color: #ffc107;
+  --card_bg-color: #fff;
+  --card_text-color: #000;
+  --card_link-color: #605c5c;
+  --card_link-hover-color: #1e1e1e;
 
   --btn-bg-color: #fff;
   --btn-text-color: #495057;

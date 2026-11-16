@@ -583,7 +583,9 @@ class TeamController(
           Some(BCrypt.hashpw("invited-user-password", BCrypt.gensalt())),
         lastTenant = Some(ctx.tenant.id),
         defaultLanguage = None,
-        preferredDomains = Map(ctx.tenant.id -> ctx.tenant.hostFor(env.requestHost(ctx.request).some)),
+        preferredDomains = Map(
+          ctx.tenant.id -> ctx.tenant.hostFor(env.requestHost(ctx.request).some)
+        ),
         invitation = Some(
           UserInvitation(
             registered = false,
@@ -859,7 +861,9 @@ class TeamController(
 
         val validRequest =
           fields.nonEmpty &&
-            fields.forall { case (k, _) => searchableUserAttributes.contains(k) }
+            fields.forall { case (k, _) =>
+              searchableUserAttributes.contains(k)
+            }
 
         if (!validRequest) {
           FastFuture.successful(
@@ -883,7 +887,7 @@ class TeamController(
           )
           .map {
             case Some(user) => Ok(user.as(using json.UserFormat).asSimpleJson)
-            case None => NotFound(Json.obj("error" -> "user not found"))
+            case None       => NotFound(Json.obj("error" -> "user not found"))
           }
       }
     }

@@ -60,14 +60,18 @@ class HomeController(
               cmsPageByIdWithoutAction(ctx, entity = CmsPageId(notFoundPage))
             case _ if env.config.isDev =>
               FastFuture.successful(
-                Redirect(env.getDaikokuUrl(ctx.tenant, "/apis", request = ctx.request))
+                Redirect(
+                  env.getDaikokuUrl(ctx.tenant, "/apis", request = ctx.request)
+                )
               )
             case _ =>
               assets.at("index.html").apply(ctx.request)
           }
         case _ if env.config.isDev =>
           FastFuture.successful(
-            Redirect(env.getDaikokuUrl(ctx.tenant, "/apis", request = ctx.request))
+            Redirect(
+              env.getDaikokuUrl(ctx.tenant, "/apis", request = ctx.request)
+            )
           )
         case _ =>
           assets.at("index.html").apply(ctx.request)

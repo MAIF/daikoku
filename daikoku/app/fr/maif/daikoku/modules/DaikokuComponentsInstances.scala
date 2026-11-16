@@ -92,6 +92,7 @@ class DaikokuComponentsInstances(context: Context)
   lazy val homeController = wire[HomeController]
   lazy val mockController = wire[MockController]
   lazy val apiController = wire[ApiController]
+  lazy val keyringController = wire[KeyringController]
   lazy val subscriptionBatchController = wire[SubscriptionBatchController]
   lazy val loginController = wire[LoginController]
   lazy val teamController = wire[TeamController]
@@ -117,6 +118,7 @@ class DaikokuComponentsInstances(context: Context)
   lazy val apiAdminApiController = wire[ApiAdminApiController]
   lazy val apiSubscriptionAdminApiController =
     wire[ApiSubscriptionAdminApiController]
+  lazy val keyringAdminApiController = wire[KeyringAdminApiController]
   lazy val apiDocumentationPageAdminApiController =
     wire[ApiDocumentationPageAdminApiController]
   lazy val notificationAdminApiController =
@@ -143,6 +145,7 @@ class DaikokuComponentsInstances(context: Context)
   lazy val remoteCatalogAdminApiController =
     wire[RemoteCatalogAdminApiController]
   lazy val remoteCatalogController = wire[RemoteCatalogController]
+  lazy val remoteCatalogTokenController = wire[RemoteCatalogTokenController]
   lazy val graphQLController = wire[GraphQLController]
   lazy val cmsApiController = wire[CmsApiController]
   lazy val cmsApiSwaggerController = wire[CmsApiSwaggerController]
@@ -251,7 +254,7 @@ class DaikokuComponentsInstances(context: Context)
     .using(vertxInstance)
     .build()
 
-  //    statsJob.start()
+  statsJob.start()
   deletor.start()
   verifier.start()
   rotationVerifier.start()

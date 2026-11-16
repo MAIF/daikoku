@@ -1,15 +1,15 @@
 import { type } from "@maif/react-forms";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import classNames from "classnames";
-import { useContext, useEffect, useState } from "react";
+import { useContext, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { createColumnHelper } from "@tanstack/react-table";
-import { Link, Menu, RefreshCcw } from "lucide-react";
+import { EllipsisVertical, Loader, RefreshCcw } from "lucide-react";
+import { QUERY_KEYS } from "../../../constants/queryKeys";
 import { I18nContext, ModalContext } from "../../../contexts";
 import { GlobalContext } from "../../../contexts/globalContext";
 import { CustomSubscriptionData } from "../../../contexts/modals/SubscriptionMetadataModal";
-import { QUERY_KEYS } from "../../../constants/queryKeys";
 import * as Services from "../../../services";
 import {
   IApi,
@@ -22,7 +22,6 @@ import {
 import { DynamicTable, DynamicTableFeatures, FetchData, FetchResult } from "../../inputs";
 import {
   api as API,
-  BeautifulTitle,
   Can,
   formatDate,
   manage
@@ -90,6 +89,23 @@ export const TeamApiSubscriptions = ({
   const queryKey = QUERY_KEYS.apiSubscriptions(api._id, currentTeam._id);
   const invalidate = () => queryClient.invalidateQueries({ queryKey });
 
+  const togglesInFlight = useRef(new Set<string>());
+  const [pendingToggles, setPendingToggles] = useState<Set<string>>(new Set());
+  const toggleSubscription = useMutation({
+    mutationFn: (sub: IApiSubscriptionGql) =>
+      Services.archiveSubscriptionByOwner(
+        currentTeam._id,
+        sub._id,
+        sub.state !== 'active'
+      ),
+    onSuccess: (result) => {
+      if (result?.error) {
+        toast.error(translate(result.error));
+        return;
+      }
+      return invalidate();
+    },
+  });
 
   type IApiSubscriptionListGQL = { subscriptions: Array<IApiSubscriptionGql>, total: number }
   const fetchData: FetchData<IApiSubscriptionGql> = ({ limit, offset, sorting }) => {
@@ -192,6 +208,7 @@ export const TeamApiSubscriptions = ({
       meta: { title: translate("Actions"), size: 8, className: 'action-cell' },
       cell: (info) => {
         const sub = info.row.original;
+        const rowPending = pendingToggles.has(sub._id);
 
         return (
           <Can I={manage} a={API} team={currentTeam}>
@@ -199,12 +216,14 @@ export const TeamApiSubscriptions = ({
               <button
                 className="btn --ghost --small --icon-only"
                 aria-label={translate('subscription.actions')}
+                aria-busy={rowPending}
+                disabled={rowPending}
                 type="button" data-bs-toggle="dropdown" aria-expanded="false"
                 id={`dropdown-${sub._id}`}>
-                <Menu
+                {rowPending ? <Loader className="--rotate" size={24} /> : <EllipsisVertical
                   className="cursor-pointer dropdown-menu-button"
                   style={{ fontSize: '18px' }}
-                />
+                />}
               </button>
               <div
                 className="dropdown-menu dropdown-menu-end"
@@ -213,26 +232,33 @@ export const TeamApiSubscriptions = ({
               >
                 <button
                   className="dropdown-item cursor-pointer"
+                  disabled={rowPending}
                   onClick={() => updateMeta(sub)
                   }
                 >
                   {translate("Update metadata")}
                 </button>
                 <div className="dropdown-divider" />
+                {api.state !== 'blocked' && (
+                  <button
+                    className="dropdown-item cursor-pointer danger"
+                    disabled={rowPending}
+                    onClick={() => toggleApiSubscriptionState(sub)}
+                  >
+                  {sub.state === 'active'
+                    ? translate("subscription.disable.button.label")
+                    : translate("subscription.enable.button.label")}
+                </button>)}
                 {api.state !== 'blocked' && <button
                   className="dropdown-item cursor-pointer danger"
-                  onClick={() => toggleApiSubscriptionState(sub)}
-                >
-                  {sub.state === 'active' ? translate("subscription.disable.button.label") : translate("subscription.enable.button.label")}
-                </button>}
-                {api.state !== 'blocked' && <button
-                  className="dropdown-item cursor-pointer danger"
+                  disabled={rowPending}
                   onClick={() => regenerateSecret(sub)}
                 >
                   {translate("refresh.secret.label")}
                 </button>}
                 <button
                   className="dropdown-item cursor-pointer danger"
+                  disabled={rowPending}
                   onClick={() => deleteSubscription(sub)}
                 >
                   {translate("api.delete.subscription")}
@@ -285,13 +311,27 @@ export const TeamApiSubscriptions = ({
   });
 
   const toggleApiSubscriptionState = (sub: IApiSubscriptionGql) => {
-    if (api.state !== 'blocked')
-      return Services.archiveSubscriptionByOwner(
-        currentTeam._id,
-        sub._id,
-        sub.state !== 'active'
-      )
-        .then(() => invalidate())
+    if (api.state === 'blocked' || togglesInFlight.current.has(sub._id)) return Promise.resolve();
+    togglesInFlight.current.add(sub._id);
+    setPendingToggles(new Set(togglesInFlight.current));
+
+    return Promise.resolve()
+      .then(() => sub.state === 'active'
+        ? confirm({ message: translate('subscription.disable.confirm') })
+        : true)
+      .then((confirmed) => {
+        if (confirmed) return toggleSubscription.mutateAsync(sub);
+      })
+      .catch((error) => {
+        const message = error && typeof error === 'object' && 'error' in error && typeof error.error === 'string'
+          ? error.error
+          : 'Oops something went wrong';
+        toast.error(translate(message));
+      })
+      .finally(() => {
+        togglesInFlight.current.delete(sub._id);
+        setPendingToggles(new Set(togglesInFlight.current));
+      });
   }
 
   const regenerateSecret = (sub: IApiSubscriptionGql) => {

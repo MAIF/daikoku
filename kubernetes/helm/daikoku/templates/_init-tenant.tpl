@@ -123,6 +123,8 @@ Both templates are called with the root context `.`.
   "DAIKOKU_INIT_S3_CHUNK_SIZE" $it.s3.chunkSize
   "DAIKOKU_INIT_S3_V4AUTH" $it.s3.v4auth
   "DAIKOKU_INIT_MAILER_EU" $it.mailer.eu
+  "DAIKOKU_INIT_MAILER_STARTTLS" $it.mailer.starttls
+  "DAIKOKU_INIT_MAILER_SSL" $it.mailer.ssl
   "DAIKOKU_INIT_AUTH_LDAP_USE_SSL" $it.auth.ldap.useSsl
 -}}
 {{- range $k, $v := $tri }}

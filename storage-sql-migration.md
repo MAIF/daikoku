@@ -42,8 +42,8 @@ code, and data access goes through named, typed methods backed by parameterised 
 | Final A | Delete `Helper.scala` and the `JsObject` methods of `Repo` | **Done** — `rowToJson` moved to `pgimplicits`, the file is gone |
 | Final B | Slim down / dedupe the `Repo` layer | **Done** — `find*` renaming, plus the index pass below |
 | Final C | GIN on `teams.users` + rewrite of the membership lookups | **Done** |
-| Final D | Drop the dead `_id` / `_tenant` indexes | **Done** — `evolution_1900_b` |
-| Final E | Physical deletion, and dropping the `_deleted` column | **Done** — `evolution_1900_c` to `_e`, see [C](#c-physical-deletion--done) |
+| Final D | Drop the dead `_id` / `_tenant` indexes | **Done** — `evolution_1910` |
+| Final E | Physical deletion, and dropping the `_deleted` column | **Done** — `evolution_1910_b` to `_d`, see [C](#c-physical-deletion--done) |
 
 ## The pattern to follow
 
@@ -209,7 +209,7 @@ does expose `_id` (`SELECT teams.*`), so switching them would save a JSON extrac
 catalogue queries. Worth doing, not needed here. The `evolutions.scala` joins were left alone too:
 they replay a past behaviour and run once.
 
-The drop itself is a **migration**, not a `CREATE INDEX IF NOT EXISTS`: `evolution_1900_b`, with the
+The drop itself is a **migration**, not a `CREATE INDEX IF NOT EXISTS`: `evolution_1910`, with the
 9 declarations spelled out in a comment so it can be replayed by hand — the evolution mechanism has
 no down-script. The `CREATE INDEX` lines are gone from `createIndexes`, so a fresh database never
 builds them in the first place.
@@ -242,7 +242,7 @@ interchangeable:
    plan, then tenant, then the generic admin CRUD. The `?logically` / `?notDeleted` admin-api
    parameters became no-ops here. Until all of them were physical the reads could not be touched: an
    earlier attempt at the read side was reverted precisely because tenant still soft-deleted.
-2. **`evolution_1900_c`** purges the legacy `_deleted = true` rows. It must run *before* the read
+2. **`evolution_1910_b`** purges the legacy `_deleted = true` rows. It must run *before* the read
    filter goes, otherwise those tombstones resurface as live data.
 3. **Read side** — `notDeletedSql` and the ~15 methods carrying it, then the 47 raw-SQL sites in
    controllers, jobs, services and `CommonServices`. Behaviour-preserving, since step 2 left no row
@@ -256,7 +256,29 @@ interchangeable:
    works against the old server, the reverse does not.
 6. **Stop writing** — the `deleted` field on the 19 case classes, its 40 lines in `json.scala`, the 9
    GraphQL fields, the `saveRaw` branch that populated the column.
-7. **`evolution_1900_e`** drops the column on its 24 tables.
+7. **`evolution_1910_d`** drops the column on its 24 tables.
+
+**Direct upgrades from older releases.** Startup creates missing tables using the current
+definition before running pending evolutions. On a pre-keyring database, this creates `keyrings`
+without `_deleted`, although `19.0.0` and the subsequent purge still need that column.
+
+Before running evolutions, the runner therefore checks the journal for an applied `19.1.0_d`.
+Until that migration is applied, a transactional compatibility step restores `_deleted` on the
+24 historical soft-delete tables. Existing non-null column values remain authoritative; null
+values are filled from the JSON flag, or `false` when absent. A temporary `false` default covers
+writes by historical evolutions using the current repositories. The normal purge and drop
+evolutions then remove tombstones and the columns. Once `19.1.0_d` is applied, subsequent startups
+do not recreate them. Fresh installations use the existing current-schema baseline and skip this
+preparation.
+
+SQL failures from `ReactivePg.execute` are logged and propagated, not converted to a successful
+zero-row result. Otherwise a failed purge could be recorded as applied and the following column
+drop would erase the deletion flags needed on retry.
+
+`DatastoreUpgradeSpec` exercises the real `initDatastore` entry point against a unique PostgreSQL
+schema per test: a synthetic pre-keyring fixture, older pending cleanup evolutions, tombstones,
+repeated initialization, a fresh installation, and resuming after a deliberately interrupted purge.
+These fixtures cover the soft-delete transition, not every historical release's full data shape.
 
 **Two traps that fail silently.** Neither surfaces as an error, which is what makes them worth
 recording:
@@ -264,11 +286,11 @@ recording:
 - **The partial unique index.** `uniq_team_personal_user` was `WHERE _deleted = false AND type =
   'Personal'`. The moment the entities stop writing the key, `saveRaw` leaves the column NULL, and
   `NULL = false` is not true — so the index quietly stops covering new rows and the "one personal
-  team per user" uniqueness is lost with no error anywhere. `evolution_1900_d` rebuilds it without
+  team per user" uniqueness is lost with no error anywhere. `evolution_1910_c` rebuilds it without
   the predicate, in the same commit that stops the writes.
 - **The `idx_*_deleted` indexes survive `DROP COLUMN`.** They are expression indexes on
   `content->>'_deleted'`, the JSON key, not on the column, so Postgres has no dependency to cascade.
-  `evolution_1900_e` drops them explicitly.
+  `evolution_1910_d` drops them explicitly.
 
 **Two public contracts changed**, both worth a release note: the GraphQL schema lost `deleted` on
 nine types, and the admin-api payloads lost `_deleted` (its twelve properties are gone from

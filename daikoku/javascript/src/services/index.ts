@@ -10,6 +10,8 @@ import {
   IMailingTranslation,
   IOtoroshiSettings,
   IQuotas,
+  IRemoteCatalog,
+  IRemoteCatalogSettings,
   ISafeSubscription,
   ISession,
   ISimpleOtoroshiSettings,
@@ -1341,7 +1343,49 @@ export const getAllAvailableEnvs = (teamId: string, apiId: string, version: stri
   }).then((r) => (r.ok ? r.json() : r));
 };
 
+const keyringDemandFields = `
+  _id state date keyringCustomName
+  from { name }
+  api { _id _humanReadableId name currentVersion team { _humanReadableId } }
+  plan { _id customName }
+  steps { id state step { name } }
+`;
+
 export const graphql = {
+  getApiKeyringEntries: `
+    query getApiKeyringEntries($apiId: String!, $teamId: String!, $filter: String, $limit: Int!, $offset: Int!, $creationLabel: String!, $unavailablePlanLabel: String!) {
+      apiKeyringEntries(id: $apiId, teamId: $teamId, filter: $filter, limit: $limit, offset: $offset, creationLabel: $creationLabel, unavailablePlanLabel: $unavailablePlanLabel) {
+        entries {
+          _id pendingCount
+          demand { ${keyringDemandFields} }
+          keyring {
+            _id customName enabled integrationToken bearerToken
+            apiKey { clientId clientSecret clientName }
+            team { name }
+            rotation { enabled rotationEvery gracePeriod pendingRotation }
+            subscriptionsCount isRotationLocked environments
+          }
+        }
+        total totalFiltered keyringsCount creationsCount
+      }
+    }
+  `,
+  getApiKeyringRows: `
+    query getApiKeyringRows($entryId: String!, $apiId: String!, $teamId: String!, $filterTable: JsArray, $sortingTable: JsArray, $limit: Int!, $offset: Int!) {
+      apiKeyringRows(id: $entryId, apiId: $apiId, teamId: $teamId, filterTable: $filterTable, sortingTable: $sortingTable, limit: $limit, offset: $offset) {
+        rows {
+          _id
+          demand { ${keyringDemandFields} }
+          subscription {
+            _id customName adminCustomName enabled state createdAt validUntil tags lastUsage
+            plan { _id customName }
+            api { _id _humanReadableId name currentVersion team { _humanReadableId } }
+          }
+        }
+        total
+      }
+    }
+  `,
   getCmsPageByName: `
     query CmsPage($name: String, $path: String) {
       page(name: $name, path: $path) {
@@ -2745,6 +2789,39 @@ export const fetchOAuthConfiguration = (
   });
 };
 
+export const getRemoteCatalogs = (tenantId: string): PromiseWithError<Array<IRemoteCatalog>> =>
+  customFetch(`/api/tenants/${tenantId}/remote-catalogs`);
+export const getRemoteCatalogSettings = (
+  tenantId: string
+): PromiseWithError<IRemoteCatalogSettings> =>
+  customFetch(`/api/tenants/${tenantId}/remote-catalogs/_settings`);
+export const createRemoteCatalog = (
+  tenantId: string,
+  catalog: Partial<IRemoteCatalog>
+): PromiseWithError<IRemoteCatalog> =>
+  customFetch(`/api/tenants/${tenantId}/remote-catalogs`, {
+    method: 'POST',
+    body: JSON.stringify(catalog),
+  });
+export const updateRemoteCatalog = (
+  tenantId: string,
+  catalog: IRemoteCatalog
+): PromiseWithError<IRemoteCatalog> =>
+  customFetch(`/api/tenants/${tenantId}/remote-catalogs/${catalog._id}`, {
+    method: 'PUT',
+    body: JSON.stringify(catalog),
+  });
+export const regenerateRemoteCatalogToken = (
+  tenantId: string,
+  catalogId: string
+): PromiseWithError<IRemoteCatalog> =>
+  customFetch(`/api/tenants/${tenantId}/remote-catalogs/${catalogId}/_regenerate-token`, {
+    method: 'POST',
+  });
+export const deleteRemoteCatalog = (tenantId: string, catalogId: string) =>
+  customFetch(`/api/tenants/${tenantId}/remote-catalogs/${catalogId}`, {
+    method: 'DELETE',
+  });
 export const getRemoteCatalogHistory = (tenantId: string, catalogId: string) =>
   customFetch(`/api/tenants/${tenantId}/remote-catalogs/${catalogId}/history`);
 export const deployRemoteCatalog = (tenantId: string, catalogId: string) =>
@@ -2754,4 +2831,13 @@ export const testRemoteCatalog = (tenantId: string, catalogId: string) =>
 export const undeployRemoteCatalog = (tenantId: string, catalogId: string) =>
   customFetch(`/api/tenants/${tenantId}/remote-catalogs/${catalogId}/_undeploy`, {
     method: 'POST',
+  });
+export const loadResources = (
+  tenantId: string,
+  files: Array<{ path: string; content: string }>,
+  dryRun: boolean
+) =>
+  customFetch(`/api/tenants/${tenantId}/remote-catalogs/_load?dryRun=${dryRun}`, {
+    method: 'POST',
+    body: JSON.stringify(files),
   });

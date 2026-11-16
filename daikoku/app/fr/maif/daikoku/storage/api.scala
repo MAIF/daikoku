@@ -68,7 +68,11 @@ trait Repo[Of, Id <: ValueType] {
   // lazy Source that materialises outside any transaction window.
   def streamAllRaw()(implicit ec: ExecutionContext): Source[JsValue, ?]
 
-  def streamAllRawFormatted()(implicit
+  // e.g. streamAllRawFormatted(Seq("content->>'api' = $1"), Seq("api-weather"))
+  def streamAllRawFormatted(
+      predicates: Seq[String] = Seq.empty,
+      params: Seq[AnyRef] = Seq.empty
+  )(implicit
       ec: ExecutionContext
   ): Source[Of, ?]
 
@@ -2373,6 +2377,27 @@ trait OperationRepo extends TenantCapableRepo[Operation, DatastoreId] {
   }
 }
 
+trait RemoteCatalogRepo
+    extends TenantCapableRepo[RemoteCatalog, RemoteCatalogId]
+
+trait RemoteCatalogRunRepo
+    extends TenantCapableRepo[RemoteCatalogRun, DatastoreId] {
+
+  /** The runs of one catalog, most recent first. */
+  def findByCatalog(tenant: TenantId, catalog: RemoteCatalogId)(implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Seq[RemoteCatalogRun]] = {
+    val repo = forTenant(tenant)
+    repo.query(
+      s"SELECT content FROM ${repo.tableName} " +
+        "WHERE content->>'_tenant' = $1 AND content->>'catalog' = $2 " +
+        "ORDER BY (content->>'at')::bigint DESC",
+      Seq(tenant.value, catalog.value)
+    )
+  }
+}
+
 trait SubscriptionBatchDemandRepo
     extends TenantCapableRepo[
       SubscriptionBatchDemand,
@@ -2712,6 +2737,25 @@ trait SubscriptionDemandRepo
     repo.query(
       s"SELECT content FROM ${repo.tableName} WHERE $where",
       params
+    )
+  }
+
+  def findByKeyring(
+      tenant: Tenant,
+      keyring: Keyring
+  )(implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Seq[SubscriptionDemand]] = {
+    val repo = forTenant(tenant)
+
+    repo.query(
+      query = s"""SELECT content FROM ${repo.tableName}
+           |WHERE content ->> '_tenant' = $$1 AND content ->> 'keyring' = $$2""".stripMargin,
+      params = Seq(
+        tenant.id.value,
+        keyring.id.value
+      )
     )
   }
 
@@ -4659,6 +4703,10 @@ trait DataStore {
   def cmsRepo: CmsPageRepo
 
   def assetRepo: AssetRepo
+
+  def remoteCatalogRepo: RemoteCatalogRepo
+
+  def remoteCatalogRunRepo: RemoteCatalogRunRepo
 
   def operationRepo: OperationRepo
 

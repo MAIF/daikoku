@@ -32,7 +32,7 @@ import {
 import { BulkAction, DynamicTable, DynamicTableColumnCtx, DynamicTableFeatures, FetchData, FetchResult, FilterDef } from '../../inputs/DynamicTable';
 import { getLanguageFns } from '../../utils';
 import { FeedbackButton } from '../../utils/FeedbackButton';
-import { SimpleApiKeyCard } from '../apikeys/TeamApiKeysForApi';
+import { SimpleApiKeyCard} from "../apikeys";
 import { IApiSubscriptionGql } from '../apis';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -584,7 +584,7 @@ export const NotificationList = () => {
       case 'NewSubscription':
         return translate({ key: 'notif.NewSubscription', replacements: [notification.action.team.name] });
       case 'ApiSubscription': {
-        const desc = translate({ key: `notif.api.subscription.${tenant.display}`, replacements: [notification.action.plan.customName] });
+        const desc = translate({ key: `notif.api.subscription.${tenant.display}`, replacements: [notification.action.team.name, notification.action.plan.customName] });
         const _api = notification.action.api;
         const _plan = notification.action.plan;
         const _team = notification.action.team;

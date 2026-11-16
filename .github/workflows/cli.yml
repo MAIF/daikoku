@@ -43,7 +43,7 @@ jobs:
         toolchain:
           - stable
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Build binary
         uses: houseabsolute/actions-rust-cross@v0
         with:
@@ -75,7 +75,7 @@ jobs:
         run:
           working-directory: ./cli
       steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Build
         run: cargo build --verbose --release
       - name: Publish to crates.io

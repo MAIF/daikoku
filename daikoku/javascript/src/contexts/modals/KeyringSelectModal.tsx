@@ -126,6 +126,7 @@ const KeyringsView = (props: KeyringsViewProps) => {
                     {translate({
                       key: 'keyring_select_modal.keys_count',
                       replacements: [String(keyring.count)],
+                      plural: keyring.count > 1
                     })}
                   </span>
                 )}

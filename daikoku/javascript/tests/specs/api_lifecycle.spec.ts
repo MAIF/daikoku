@@ -276,10 +276,10 @@ test('Blocked sub by API owner action display a blocked state to consumer', asyn
   for (const row of await rows.all()) {
     await expect(row.getByText('Bloquée')).toBeVisible();
   }
-  await page.getByText('Trousseaux').click();  
+  await page.getByText('Clés d\'API').click();  
   await page
       .getByRole('listitem', { name: 'api commande - dev' })
-      .getByRole('button', { name: 'Contenu du trousseau' })
+      .getByRole('button', { name: 'Contenu de la clé d\'API' })
       .click()
   await expect(page
       .getByRole('listitem', { name: 'api commande - dev' })

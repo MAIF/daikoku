@@ -372,7 +372,7 @@ class DeletionService(
     * the queued cleanup no longer needs the tenant — which lets the tenant
     * itself be deleted without waiting for the queue.
     */
-  private def otoroshiTargetPayload(
+  def otoroshiTargetPayload(
       keyring: Keyring,
       tenant: Tenant
   ): Option[JsObject] =
@@ -900,7 +900,7 @@ class DeletionService(
   }
 
   def cancelSubscriptionDemand(
-      demandId: String,
+      demandId: DemandId,
       tenant: Tenant
   ): EitherT[Future, AppError, Unit] = {
     for {

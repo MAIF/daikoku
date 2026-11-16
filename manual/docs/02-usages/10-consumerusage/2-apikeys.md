@@ -6,6 +6,28 @@ And you should see the list of subscribed `APIs`
 On the right of the API line, click on the `API Keys` button.
 All subscribed plan for the API are displayed.
 
+### Pending requests
+
+The API key list also shows your team's requests that are waiting or in progress for
+the selected API. A request to create a new API key appears as a temporary card,
+using the requested name when available. It has no credentials or key-management
+actions: the API key is only created when the request is approved.
+
+Requests to extend an existing API key appear as rows in its subscription table,
+with the requested API, plan/environment and a **Request in progress** status.
+All pending extensions of that API key are shown, even when they target a different
+API from the page being viewed. Its pending-request badge counts those same extensions.
+The environment/plan summary includes both existing subscriptions and open requests
+across the API key, with duplicate names removed.
+Temporary cards for new API keys remain limited to requests for the selected API.
+Expand the card to see the requester, request date and current validation step.
+A pending-request badge remains visible when the card is collapsed.
+
+Search and pagination include pending requests, but their counters remain separate
+from existing API keys and subscriptions. Pending rows have no subscription actions
+or usage statistics. Requests that have finished are not kept as history here.
+On refresh view, an approved request is replaced by the resulting API key or subscription.
+
 first of all, you can rename your API key, it's just for better reading
 
  - Secret can be reset for an API key

@@ -56,6 +56,41 @@ Override values with `--set key=value` or your own values file (`-f my-values.ya
 | `resources` | 500m / 1Gi requests | Daikoku requests and limits |
 | `secrets.*` | auto-generated | Crypto keys and admin password |
 
+### Initialize the default tenant
+
+Use `daikoku.initTenant` to seed the default tenant's identity, security, mailer, S3 storage, Otoroshi connection, authentication and audit destinations. See [Initialize Daikoku](../01-getstarted/05-firstrun/initialization.md) for the complete environment variable reference and activation conditions.
+
+For example, configure SMTP with STARTTLS in your values file:
+
+```yaml
+daikoku:
+  initTenant:
+    mailer:
+      type: smtpClient
+      host: smtp.example.com
+      port: "587"
+      fromEmail: portal@example.com
+      username: portal@example.com
+      starttls: true
+      ssl: false
+  extraEnv:
+    - name: DAIKOKU_INIT_MAILER_PASSWORD
+      valueFrom:
+        secretKeyRef:
+          name: daikoku-smtp
+          key: password
+```
+
+Create the `daikoku-smtp` Secret in the release namespace before starting Daikoku, using your secret management tooling. Leave `initTenant.mailer.password` empty when injecting the password this way. Do not commit credentials in plain text.
+
+Optional boolean fields use `null` to leave the corresponding environment variable unset; `false` explicitly disables the setting. For SMTP, unset TLS settings are inferred from the port: STARTTLS on `587`, implicit SSL/TLS on `465`.
+
+:::warning Bootstrap is not GitOps reconciliation
+`initTenant` settings apply only when Daikoku generates initial data in an empty datastore. If `DAIKOKU_INIT_DATA_FROM` is supplied, the imported state is used instead.
+
+Changing the values file or a referenced Secret and running `helm upgrade` does not update an existing tenant, even after a pod restart. Update existing tenant settings through the administration UI or admin API. The chart does not automatically reconcile tenant configuration or rotate stored SMTP credentials.
+:::
+
 ### Secrets
 
 Leave `secrets.*` empty (the default) and the chart generates strong random values on first install, then **reuses them on every `helm upgrade`** by reading them back from the live Secret. This matters: rotating `DAIKOKU_CYPHER_SECRET` would make already-encrypted data unreadable, and rotating `PLAY_CRYPTO_SECRET` would invalidate every session. To bring your own, set the values explicitly or reference an existing Secret with `secrets.existingSecret`.

@@ -1,4 +1,4 @@
-import {useContext, useEffect, useState} from 'react';
+import {useContext} from 'react';
 import Select from 'react-select';
 
 import {I18nContext} from '../../../contexts';
@@ -19,18 +19,14 @@ export const ApiSubscriptions = (props: ApiSubscriptions) => {
   const [searchParams, setSearchParams] = useSearchParams()
   const urlTeamId = searchParams.get("team")
 
-  const [selectedTeam, setSelectedTeam] = useState<ITeamSimple>(props.subscribingTeams[0])
+  const selectedTeam = props.subscribingTeams.find(t => t._id === urlTeamId)
+    ?? props.subscribingTeams[0];
 
-  useEffect(() => {
-    const urlTeam = props.subscribingTeams.find(t => t._id === urlTeamId)
-    setSelectedTeam(urlTeam ?? props.subscribingTeams[0])
-  }, [props.subscribingTeams, urlTeamId])
-
-  useEffect(() => {
-    if (!props.subscribingTeams.some(t => selectedTeam && t._id === selectedTeam._id)) (
-      setSelectedTeam(props.subscribingTeams[0])
-    )
-  }, [props.subscribingTeams])
+  if (!selectedTeam) {
+    return <div className="alert alert-info" role="status">
+      {translate('api.subscriptions.team.empty')}
+    </div>;
+  }
 
   return (
     <div>
@@ -40,9 +36,9 @@ export const ApiSubscriptions = (props: ApiSubscriptions) => {
         placeholder={translate('api.subscriptions.team.select.placeholder')}
         options={props.subscribingTeams.map(value => ({label: value.name, value: value}))}
         onChange={t => {
-          setSelectedTeam(t!.value)
+          if (!t) return;
           setSearchParams((searchParams) => {
-            searchParams.set("team", t!.value!._id);
+            searchParams.set("team", t.value._id);
             return searchParams;
           });
         }}
@@ -66,6 +62,7 @@ export const ApiSubscriptions = (props: ApiSubscriptions) => {
           }
         }}/>
       <ApiKeysListForApi
+        key={selectedTeam._id}
         team={selectedTeam}
         api={props.api}
         ownerTeam={props.ownerTeam}

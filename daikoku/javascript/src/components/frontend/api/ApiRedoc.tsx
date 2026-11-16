@@ -115,9 +115,17 @@ export function ApiRedoc<T extends IWithSwagger>(props: ApiRedocProps<T>) {
       </Can>
       <div>
         {props.swaggerConf?.specificationType === SpecificationType.openapi &&
-          <RedocStandalone
-            specUrl={props.swaggerUrl}
-            options={{ downloadFileName, pathInMiddlePanel: true, sideNavStyle: SideNavStyleEnum.PathOnly, ...props.swaggerConf?.additionalConf }} />}
+          <div onClickCapture={event => {
+            const link = event.target instanceof Element && event.target.closest('a[href^="#"]');
+            if (link && event.currentTarget.contains(link)) {
+              // Swagger UI's global zenscroll handler otherwise intercepts ReDoc's anchors.
+              link.classList.add('noZensmooth');
+            }
+          }}>
+            <RedocStandalone
+              specUrl={props.swaggerUrl}
+              options={{ downloadFileName, pathInMiddlePanel: true, sideNavStyle: SideNavStyleEnum.PathOnly, ...props.swaggerConf?.additionalConf }} />
+          </div>}
         {props.swaggerConf?.specificationType === SpecificationType.asyncapi && <AsyncApiComponent schema={spec} config={config} />}
         {!props.swaggerConf && (
           <Can I={manage} a={API} team={props.ownerTeam}>

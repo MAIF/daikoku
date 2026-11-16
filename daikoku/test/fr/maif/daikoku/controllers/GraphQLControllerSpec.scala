@@ -24,6 +24,405 @@ class GraphQLControllerSpec()
     with IntegrationPatience {
 
   "with graphql query a user" can {
+    "paginate pending keyring entries and subscription rows without granting access" in {
+      Await.result(waitForDaikokuSetup(), 5.second)
+      val api = defaultApi.api
+      val plan = defaultApi.plans.head
+      val requestedPlan = plan.copy(
+        id = UsagePlanId("pending-plan"),
+        customName = "Requested environment"
+      )
+      val keyring = Keyring(
+        id = KeyringId("pending-test-keyring"),
+        tenant = tenant.id,
+        team = teamConsumerId,
+        apiKey =
+          OtoroshiApiKey("existing", "existing-client", "existing-secret"),
+        otoroshiSettings = KeyringOtoroshiBinding.Internal,
+        createdAt = DateTime.now(),
+        customName = "A existing keyring",
+        integrationToken = IdGenerator.token(32)
+      )
+      val extensionOnly = keyring.copy(
+        id = KeyringId("extension-only"),
+        customName = "B extension only"
+      )
+      val subscription = ApiSubscription(
+        id = ApiSubscriptionId("pending-test-subscription"),
+        tenant = tenant.id,
+        plan = plan.id,
+        createdAt = DateTime.now(),
+        team = teamConsumerId,
+        api = api.id,
+        by = userAdmin.id,
+        customName = None,
+        keyring = keyring.id
+      )
+      val initial = SubscriptionDemand(
+        id = DemandId("initial-request"),
+        tenant = tenant.id,
+        api = api.id,
+        plan = requestedPlan.id,
+        steps = Seq.empty,
+        state = SubscriptionDemandState.Waiting,
+        team = teamConsumerId,
+        from = userAdmin.id,
+        keyringCustomName = Some("C initial keyring")
+      )
+      val extension = initial.copy(
+        id = DemandId("extension-request"),
+        state = SubscriptionDemandState.InProgress,
+        keyring = Some(keyring.id)
+      )
+      val secondInitial = initial.copy(
+        id = DemandId("second-initial"),
+        keyringCustomName = Some("D second")
+      )
+      val foreignTeam =
+        teamConsumer.copy(id = TeamId("another-consumer"), users = Set.empty)
+      val otherTenant = tenant.copy(
+        id = TenantId("another-tenant"),
+        name = "Another tenant",
+        domain = "another.tenant"
+      )
+      val closed = Seq(
+        SubscriptionDemandState.Accepted,
+        SubscriptionDemandState.Refused,
+        SubscriptionDemandState.Canceled,
+        SubscriptionDemandState.Blocked
+      ).map(state =>
+        initial.copy(id = DemandId(s"closed-${state.name}"), state = state)
+      )
+      setupEnvBlocking(
+        tenants = Seq(tenant, otherTenant),
+        users = Seq(userAdmin, userApiEditor),
+        teams = Seq(
+          teamOwner,
+          teamConsumer.copy(apiKeyVisibility =
+            Some(TeamApiKeyVisibility.Administrator)
+          ),
+          foreignTeam
+        ),
+        apis = Seq(api),
+        usagePlans = defaultApi.plans :+ requestedPlan,
+        keyrings = Seq(keyring, extensionOnly),
+        subscriptions = Seq(subscription),
+        subscriptionDemands = closed ++ Seq(
+          initial,
+          secondInitial,
+          extension,
+          extension.copy(
+            id = DemandId("extension-only-request"),
+            keyring = Some(extensionOnly.id)
+          ),
+          initial
+            .copy(id = DemandId("foreign-team-request"), team = foreignTeam.id),
+          initial.copy(
+            id = DemandId("foreign-tenant-request"),
+            tenant = otherTenant.id
+          ),
+          initial.copy(
+            id = DemandId("other-api-request"),
+            api = ApiId("another-api")
+          )
+        )
+      )
+      val session = loginWithBlocking(userAdmin, tenant)
+      val consumerRequests = httpJsonCallBlocking(
+        path =
+          s"/api/me/subscriptions/${api.id.value}/${api.currentVersion.value}",
+        method = "GET"
+      )(using tenant, session)
+      consumerRequests.status mustBe 200
+      val visibleRequestIds = (consumerRequests.json \ "requests")
+        .as[Seq[JsValue]]
+        .map(v => (v \ "_id").as[String])
+        .toSet
+      visibleRequestIds mustBe Set(
+        "initial-request",
+        "second-initial",
+        "extension-request",
+        "extension-only-request"
+      )
+      def query(selection: String): JsValue = {
+        val response = httpJsonCallBlocking(
+          path = "/api/search",
+          method = "POST",
+          body = Some(Json.obj("query" -> s"{$selection}"))
+        )(using tenant, session)
+        response.status mustBe 200
+        (response.json \ "errors").isDefined mustBe false
+        (response.json \ "data").as[JsValue]
+      }
+      def entries(offset: Int, filter: String = "") = query(
+        s"""apiKeyringEntries(id: "${api.id.value}", teamId: "${teamConsumerId.value}", filter: "$filter", limit: 2, offset: $offset) {
+           | entries { _id pendingCount
+           |   keyring { _id customName enabled integrationToken bearerToken subscriptionsCount isRotationLocked environments
+           |     team { name } apiKey { clientId clientSecret clientName }
+           |     rotation { enabled rotationEvery gracePeriod pendingRotation } }
+           |   demand { _id state date keyringCustomName from { name } api { _id name currentVersion }
+           |     plan { _id customName } steps { id state step { name } } }
+           | }
+           | total totalFiltered keyringsCount creationsCount
+           |}""".stripMargin
+      ) \ "apiKeyringEntries"
+      val first = entries(0)
+      (first \ "total").as[Int] mustBe 4
+      (first \ "keyringsCount").as[Int] mustBe 2
+      (first \ "creationsCount").as[Int] mustBe 2
+      val firstCards = (first \ "entries").as[Seq[JsValue]]
+      firstCards.map(v => (v \ "_id").as[String]) mustBe Seq(
+        "keyring:pending-test-keyring",
+        "keyring:extension-only"
+      )
+      (firstCards.head \ "pendingCount").as[Int] mustBe 1
+      (firstCards.head \ "keyring" \ "subscriptionsCount").as[Int] mustBe 1
+      (firstCards.head \ "keyring" \ "apiKey" \ "clientSecret")
+        .as[String] mustBe "existing-secret"
+      (firstCards(1) \ "keyring" \ "subscriptionsCount").as[Int] mustBe 0
+      (firstCards(1) \ "keyring" \ "environments").as[Seq[String]] mustBe Seq(
+        requestedPlan.customName
+      )
+      (firstCards.head \ "keyring" \ "environments").as[Seq[String]] mustBe
+        Seq(plan.customName, requestedPlan.customName).distinct.sorted
+      val initialCards = (entries(2) \ "entries").as[Seq[JsValue]]
+      initialCards.map(v => (v \ "_id").as[String]) mustBe Seq(
+        "demand:initial-request",
+        "demand:second-initial"
+      )
+      initialCards.foreach(v =>
+        (v \ "keyring").asOpt[JsValue].get mustBe play.api.libs.json.JsNull
+      )
+      (entries(0, "Requested environment") \ "totalFiltered").as[Int] mustBe 4
+      val emptyPage = entries(100)
+      (emptyPage \ "entries").as[Seq[JsValue]] mustBe empty
+      (emptyPage \ "totalFiltered").as[Int] mustBe 4
+      (entries(0, "does-not-exist") \ "totalFiltered").as[Int] mustBe 0
+
+      def rows(
+          entryId: String,
+          offset: Int,
+          filter: String = "",
+          viewedApiId: String = api.id.value
+      ) = query(
+        s"""apiKeyringRows(id: "$entryId", apiId: "$viewedApiId", teamId: "${teamConsumerId.value}",
+           | filterTable: "[{\\"id\\":\\"plan\\",\\"value\\":\\"$filter\\"}]", sortingTable: "[]", limit: 1, offset: $offset) {
+           | rows { _id subscription { _id customName adminCustomName enabled state createdAt validUntil tags lastUsage
+           |   plan { _id customName } api { _id _humanReadableId name currentVersion } }
+           |   demand { _id state date keyringCustomName from { name } api { _id name currentVersion }
+           |     plan { _id customName } steps { id state step { name } } } } total
+           |}""".stripMargin
+      ) \ "apiKeyringRows"
+      val mixed = (0 to 1).flatMap(offset =>
+        (rows("keyring:pending-test-keyring", offset) \ "rows").as[Seq[JsValue]]
+      )
+      mixed.map(v => (v \ "_id").as[String]).toSet mustBe Set(
+        "subscription:pending-test-subscription",
+        "demand:extension-request"
+      )
+      (rows("keyring:pending-test-keyring", 0) \ "total").as[Int] mustBe 2
+      (rows("keyring:pending-test-keyring", 100) \ "total").as[Int] mustBe 2
+      (rows(
+        "keyring:pending-test-keyring",
+        0,
+        "Requested environment"
+      ) \ "total").as[Int] mustBe 1
+      (rows("demand:initial-request", 0) \ "total").as[Int] mustBe 1
+      (rows("demand:foreign-team-request", 0) \ "total").as[Int] mustBe 0
+      (rows("demand:foreign-tenant-request", 0) \ "total").as[Int] mustBe 0
+      (rows("demand:other-api-request", 0) \ "total").as[Int] mustBe 0
+
+      Await.result(
+        daikokuComponents.env.dataStore.subscriptionDemandRepo
+          .forTenant(tenant)
+          .save(initial.copy(state = SubscriptionDemandState.Accepted)),
+        5.seconds
+      )
+      (entries(0) \ "total").as[Int] mustBe 3
+      (rows("demand:initial-request", 0) \ "total").as[Int] mustBe 0
+      val provisioned = keyring.copy(
+        id = KeyringId("provisioned-keyring"),
+        customName = "C initial keyring"
+      )
+      Await.result(
+        for {
+          _ <- daikokuComponents.env.dataStore.keyringRepo
+            .forTenant(tenant)
+            .save(provisioned)
+          _ <- daikokuComponents.env.dataStore.apiSubscriptionRepo
+            .forTenant(tenant)
+            .save(
+              subscription.copy(
+                id = ApiSubscriptionId("provisioned-subscription"),
+                keyring = provisioned.id,
+                plan = requestedPlan.id
+              )
+            )
+        } yield (),
+        5.seconds
+      )
+      (entries(0) \ "total").as[Int] mustBe 4
+      val completedCards = (entries(2) \ "entries").as[Seq[JsValue]]
+      completedCards.map(v => (v \ "_id").as[String]) mustBe Seq(
+        "keyring:provisioned-keyring",
+        "demand:second-initial"
+      )
+      Await.result(
+        daikokuComponents.env.dataStore.subscriptionDemandRepo
+          .forTenant(tenant)
+          .save(
+            initial
+              .copy(id = DemandId("unnamed-initial"), keyringCustomName = None)
+          ),
+        5.seconds
+      )
+      (entries(2) \ "entries")
+        .as[Seq[JsValue]]
+        .map(v => (v \ "_id").as[String]) mustBe Seq(
+        "keyring:provisioned-keyring",
+        "demand:unnamed-initial"
+      )
+      (entries(0, "Creation pending") \ "totalFiltered").as[Int] mustBe 1
+      val localized = query(
+        s"""apiKeyringEntries(id: "${api.id.value}", teamId: "${teamConsumerId.value}",
+           | creationLabel: "Z pending - %s", unavailablePlanLabel: "Missing plan", limit: 10, offset: 0) {
+           | entries { _id } total
+           |}""".stripMargin
+      )
+      val localizedCards =
+        (localized \ "apiKeyringEntries" \ "entries").as[Seq[JsValue]]
+      (localizedCards.last \ "_id").as[String] mustBe "demand:unnamed-initial"
+
+      val otherPlan = requestedPlan.copy(
+        id = UsagePlanId("other-api-plan"),
+        customName = "Other API environment"
+      )
+      val otherApi = api.copy(
+        id = ApiId("another-api"),
+        name = "Another API",
+        possibleUsagePlans = Seq(otherPlan.id),
+        defaultUsagePlan = Some(otherPlan.id)
+      )
+      val unrelatedKeyring = keyring.copy(
+        id = KeyringId("unrelated-keyring"),
+        customName = "Unrelated keyring"
+      )
+      Await.result(
+        for {
+          _ <- daikokuComponents.env.dataStore.apiRepo
+            .forTenant(tenant)
+            .save(otherApi)
+          _ <- daikokuComponents.env.dataStore.usagePlanRepo
+            .forTenant(tenant)
+            .save(otherPlan)
+          _ <- daikokuComponents.env.dataStore.keyringRepo
+            .forTenant(tenant)
+            .save(unrelatedKeyring)
+          _ <- daikokuComponents.env.dataStore.subscriptionDemandRepo
+            .forTenant(tenant)
+            .save(
+              extension.copy(
+                id = DemandId("cross-api-extension"),
+                api = otherApi.id,
+                plan = otherPlan.id
+              )
+            )
+          _ <- daikokuComponents.env.dataStore.subscriptionDemandRepo
+            .forTenant(tenant)
+            .save(
+              extension.copy(
+                id = DemandId("unrelated-extension"),
+                api = otherApi.id,
+                plan = otherPlan.id,
+                keyring = Some(unrelatedKeyring.id)
+              )
+            )
+        } yield (),
+        5.seconds
+      )
+      val sharedCard = (entries(0) \ "entries").as[Seq[JsValue]].head
+      (sharedCard \ "pendingCount").as[Int] mustBe 2
+      val sharedEnvironments = Seq(
+        plan.customName,
+        requestedPlan.customName,
+        otherPlan.customName
+      ).distinct.sorted
+      (sharedCard \ "keyring" \ "environments")
+        .as[Seq[String]] mustBe sharedEnvironments
+      (entries(0) \ "total").as[Int] mustBe 5
+      val crossApiSearch = entries(0, "Other API environment")
+      (crossApiSearch \ "totalFiltered").as[Int] mustBe 1
+      ((crossApiSearch \ "entries").as[Seq[JsValue]].head \ "_id")
+        .as[String] mustBe "keyring:pending-test-keyring"
+      val expectedSharedRows = Set(
+        "subscription:pending-test-subscription",
+        "demand:extension-request",
+        "demand:cross-api-extension"
+      )
+      Seq(api.id.value, otherApi.id.value).foreach { viewedApiId =>
+        val sharedRows = (0 to 2).flatMap(offset =>
+          (rows(
+            "keyring:pending-test-keyring",
+            offset,
+            viewedApiId = viewedApiId
+          ) \ "rows").as[Seq[JsValue]]
+        )
+        sharedRows
+          .map(v => (v \ "_id").as[String])
+          .toSet mustBe expectedSharedRows
+        (rows(
+          "keyring:pending-test-keyring",
+          0,
+          viewedApiId = viewedApiId
+        ) \ "total").as[Int] mustBe 3
+      }
+      val otherApiCards = query(
+        s"""apiKeyringEntries(id: "${otherApi.id.value}", teamId: "${teamConsumerId.value}", limit: 10, offset: 0) {
+           | entries { _id pendingCount keyring { environments } } total
+           |}""".stripMargin
+      )
+      val otherEntries =
+        (otherApiCards \ "apiKeyringEntries" \ "entries").as[Seq[JsValue]]
+      otherEntries.map(v => (v \ "_id").as[String]).toSet mustBe Set(
+        "keyring:pending-test-keyring",
+        "keyring:unrelated-keyring",
+        "demand:other-api-request"
+      )
+      (otherEntries
+        .find(v => (v \ "_id").as[String] == "keyring:pending-test-keyring")
+        .get \ "pendingCount").as[Int] mustBe 2
+      (otherEntries
+        .find(v => (v \ "_id").as[String] == "keyring:pending-test-keyring")
+        .get \ "keyring" \ "environments")
+        .as[Seq[String]] mustBe sharedEnvironments
+
+      val deniedTeam = httpJsonCallBlocking(
+        path = "/api/search",
+        method = "POST",
+        body = Some(
+          Json.obj(
+            "query" ->
+              s"""{ apiKeyringEntries(id: "${api.id.value}", teamId: "${foreignTeam.id.value}") { total } }"""
+          )
+        )
+      )(using tenant, session)
+      (deniedTeam.json \ "errors").isDefined mustBe true
+      val editorSession = loginWithBlocking(userApiEditor, tenant)
+      val deniedCredentials = httpJsonCallBlocking(
+        path = "/api/search",
+        method = "POST",
+        body = Some(
+          Json.obj(
+            "query" ->
+              s"""{ apiKeyringEntries(id: "${api.id.value}", teamId: "${teamConsumerId.value}") {
+             | entries { keyring { apiKey { clientSecret } } }
+             |} }""".stripMargin
+          )
+        )
+      )(using tenant, editorSession)
+      (deniedCredentials.json \ "errors").isDefined mustBe true
+    }
+
     "list all visible apis - Home page" in {
       Await.result(waitForDaikokuSetup(), 5.second)
       val _tenant = tenant.copy(isPrivate = false)

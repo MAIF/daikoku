@@ -160,7 +160,7 @@ test('Utiliser le page d\'affichage d\'une API ', async ({ page }) => {
   await expect(page.getByRole('navigation').getByText('Test')).toBeHidden();
   await expect(page.getByRole('navigation').getByText('Actualités')).toBeHidden();
   await expect(page.getByRole('navigation').getByText('Souscriptions')).toBeHidden();
-  await expect(page.getByRole('navigation').getByText('Trousseaux')).toBeHidden();
+  await expect(page.getByRole('navigation').getByText('Clés d\'API')).toBeHidden();
 
   await page.goto(HOME)
 
@@ -174,10 +174,10 @@ test('Utiliser le page d\'affichage d\'une API ', async ({ page }) => {
   await expect(page.getByText('prod', { exact: true })).toBeVisible();
   await page.getByRole('navigation').getByText('Questions').click();
   await expect(page.getByText('Aucun problème correspondant')).toBeVisible();
-  await page.getByRole('navigation').getByText('Trousseaux').click();
+  await page.getByRole('navigation').getByText('Clés d\'API').click();
   await page
       .getByRole('listitem', { name: 'api papier - dev' })
-      .getByRole('button', { name: 'Contenu du trousseau' })
+      .getByRole('button', { name: 'Contenu de la clé d\'API' })
       .click()
   await page
       .getByRole('listitem', { name: 'api papier - dev' })
@@ -200,7 +200,7 @@ test('Utiliser le page d\'affichage d\'une API ', async ({ page }) => {
   await expect(page.getByText('prod', { exact: true })).toBeVisible();
   await page.getByRole('navigation').getByText('Questions').click();
   await expect(page.getByText('Aucun problème correspondant')).toBeVisible();
-  await page.getByRole('navigation').getByText('Trousseaux').click();
+  await page.getByRole('navigation').getByText('Clés d\'API').click();
 
   await expect(page.getByRole('navigation').getByText('Documentation')).toBeVisible();
   await expect(page.getByRole('navigation').getByText('Spécification')).toBeVisible();
@@ -324,7 +324,7 @@ test('Utiliser le page d\'affichage d\'une API ', async ({ page }) => {
   await expect(page.getByRole('navigation').getByText('Questions')).toBeVisible();
   await expect(page.getByRole('navigation').getByText('Souscriptions')).toBeHidden();
   await expect(page.getByRole('navigation').getByText('Consommation')).toBeHidden();
-  await expect(page.getByRole('navigation').getByText('Trousseaux')).toBeHidden();
+  await expect(page.getByRole('navigation').getByText('Clés d\'API')).toBeHidden();
   await page.goto(HOME)
 
 
@@ -339,7 +339,7 @@ test('Utiliser le page d\'affichage d\'une API ', async ({ page }) => {
   await expect(page.getByRole('navigation').getByText('Actualités')).toBeVisible();
   await expect(page.getByRole('navigation').getByText('Questions')).toBeVisible();
   await expect(page.getByRole('navigation').getByText('Souscriptions')).toBeHidden();
-  await expect(page.getByRole('navigation').getByText('Trousseaux')).toBeVisible();
+  await expect(page.getByRole('navigation').getByText('Clés d\'API')).toBeVisible();
   await logout(page)
 
   //user admin
@@ -353,7 +353,7 @@ test('Utiliser le page d\'affichage d\'une API ', async ({ page }) => {
   await expect(page.getByRole('navigation').getByText('Actualités')).toBeVisible();
   await expect(page.getByRole('navigation').getByText('Questions')).toBeVisible();
   await expect(page.getByRole('navigation').getByText('Souscriptions')).toBeVisible();
-  await expect(page.getByRole('navigation').getByText('Trousseaux')).toBeVisible();
+  await expect(page.getByRole('navigation').getByText('Clés d\'API')).toBeVisible();
 })
 
 test('Voir ses notifications', async ({ page }) => {

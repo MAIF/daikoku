@@ -335,6 +335,7 @@ export interface IDocPage {
   remoteContentHeaders: object;
   linked?: boolean;
   cmsPage?: string;
+  metadata?: { [key: string]: string };
 }
 
 export interface IOtoroshiApiKey {

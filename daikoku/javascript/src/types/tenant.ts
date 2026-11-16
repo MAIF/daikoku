@@ -182,7 +182,6 @@ export interface ITenantFull extends ITenant {
   style: ITenantStyle;
   translation: any;
   thirdPartyPaymentSettings: Array<IThirdPartyPaymentSettings>;
-  remoteCatalogs: Array<IRemoteCatalog>;
 }
 
 export type RemoteCatalogSourceKind = 'file' | 'http' | 'github' | 'gitlab';
@@ -212,16 +211,25 @@ export interface IRemoteCatalogSource {
 }
 export interface IRemoteCatalogScheduling {
   enabled: boolean;
-  deployArgs?: any;
 }
 export interface IRemoteCatalog {
-  id: string;
+  _id: string;
+  _tenant: string;
   name: string;
   enabled: boolean;
   source: IRemoteCatalogSource;
   scheduling: IRemoteCatalogScheduling;
   allowedKinds: Array<string>;
-  testDeployArgs?: any;
+  maxDeletionPercent: number;
+  adoptExisting: boolean;
+  folderPerTeam: boolean;
+  allowDeletions: boolean;
+  token: string;
+}
+export interface IRemoteCatalogSettings {
+  allowFileSource: boolean;
+  allowPreCommand: boolean;
+  allowedHosts: Array<string>;
 }
 
 export type TranslationItem = string | { s: string; p: string };
@@ -322,30 +330,30 @@ export interface ILogger {
 
 type AlgoSettings =
   | {
-    type: 'HSAlgoSettings';
-    size: number;
-    secret: string;
-  }
+      type: 'HSAlgoSettings';
+      size: number;
+      secret: string;
+    }
   | {
-    type: 'RSAlgoSettings';
-    size: number;
-    publicKey: string;
-    privateKey?: string;
-  }
+      type: 'RSAlgoSettings';
+      size: number;
+      publicKey: string;
+      privateKey?: string;
+    }
   | {
-    type: 'ESAlgoSettings';
-    size: number;
-    publicKey: string;
-    privateKey?: string;
-  }
+      type: 'ESAlgoSettings';
+      size: number;
+      publicKey: string;
+      privateKey?: string;
+    }
   | {
-    type: 'JWKSAlgoSettings';
-    url: string;
-    timeout: number;
-    headers: { [x: string]: string };
-    ttl: number;
-    kty: string;
-  };
+      type: 'JWKSAlgoSettings';
+      url: string;
+      timeout: number;
+      headers: { [x: string]: string };
+      ttl: number;
+      kty: string;
+    };
 
 export type OAuthSettings = {
   sessionMaxAge: number;

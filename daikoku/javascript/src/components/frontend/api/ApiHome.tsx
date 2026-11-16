@@ -173,7 +173,12 @@ export const ApiHome = () => {
     const pendingSubscriptions = mySubscriptionQuery.data!.requests;
 
     const subscribingTeams = myTeams
-      .filter((team) => subscriptions.some((sub) => sub.team === team._id));
+      .filter((team) =>
+        subscriptions.some((sub) => sub.team === team._id) ||
+        pendingSubscriptions.some((demand) =>
+          demand.team === team._id && ['waiting', 'inProgress'].includes(demand.state)
+        )
+      );
 
 
     document.title = `${tenant.title} - ${api ? api.name : 'API'}`;

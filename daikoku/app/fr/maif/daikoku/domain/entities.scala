@@ -114,6 +114,12 @@ case class AssetId(value: String) extends ValueType with CanJson[AssetId] {
   def asJson: JsValue = JsString(value)
 }
 
+case class RemoteCatalogId(value: String)
+    extends ValueType
+    with CanJson[RemoteCatalogId] {
+  def asJson: JsValue = JsString(value)
+}
+
 case class ThirdPartyPaymentSettingsId(value: String)
     extends ValueType
     with CanJson[CmsPageId] {
@@ -203,6 +209,7 @@ enum JobName(val value: String):
   case RemoteCatalog extends JobName("RemoteCatalog")
   case NotificationPurge extends JobName("NotificationPurge")
   case AuditTrailPurge extends JobName("AuditTrailPurge")
+  case ApiKeyStatsCollector extends JobName("ApiKeyStatsCollector")
   // Kept to read job history persisted before event-driven batch processing.
   case SubscriptionBatchMaterialization
       extends JobName("SubscriptionBatchMaterialization")

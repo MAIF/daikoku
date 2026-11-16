@@ -198,7 +198,7 @@ class ConsumptionController(
         )
       )(teamId, ctx) { team =>
         apiKeyStatsJob
-          .syncForSubscriber(team, ctx.tenant)
+          .syncForSubscriber(team.id, ctx.tenant)
           .map(seq => Ok(JsArray(seq.map(_.asJson))))
       }
     }
@@ -211,7 +211,7 @@ class ConsumptionController(
         )
       )(teamId, ctx) { team =>
         apiKeyStatsJob
-          .syncForOwner(team, ctx.tenant)
+          .syncForOwner(team.id, ctx.tenant)
           .map(seq => Ok(JsArray(seq.map(_.asJson))))
       }
     }
@@ -480,7 +480,9 @@ class ConsumptionController(
       )(teamId, ctx) { team =>
         val callback = ctx.request
           .getQueryString("callback")
-          .getOrElse(env.getDaikokuUrl(ctx.tenant, "/apis", request = ctx.request))
+          .getOrElse(
+            env.getDaikokuUrl(ctx.tenant, "/apis", request = ctx.request)
+          )
         env.dataStore.usagePlanRepo
           .forTenant(ctx.tenant)
           .findById(plan)

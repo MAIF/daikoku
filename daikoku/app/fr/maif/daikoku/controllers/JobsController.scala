@@ -101,12 +101,27 @@ class JobsController(
       }
     }
 
-  def apikeysStatsSyncJob(): Action[AnyContent] =
-    Action.async { req =>
-      if (env.config.apikeysStatsByCron) {
-        apiKeyStatsJob.getStats.map(_ => Ok(Json.obj("done" -> true)))
-      } else {
-        FastFuture.successful(NotFound(Json.obj("error" -> "API not found")))
+  def apikeysStatsSyncJob(parallelism: Int = 2): Action[AnyContent] =
+    Action.async { ctx =>
+      TenantHelper.withTenant(ctx, env) { tenant =>
+        ctx
+          .getQueryString("access_key")
+          .orElse(ctx.getQueryString("key")) match {
+          case Some(key)
+              if env.config.apikeysStatsJobKey == key && parallelism <= 0 =>
+            FastFuture.successful(
+              BadRequest(Json.obj("error" -> "parallelism must be positive"))
+            )
+          case Some(key) if env.config.apikeysStatsJobKey == key =>
+            apiKeyStatsJob
+              .run(
+                tenant = tenant,
+                runBy = Runner.Api,
+                parallelism = parallelism
+              )
+              .map(_ => Ok(Json.obj("done" -> true)))
+          case _ => AppError.Unauthorized.renderF()
+        }
       }
     }
 
