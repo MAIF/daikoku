@@ -2558,7 +2558,7 @@ object evolution_1910_d extends EvolutionScript {
     }
 }
 
-object evolution_1900_f extends EvolutionScript {
+object evolution_1920 extends EvolutionScript {
   override def version: String = "19.2.0"
 
   private[daikoku] def provisionTenant(
@@ -2686,7 +2686,8 @@ object evolutions {
       evolution_1910,
       evolution_1910_b,
       evolution_1910_c,
-      evolution_1910_d
+      evolution_1910_d,
+      evolution_1920
     )
   def run(
       dataStore: DataStore,
