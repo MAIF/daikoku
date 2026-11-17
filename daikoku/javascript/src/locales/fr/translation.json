@@ -474,6 +474,7 @@
   "Automatic": "Automatique",
   "Manual": "Manuelle",
   "team.created.success": "L'équipe %s a été créée avec succès",
+  "team.creation.demand.success": "La demande de création de l'équipe %s a été réalisée avec succès",
   "team.updated.success": "L'équipe %s a été modifiée avec succès",
   "team.deleted.success": "L'équipe %s a été supprimée avec succès",
   "user.updated.success": "L'utilisateur %s a été modifié avec succès",

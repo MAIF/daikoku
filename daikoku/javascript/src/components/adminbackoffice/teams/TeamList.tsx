@@ -154,7 +154,10 @@ export const TeamList = () => {
               } else {
                 queryClient.invalidateQueries({ queryKey: ['teams'] });
                 toast.info(translate("mailValidation.sent.body"))
-                toast.success(translate({ key: "team.created.success", replacements: [data.name] }))
+                if (!tenant.teamCreationProcess.some((step) => step.type === "email")){
+                  toast.success(translate({ key: "team.created.success", replacements: [data.name] }))
+                }
+                toast.success(translate({ key: "team.creation.demand.success", replacements: [data.name] }))
               }
             }),
           value: newTeam

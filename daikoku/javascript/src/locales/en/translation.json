@@ -473,6 +473,7 @@
   "Automatic": "Automatic",
   "Manual": "Manual",
   "team.created.success": "Team %s created successfully",
+  "team.creation.demand.success": "The team creation demand %s has been realized successfully",
   "team.updated.success": "Team %s updated successfully",
   "team.deleted.success": "Team %s deleted successfully",
   "user.updated.success": "User %s updated successfully",
