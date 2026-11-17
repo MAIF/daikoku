@@ -7,14 +7,13 @@ import fr.maif.daikoku.env.Env
 import fr.maif.daikoku.logger.AppLogger
 import fr.maif.daikoku.utils.future.EnhancedObject
 import org.apache.pekko.http.scaladsl.util.FastFuture
-import org.apache.pekko.http.scaladsl.util.FastFuture.EnhancedFuture
 import org.owasp.html.HtmlPolicyBuilder
 import play.api.Logger
 import play.api.i18n.MessagesApi
 import play.api.libs.json.*
 import play.api.libs.ws.DefaultBodyWritables.writeableOf_urlEncodedForm
 import play.api.libs.ws.JsonBodyWritables.writeableOf_JsValue
-import play.api.libs.ws.{DefaultBodyWritables, WSAuthScheme, WSClient}
+import play.api.libs.ws.{DefaultBodyWritables, WSAuthScheme, WSClient, WSResponse}
 
 import java.util.concurrent.ConcurrentHashMap
 import java.util.{Date, Properties}
@@ -39,6 +38,12 @@ object HtmlSanitizer {
 
 sealed trait Mailer {
   lazy val logger = Logger("daikoku-console-mailer")
+  protected def checkResponse(response: WSResponse): Unit =
+    if (response.status < 200 || response.status >= 300)
+      throw new jakarta.mail.MessagingException(
+        s"Mail service returned HTTP status ${response.status}."
+      )
+
   def send(title: String, to: Seq[String], body: String, tenant: Tenant)(
       implicit
       ec: ExecutionContext,
@@ -142,15 +147,15 @@ class MailgunSender(wsClient: WSClient, settings: MailgunSettings)
         tenant,
         Map("email" -> JsString(body))
       )
-      .map(templatedBody => {
+      .flatMap(templatedBody => {
         _send(body = templatedBody, title = title, to = to)
+          .map(checkResponse)
           .andThen {
-            case Success(res) =>
-              logger.info(s"Alert email sent \r\n ${res.json}")
+            case Success(_) =>
+              logger.info("Alert email sent")
             case Failure(e) =>
               logger.error("Error while sending alert email", e)
           }
-          .map(_ -> ())
       })
   }
 
@@ -230,15 +235,15 @@ class MailjetSender(wsClient: WSClient, settings: MailjetSettings)
         tenant,
         Map("email" -> JsString(body))
       )
-      .map(templatedBody => {
+      .flatMap(templatedBody => {
         _send(body = templatedBody, title = title, to = to)
+          .map(checkResponse)
           .andThen {
             case Success(_) =>
               logger.info("Alert email sent")
             case Failure(e) =>
               logger.error("Error while sending alert email", e)
           }
-          .map(_ => ())
       })
   }
 
@@ -313,7 +318,7 @@ class SimpleSMTPSender(settings: SimpleSMTPSettings) extends Mailer {
         tenant,
         Map("email" -> JsString(body))
       )
-      .map(templatedBody => {
+      .flatMap(templatedBody => {
 
         val properties = buildProperties()
 
@@ -350,15 +355,11 @@ class SimpleSMTPSender(settings: SimpleSMTPSettings) extends Mailer {
                   "text/html; charset=utf-8"
                 )
 
-                Try {
-                  Transport.send(message)
-                  logger.debug(
-                    s"Alert email sent to : ${address.mkString("Array(", ", ", ")")}"
-                  )
-                  logger.debug(s"title: $title -- body: $body")
-                } recover { case e: Exception =>
-                  logger.error("Error while sending alert email", e)
-                } get
+                Transport.send(message)
+                logger.debug(
+                  s"Alert email sent to : ${address.mkString("Array(", ", ", ")")}"
+                )
+                logger.debug(s"title: $title -- body: $body")
 
                 FastFuture.successful(())
               }
@@ -460,16 +461,15 @@ class SendgridSender(ws: WSClient, settings: SendgridSettings) extends Mailer {
         tenant,
         Map("email" -> JsString(body))
       )
-      .map(templatedBody => {
+      .flatMap(templatedBody => {
         _send(templatedBody, title, to)
+          .map(checkResponse)
           .andThen {
             case Success(_) =>
               logger.info(s"Alert email sent : $to")
             case Failure(e) =>
               logger.error("Error while sending alert email", e)
           }
-          .fast
-          .map(_ => ())
       })
   }
 
@@ -773,14 +773,13 @@ class SMTPOauth2Sender(settings: SMTPOauth2Settings) extends Mailer {
       env: Env,
       language: String
   ): Future[Unit] =
-    _send(title, to, body, tenant)
-      .leftMap(error => {
-        logger.error(
-          s"Error while sending alert email to [${to.mkString(",")}]"
-        )
-        logger.error(error.getErrorMessage())
-      })
-      .merge
+    _send(title, to, body, tenant).value.flatMap {
+      case Right(_) => Future.successful(())
+      case Left(_) =>
+        Future.failed(new jakarta.mail.MessagingException(
+          "SMTP authentication or delivery failed."
+        ))
+    }
 
   private def _testConnection(
       tenant: Tenant

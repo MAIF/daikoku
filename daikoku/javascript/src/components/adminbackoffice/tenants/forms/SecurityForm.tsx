@@ -255,9 +255,6 @@ export const SecurityForm = (props: {
         </p>
         <ul>
           <li>
-            <strong>{translate('subscription.process.form')}</strong> : {translate('tenant.security.account.creation.process.doc.step.form')}
-          </li>
-          <li>
             <strong>{translate('subscription.process.email')}</strong> : {translate('tenant.security.account.creation.process.doc.step.email')}
           </li>
           <li>

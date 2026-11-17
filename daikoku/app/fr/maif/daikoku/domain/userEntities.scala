@@ -239,7 +239,7 @@ case class TeamCreation(
   override def asJson: JsValue = json.TeamCreationFormat.writes(this)
 
   def effectiveMetadata(tenant: Tenant): Map[String, String] = {
-    val keys = tenant.teamCreationProcess
+    val keys = steps.map(_.step)
       .collectFirst { case step: ValidationStep.Form => step }
       .flatMap(_.formKeysToMetadata)
       .getOrElse(Seq.empty)

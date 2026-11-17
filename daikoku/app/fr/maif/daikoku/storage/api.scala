@@ -524,6 +524,24 @@ trait AccountCreationRepo extends Repo[AccountCreation, DemandId] {
 }
 
 trait TeamCreationRepo extends Repo[TeamCreation, DemandId] {
+  def saveIfCurrent(previous: TeamCreation, updated: TeamCreation)(implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Boolean] =
+    queryTyped(
+      s"""UPDATE $tableName SET content = $$1::text::jsonb
+         |WHERE _id = $$2 AND content->>'fromTenant' = $$3
+         |AND content->'steps' = $$4::text::jsonb AND content->>'state' = $$5
+         |RETURNING content""".stripMargin,
+      Seq(
+        Json.stringify(updated.asJson),
+        previous.id.value,
+        previous.fromTenant.value,
+        Json.stringify((previous.asJson \ "steps").get),
+        previous.state.name
+      )
+    ).map(_.nonEmpty)
+
   def findByRandomId(
       randomId: String
   )(implicit

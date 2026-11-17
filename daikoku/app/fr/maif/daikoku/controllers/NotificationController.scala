@@ -170,7 +170,8 @@ class NotificationController(
                 EitherT(
                   teamService.acceptTeamCreationAttempt(
                     demand,
-                    step
+                    step,
+                    notification
                   )
                 )
               case ApiSubscriptionDemand(
@@ -319,17 +320,6 @@ class NotificationController(
           case AccountCreationAttempt(demand, step, _) =>
             EitherT(
               accountCreationService.declineAccountCreationAttempt(
-                demand,
-                step,
-                ctx.tenant,
-                maybeMessage
-              )
-            ).map(_ => None)
-              .leftMap(_ => None)
-              .merge
-          case TeamCreationAttempt(demand, step, _) =>
-            EitherT(
-              teamService.declineTeamCreationAttempt(
                 demand,
                 step,
                 ctx.tenant,
@@ -615,19 +605,39 @@ class NotificationController(
             .findById(notificationId),
           AppError.NotificationNotFound
         )
-        sender <- EitherT.fromOptionF[Future, AppError, User](
-          env.dataStore.userRepo.findById(notification.sender.id.get),
-          AppError.UserNotFound()
+        sender <- EitherT.liftF[Future, AppError, Option[User]](
+          notification.sender.id match {
+            case Some(id) => env.dataStore.userRepo.findById(id)
+            case None    => Future.successful(None)
+          }
         )
       } yield {
-        implicit val lang: String = sender.defaultLanguage
+        implicit val lang: String = sender.flatMap(_.defaultLanguage)
           .orElse(ctx.tenant.defaultLanguage)
           .getOrElse("en")
 
         notification.team match {
           case None => rejectNotificationOfMe(notification)
           case Some(team) =>
-            rejectNotificationOfTeam(team, notification, maybeMessage)
+            notification.action match {
+              case TeamCreationAttempt(demand, step, _) =>
+                TeamAdminOnly(
+                  AuditTrailEvent(s"@{user.name} has rejected team creation ${demand.value}")
+                )(team.value, ctx) { _ =>
+                  (for {
+                    _ <- EitherT(teamService.declineTeamCreationAttempt(
+                      demand, step, ctx.tenant, maybeMessage
+                    ))
+                    _ <- EitherT.liftF[Future, AppError, Boolean](
+                      env.dataStore.notificationRepo.forTenant(ctx.tenant)
+                        .save(notification.copy(status = NotificationStatus.Rejected()))
+                    )
+                  } yield Ok(Json.obj("done" -> true)))
+                    .leftMap(_.render()).merge
+                }
+              case _ =>
+                rejectNotificationOfTeam(team, notification, maybeMessage)
+            }
         }
       }
 

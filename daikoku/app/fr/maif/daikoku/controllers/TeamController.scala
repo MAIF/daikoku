@@ -172,6 +172,17 @@ class TeamController(
               email
             )
           )
+          _ <- EitherT.cond[Future][AppError, Unit](
+            ctx.tenant.teamCreationProcess.forall {
+              case _: ValidationStep.Email | _: ValidationStep.HttpRequest |
+                  _: ValidationStep.TeamAdmin => true
+              case _ => false
+            },
+            (),
+            AppError.BadRequestError(
+              "Team creation only supports Email, HTTP and Admin steps."
+            )
+          )
           _ <- EitherT.liftF(
             env.dataStore.teamCreationRepo
               .save(
@@ -186,11 +197,7 @@ class TeamController(
                   steps = ctx.tenant.teamCreationProcess.map(step =>
                     SubscriptionDemandStep(
                       id = SubscriptionDemandStepId(IdGenerator.token),
-                      state = step match {
-                        case _: ValidationStep.Form =>
-                          SubscriptionDemandState.Accepted
-                        case _ => SubscriptionDemandState.Waiting
-                      },
+                      state = SubscriptionDemandState.Waiting,
                       step = step
                     )
                   ),

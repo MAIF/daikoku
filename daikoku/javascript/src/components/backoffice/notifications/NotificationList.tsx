@@ -356,10 +356,9 @@ export const NotificationList = () => {
               apisCreationPermission: customizations.creationSecurity
             }))
             .then(response => {
-              if (isError(response)) return response.error;
               return queryClient.invalidateQueries({ queryKey: ['notifications'] })
                 .then(() => reloadUnreadNotificationsCount())
-                .then(() => undefined);
+                .then(() => isError(response) ? response.error : undefined);
             })
             .catch(error => error instanceof Error ? error.message : translate('oops, something went wrong.'));
         },

@@ -239,6 +239,98 @@ class TeamService(
     }
   }
 
+  private def saveTeamCreation(
+      previous: TeamCreation,
+      updated: TeamCreation
+  ): EitherT[Future, AppError, Unit] =
+    EitherT[Future, AppError, Unit](
+      env.dataStore.teamCreationRepo.saveIfCurrent(previous, updated).map {
+        case true => Right(())
+        case false =>
+          Left(AppError.EntityConflict("Team creation has already changed"))
+      }
+    )
+
+  private def executeTeamCreation[A](
+      demand: TeamCreation,
+      tenant: Tenant
+  )(
+      action: => EitherT[Future, AppError, A]
+  ): EitherT[Future, AppError, A] = {
+    val result = action.value.recover {
+      case _: java.io.IOException | _: java.util.concurrent.TimeoutException |
+          _: jakarta.mail.MessagingException =>
+        Left(AppError.BadRequestError(
+          "Team creation could not contact an external service."
+        ))
+    }
+    EitherT[Future, AppError, A](result.flatMap {
+      case Left(error: AppError.EntityConflict) =>
+        Future.successful(Left(error))
+      case Left(error) =>
+        for {
+          current <- env.dataStore.teamCreationRepo.findById(demand.id)
+          _ <- current match {
+            case Some(value) if !value.state.isClosed =>
+              env.dataStore.teamCreationRepo.saveIfCurrent(
+                demand,
+                demand.copy(state = SubscriptionDemandState.Blocked)
+              ).map {
+                case true => ()
+                case false =>
+                  AppLogger.warn(s"Team creation ${demand.id.value} changed while reporting an error")
+              }
+            case _ => Future.successful(())
+          }
+          _ = AppLogger.error(
+            s"Team creation ${demand.id.value} failed: ${error.getErrorMessage()}"
+          )
+          failure =
+            if (current.exists(_.state == Accepted))
+              AppError.BadRequestError(
+                "The team was created, but its confirmation email could not be sent."
+              )
+            else error
+          reported <- notifyTeamCreationError(demand, tenant).transform {
+            case scala.util.Success(_) => scala.util.Success(Left(failure))
+            case scala.util.Failure(_) =>
+              scala.util.Success(Left(AppError.BadRequestError(
+                s"${failure.getErrorMessage()} Administrators could not be notified."
+              )))
+          }
+        } yield reported
+      case Right(value) => Future.successful(Right(value))
+    })
+  }
+
+  private def notifyTeamCreationError(
+      demand: TeamCreation,
+      tenant: Tenant
+  ): Future[Unit] = {
+    implicit val language: String = tenant.defaultLanguage.getOrElse("en")
+    (for {
+      adminTeam <- env.dataStore.teamRepo.findAdminTeam(tenant.id)
+      admins <- env.dataStore.userRepo.findByIds(
+        adminTeam.toSeq.flatMap(_.admins()).toSeq
+      )
+      title <- translator.translate("mail.team.creation.error.title", tenant)
+      body <- translator.translate(
+        "mail.team.creation.error.body",
+        tenant,
+        Map("demandId" -> JsString(demand.id.value))
+      )
+      _ <-
+        if (admins.nonEmpty)
+          tenant.mailer.send(title, admins.map(_.email), body, tenant)
+        else Future.failed(new IllegalStateException(
+          "Tenant administrators were not found"
+        ))
+    } yield ()).andThen {
+      case scala.util.Failure(error) =>
+        AppLogger.error(s"Could not notify administrators for team creation ${demand.id.value}: ${error.getClass.getSimpleName}")
+    }
+  }
+
   def runTeamCreationProcess(
       demandId: DemandId,
       tenant: Tenant
@@ -256,23 +348,20 @@ class TeamService(
       step.step match {
         case s: ValidationStep.TeamAdmin =>
           notifyTenantAdminteam(s, step, teamCreation, tenant)
-        // generate notification
         case s: ValidationStep.Email =>
           sendEmail(s, step, teamCreation, tenant)
-        // send email
         case s: ValidationStep.HttpRequest =>
           callHttpRequestStep(s, step, teamCreation, tenant)
-        // call http and check response
-        case s: ValidationStep.Form =>
+        case _: ValidationStep.Form =>
           EitherT.leftT[Future, Result](
             AppError.BadRequestError(
-              "Only one form si available, please contact an administrator"
+              "Form steps are not allowed for team creation."
             )
           )
         case _: ValidationStep.Payment =>
           EitherT.leftT[Future, Result](
             AppError.BadRequestError(
-              "Payment step is not authorized for the  moment, please contact an administrator"
+              "Payment steps are not allowed for team creation."
             )
           )
       }
@@ -283,17 +372,53 @@ class TeamService(
         AppError.EntityNotFound("Team creation")
       )
       _ <- EitherT.cond[Future][AppError, Unit](
-        !teamCreation.state.isClosed,
+        teamCreation.fromTenant == tenant.id &&
+          teamCreation.state == SubscriptionDemandState.Waiting,
         (),
         AppError.Forbidden("Team creation is closed")
       )
       maybeStep <- EitherT.pure[Future, AppError](
-        teamCreation.steps.find(!_.state.isClosed)
+        teamCreation.steps.find(_.state != Accepted)
       )
-      result <-
-        maybeStep.fold(finalizeTeamCreation(teamCreation, tenant))(
-          processStep(_, teamCreation)
-        )
+      result <- maybeStep match {
+        case Some(step) if step.state == SubscriptionDemandState.InProgress =>
+          EitherT.rightT[Future, AppError](Ok(Json.obj("creation" -> "waiting")))
+        case Some(step) =>
+          val startedStep = step.copy(state = SubscriptionDemandState.InProgress)
+          val started = teamCreation.copy(
+            steps = teamCreation.steps.map(s => if (s.id == step.id) startedStep else s)
+          )
+          for {
+            _ <- EitherT.cond[Future][AppError, Unit](
+              step.state == SubscriptionDemandState.Waiting,
+              (),
+              AppError.EntityConflict("Team creation step is already closed")
+            )
+            _ <- saveTeamCreation(teamCreation, started)
+            processed <- executeTeamCreation(started, tenant)(
+              processStep(startedStep, started)
+            )
+            next <- step.step match {
+              case _: ValidationStep.HttpRequest =>
+                EitherT.liftF[Future, AppError, Option[TeamCreation]](
+                  env.dataStore.teamCreationRepo.findById(demandId)
+                ).flatMap {
+                  case Some(current) if !current.state.isClosed =>
+                    runTeamCreationProcess(demandId, tenant)
+                  case _ => EitherT.rightT[Future, AppError](processed)
+                }
+              case _ => EitherT.rightT[Future, AppError](processed)
+            }
+          } yield next
+        case None =>
+          val finalizing = teamCreation.copy(state = SubscriptionDemandState.InProgress)
+          for {
+            _ <- saveTeamCreation(teamCreation, finalizing)
+            finalized <- executeTeamCreation(finalizing, tenant)(
+              finalizeTeamCreation(finalizing, tenant)
+            )
+          } yield finalized
+      }
     } yield result
   }
 
@@ -312,129 +437,87 @@ class TeamService(
     def declineTeamCreation(
         demand: TeamCreation
     ): EitherT[Future, AppError, Result] = {
-      val language = tenant.defaultLanguage.getOrElse("en")
       for {
-        _ <- EitherT.right[AppError](
-          env.dataStore.teamCreationRepo
-            .save(
-              demand.copy(
-                state = SubscriptionDemandState.Refused,
-                steps = demand.steps.map(s =>
-                  if (s.id == _step.id)
-                    s.copy(state = SubscriptionDemandState.Refused)
-                  else s
-                )
-              )
-            )
-        )
-        title <- EitherT.right[AppError](
-          translator.translate("mail.rejection.title", tenant)(using
-            messagesApi,
-            language,
-            env
-          )
-        )
-        body <- EitherT.right[AppError](
-          translator.translate(
-            "mail.api.subscription.rejection.body",
-            tenant,
-            Map(
-              "user" -> JsString(demand.name),
-              "tenant" -> JsString(tenant.name),
-              "team_creation_data" -> demand.asJson,
-              "tenant_data" -> tenant.asJson
-            )
-          )(using messagesApi, language, env)
-        )
-        _ <- EitherT.right[AppError](
-          tenant.mailer.send(title, Seq(demand.email), body, tenant)(using
-            ec,
-            translator,
-            messagesApi,
-            env,
-            language
-          )
-        )
+        _ <- rejectStep(_step, demand, tenant, None)
       } yield Ok(Json.obj("creation" -> "refused"))
     }
 
     def validStep(js: JsValue): EitherT[Future, AppError, Result] = {
-      val metadata = (js \ "metadata").asOpt[JsObject]
-      val authorizedEntitiesResult: Either[
-        AppError,
-        Option[Seq[TeamAuthorizedEntities]]
-      ] =
-        (js \ "authorizedOtoroshiEntities")
-          .validateOpt(using json.SeqTeamAuthorizedEntitiesFormat) match {
-          case JsSuccess(value, _) => Right(value)
-          case JsError(errors) =>
-            Left(
-              AppError.BadRequestError(Json.stringify(JsError.toJson(errors)))
-            )
-        }
-      val apisCreationPermission =
-        (js \ "apisCreationPermission").asOpt[Boolean]
-
+      val customizations = for {
+        metadata <- (js \ "metadata").validateOpt[Map[String, String]]
+        entities <- (js \ "authorizedOtoroshiEntities")
+          .validateOpt(using json.SeqTeamAuthorizedEntitiesFormat)
+        permission <- (js \ "apisCreationPermission").validateOpt[Boolean]
+      } yield (metadata.getOrElse(Map.empty), entities, permission)
       for {
-        authorizedEntities <- EitherT.fromEither[Future](
-          authorizedEntitiesResult
+        values <- EitherT.fromEither[Future](
+          customizations.asEither.left.map(_ =>
+            AppError.BadRequestError("HTTP validation response contains invalid team customizations.")
+          )
         )
-        _ <- _step.check()
+        (metadata, authorizedEntities, permission) = values
+        _ <- checkTeamCreationStep(_step, demand)
+        mergedMetadata = demand.metadata ++ metadata
         updatedDemand = demand.copy(
           steps = demand.steps.map(s =>
             if (s.id == _step.id)
               s.copy(state = SubscriptionDemandState.Accepted)
             else s
           ),
-          metadata = demand.metadata ++ metadata
-            .map(_.as[Map[String, String]])
-            .getOrElse(Map.empty),
-          creationSecurity = apisCreationPermission,
+          metadata = mergedMetadata,
+          creationSecurity = permission.orElse(demand.creationSecurity),
           adminReview = Some(
             TeamCreationAdminReview(
-              metadata = demand.metadata,
-              removedMetadataKeys = Set.empty,
-              authorizedOtoroshiEntities = authorizedEntities,
-              creationSecurity = demand.creationSecurity
+              metadata = mergedMetadata,
+              removedMetadataKeys = demand.adminReview
+                .map(_.removedMetadataKeys).getOrElse(Set.empty) -- metadata.keySet,
+              authorizedOtoroshiEntities =
+                if ((js \ "authorizedOtoroshiEntities").toOption.isDefined) authorizedEntities
+                else demand.adminReview.fold(tenant.defaultAuthorizedOtoroshiEntities)(
+                  _.authorizedOtoroshiEntities
+                ),
+              creationSecurity = permission.orElse(
+                demand.adminReview.flatMap(_.creationSecurity)
+              ).orElse(demand.creationSecurity)
             )
           )
         )
-        _ <- EitherT.liftF(
-          env.dataStore.teamCreationRepo
-            .save(updatedDemand)
-        )
-        result <- runTeamCreationProcess(
-          demand.id,
-          tenant
-        )
-      } yield result
+        _ <- saveTeamCreation(demand, updatedDemand)
+      } yield Ok(Json.obj("creation" -> "waiting"))
     }
 
     for {
-      response <- EitherT(
-        env.wsClient
-          .url(step.url)
-          .withHttpHeaders(step.headers.toSeq*)
-          .post(
-            Json.obj(
-              "demand" -> demand.asJson
-            )
-          )
-          .map(resp => {
-            val value: Either[AppError, (Boolean, JsValue)] = Try {
-              Right(((resp.json \ "accept").as[Boolean], resp.json))
-            }.recover(e => {
-              AppLogger.error(e.getMessage, e)
-              AppLogger.error(s"body ==> ${Json.stringify(resp.json)}")
-              Left(AppError.OtoroshiError(Json.obj("error" -> e.getMessage)))
-            }).get
-            value
-          })
+      request <- EitherT.fromEither[Future](
+        Try(
+          env.wsClient.url(step.url).withHttpHeaders(step.headers.toSeq*)
+        ).toEither.left.map(_ =>
+          AppError.BadRequestError("HTTP validation endpoint configuration is invalid.")
+        )
       )
-
+      httpResponse <- EitherT.liftF[Future, AppError, play.api.libs.ws.WSResponse](
+        request.post(Json.obj("demand" -> demand.asJson))
+      )
+      _ <- EitherT.cond[Future][AppError, Unit](
+        httpResponse.status >= 200 && httpResponse.status < 300,
+        (),
+        AppError.BadRequestError(
+          s"HTTP validation endpoint returned status ${httpResponse.status}; expected 2xx."
+        )
+      )
+      response <- EitherT.fromEither[Future](
+        Try(Json.parse(httpResponse.body)).toEither.left.map(_ =>
+          AppError.BadRequestError("HTTP validation response must be valid JSON.")
+        )
+      )
+      accept <- EitherT.fromOption[Future](
+        (response \ "accept").asOpt[Boolean],
+        AppError.BadRequestError(
+          "HTTP validation response must contain a boolean 'accept' field."
+        )
+      )
       r <-
-        if (response._1)
-          validStep(response._2)
+        if (accept)
+          validStep(response)
         else
           declineTeamCreation(
             demand
@@ -496,6 +579,13 @@ class TeamService(
       "tenant_data" -> tenant.asJson
     )
     for {
+      _ <- EitherT.cond[Future][AppError, Unit](
+        s.emails.exists(_.trim.nonEmpty),
+        (),
+        AppError.BadRequestError(
+          "Team creation email step must have at least one recipient."
+        )
+      )
       title <- EitherT.right[AppError](
         translator.translate(
           s"mail.team.creation.mail.$mailType.title",
@@ -510,19 +600,20 @@ class TeamService(
           mailData
         )
       )
-
-      _ <- EitherT.right[AppError](
-        tenant.mailer.send(
-          title,
-          s.emails.map(_.replace("${form.email}", teamCreation.email)),
-          body,
-          tenant
-        )
-      )
       _ <- EitherT.right[AppError](
         env.dataStore.stepValidatorRepo
           .forTenant(tenant)
           .save(stepValidator)
+      )
+      _ <- EitherT.right[AppError](
+        tenant.mailer.send(
+          title,
+          s.emails
+            .filter(_.trim.nonEmpty)
+            .map(_.replace("${form.email}", teamCreation.email)),
+          body,
+          tenant
+        )
       )
     } yield {
       Ok(Json.obj("creation" -> "waiting"))
@@ -541,39 +632,11 @@ class TeamService(
       messagesApi: MessagesApi
   ): EitherT[Future, AppError, Result] = {
 
-    val motivationPattern = "\\[\\[(.+?)\\]\\]".r
-
     for {
-      formStep <- EitherT.fromOption[Future][AppError, ValidationStep.Form](
-        tenant.teamCreationProcess.collectFirst { case s: ValidationStep.Form =>
-          s
-        },
-        AppError.EntityNotFound("form step")
-      )
       adminTeam <- EitherT.fromOptionF(
         env.dataStore.teamRepo.findAdminTeam(tenant.id),
         AppError.EntityNotFound("tenant team admin")
       )
-      _ <- EitherT.cond[Future](
-        adminTeam.id == step.team,
-        (),
-        AppError.EntityNotFound("tenant Admin team")
-      )
-      motivationAsString =
-        tenant.teamCreationProcess
-          .collectFirst { case s: ValidationStep.Form => s }
-          .map { formStep =>
-            val formatter = formStep.formatter.getOrElse("[[motivation]]")
-            motivationPattern.findAllMatchIn(formatter).foldLeft(formatter) {
-              (motivation, rgxMatch) =>
-                val key = rgxMatch.group(1)
-                val replacement = (teamCreation.value \ key)
-                  .asOpt[String]
-                  .getOrElse(s"-- $key --")
-                motivation.replace(s"[[$key]]", replacement)
-            }
-          }
-          .getOrElse("")
       notification = Notification(
         id = NotificationId(IdGenerator.token(32)),
         tenant = tenant.id,
@@ -587,7 +650,7 @@ class TeamService(
           .TeamCreationAttempt(
             teamCreation.id,
             _step.id,
-            motivationAsString
+            ""
           )
       )
 
@@ -663,7 +726,6 @@ class TeamService(
         authorizedOtoroshiEntities = tenant.defaultAuthorizedOtoroshiEntities,
         contact = teamCreation.email,
         avatar = Some(teamCreation.avatar)
-        // metadata : voir ci-dessous
       )
 
       effectiveMetadata = teamCreation.effectiveMetadata(tenant)
@@ -683,6 +745,7 @@ class TeamService(
             )
           )
       )
+      _ <- saveTeamCreation(teamCreation, teamCreation.copy(state = Accepted))
 
       mailData = Map(
         "tenant" -> JsString(tenant.name),
@@ -708,13 +771,22 @@ class TeamService(
       _ <- EitherT.liftF(
         tenant.mailer.send(title, Seq(teamCreation.email), body, tenant)
       )
-      _ <- EitherT.liftF[Future, AppError, Boolean](
-        env.dataStore.teamCreationRepo
-          .save(teamCreation.copy(state = Accepted))
-      )
-
     } yield Ok(Json.obj("message" -> "team.validated.success"))
   }
+
+  private def checkTeamCreationStep(
+      step: SubscriptionDemandStep,
+      demand: TeamCreation
+  ): EitherT[Future, AppError, Unit] =
+    for {
+      _ <- step.check()
+      _ <- EitherT.cond[Future][AppError, Unit](
+        demand.state == SubscriptionDemandState.Waiting &&
+          demand.steps.find(_.state != Accepted).exists(_.id == step.id),
+        (),
+        AppError.EntityConflict("Team creation step is not awaiting a decision")
+      )
+    } yield ()
 
   def validateStep(
       step: SubscriptionDemandStep,
@@ -725,7 +797,7 @@ class TeamService(
       ec: ExecutionContext
   ): EitherT[Future, AppError, Unit] = {
     for {
-      _ <- step.check()
+      _ <- checkTeamCreationStep(step, demand)
       incomingMetadata = metadata
         .map(
           _.fields
@@ -738,21 +810,23 @@ class TeamService(
         .getOrElse(Map.empty[String, String])
       collectedMetadata = demand.metadata ++ incomingMetadata
       effectiveMetadata = demand.adminReview.fold(collectedMetadata)(review =>
-        (collectedMetadata -- review.removedMetadataKeys) ++ review.metadata
+        (collectedMetadata -- review.removedMetadataKeys) ++ review.metadata ++ incomingMetadata
       )
-      afg = println(effectiveMetadata)
       updatedDemand = demand.copy(
         steps = demand.steps.map(s =>
           if (s.id == step.id)
             s.copy(state = SubscriptionDemandState.Accepted)
           else s
         ),
-        metadata = effectiveMetadata
+        metadata = effectiveMetadata,
+        adminReview = demand.adminReview.map(review =>
+          review.copy(
+            metadata = review.metadata ++ incomingMetadata,
+            removedMetadataKeys = review.removedMetadataKeys -- incomingMetadata.keySet
+          )
+        )
       )
-      _ <- EitherT.right[AppError](
-        env.dataStore.teamCreationRepo
-          .save(updatedDemand)
-      )
+      _ <- saveTeamCreation(demand, updatedDemand)
     } yield ()
   }
 
@@ -775,6 +849,12 @@ class TeamService(
         demand.steps.find(_.id == validator.step),
         AppError.EntityNotFound("Validation Step")
       )
+      _ <- EitherT.cond[Future][AppError, Unit](
+        demand.fromTenant == tenant.id &&
+          step.step.isInstanceOf[ValidationStep.Email],
+        (),
+        AppError.ForbiddenAction
+      )
       _ <- validateStep(step, demand)
       _ <- EitherT.liftF[Future, AppError, Boolean](
         env.dataStore.stepValidatorRepo
@@ -784,7 +864,9 @@ class TeamService(
       result <- runTeamCreationProcess(
         demand.id,
         tenant
-      )
+      ).leftMap(error => AppError.BadRequestError(
+        s"The validation was recorded, but the workflow could not complete: ${error.getErrorMessage()}"
+      ))
     } yield result
   }
 
@@ -808,7 +890,15 @@ class TeamService(
         demand.steps.find(_.id == validator.step),
         AppError.EntityNotFound("Validation Step")
       )
-      _ <- rejectStep(step, demand, tenant, None)
+      _ <- EitherT.cond[Future][AppError, Unit](
+        demand.fromTenant == tenant.id &&
+          step.step.isInstanceOf[ValidationStep.Email],
+        (),
+        AppError.ForbiddenAction
+      )
+      _ <- executeTeamCreation(demand, tenant)(
+        rejectStep(step, demand, tenant, None)
+      )
       _ <- EitherT.liftF[Future, AppError, Boolean](
         env.dataStore.stepValidatorRepo
           .deleteByStep(tenant.id, validator.step.value)
@@ -895,7 +985,8 @@ class TeamService(
 
   def acceptTeamCreationAttempt(
       teamCreation: DemandId,
-      subscriptionDemandStepId: SubscriptionDemandStepId
+      subscriptionDemandStepId: SubscriptionDemandStepId,
+      notification: Notification
   )(implicit
       ctx: DaikokuActionContext[JsValue],
       env: Env,
@@ -939,7 +1030,15 @@ class TeamService(
         AppError.TeamNameAlreadyExists
       )
       _ <- validateStep(step, reviewedDemand)
-      _ <- runTeamCreationProcess(demand.id, ctx.tenant)
+      _ <- EitherT.liftF[Future, AppError, Boolean](
+        env.dataStore.notificationRepo.forTenant(ctx.tenant)
+          .save(notification.copy(status = NotificationStatus.Accepted()))
+      )
+      _ <- runTeamCreationProcess(demand.id, ctx.tenant).leftMap(error =>
+        AppError.BadRequestError(
+          s"The validation was recorded, but the workflow could not complete: ${error.getErrorMessage()}"
+        )
+      )
     } yield ()
     r.value
   }
@@ -966,7 +1065,15 @@ class TeamService(
         demand.steps.find(_.id == subscriptionDemandStepId),
         AppError.EntityNotFound("Validation Step")
       )
-      _ <- rejectStep(step, demand, tenant, message)
+      _ <- EitherT.cond[Future][AppError, Unit](
+        demand.fromTenant == tenant.id &&
+          step.step.isInstanceOf[ValidationStep.TeamAdmin],
+        (),
+        AppError.ForbiddenAction
+      )
+      _ <- executeTeamCreation(demand, tenant)(
+        rejectStep(step, demand, tenant, message)
+      )
     } yield ()
 
     r.value
@@ -995,7 +1102,7 @@ class TeamService(
       "tenant_data" -> tenant.asJson
     )
     for {
-      _ <- step.check()
+      _ <- checkTeamCreationStep(step, teamCreation)
       updatedDemand = teamCreation.copy(
         state = SubscriptionDemandState.Refused,
         steps = teamCreation.steps.map(s =>
@@ -1004,10 +1111,7 @@ class TeamService(
           else s
         )
       )
-      _ <- EitherT.right[AppError](
-        env.dataStore.teamCreationRepo
-          .save(updatedDemand)
-      )
+      _ <- saveTeamCreation(teamCreation, updatedDemand)
 
       title <- EitherT.right[AppError](
         translator.translate(

@@ -505,7 +505,7 @@ export const SubscriptionProcessEditor = (props: SubProcessProps) => {
       getTitle: step => step.title,
       Content: ValidationCard,
       canEdit: false,
-      canAdd: !draft.some(step => step.type === 'teamAdmin'),
+      canAdd: props.allowFormStep === false || !draft.some(step => step.type === 'teamAdmin'),
       unavailableReason: translate('subscription.process.palette.admin.exists'),
     },
     payment: {
