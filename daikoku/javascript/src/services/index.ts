@@ -2479,7 +2479,6 @@ export const graphql = {
                   }
                 }
               }
-              motivation
             }
           }
           date
