@@ -8,21 +8,11 @@ Go to `settings/Organizations settings` and then click `teams` on the left menu.
 
 The tenant security settings can require Email, HTTP and Admin validation steps.
 Steps run sequentially in the configured order, and each type can appear multiple times.
-Form and Payment steps are not supported. An empty workflow creates the team immediately.
-Each request keeps its original steps even if the tenant configuration changes.
-
-An Email or Admin step needs only one decision. Repeated or concurrent decisions cannot
-process the same step twice. Admin steps are addressed to the tenant administration team.
-Their changes are kept, and later validated metadata overrides earlier values.
+Form and Payment steps are not supported. 
 
 HTTP steps require a 2xx response containing JSON with a boolean `accept` field.
 `false` rejects the request without creating a team. Invalid responses and unreachable
-services are technical errors. Email steps require at least one recipient.
-
-A technical error blocks the request and alerts tenant administrators by email.
-Already recorded decisions are kept. There is no retry or recovery action after an
-error or interruption. If the team has already been created, a confirmation email
-failure does not undo its creation.
+services are technical errors.
 
 ## properties
 A team needs the following information:
