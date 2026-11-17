@@ -529,7 +529,7 @@ const QuotasForm = (props: { ownerTeam: ITeamSimple, plan: IUsagePlanGQL, savePl
       />}
       {!quotasDisplayed && (
         <div className='mrf-flex mrf-jc_end mrf-mt_5'>
-          <button className='btn primary'
+          <button className='btn --primary'
             type='button'
             onClick={() => props.savePlan(convertIUsagePlanGQLToIUsagePlan({
               ...props.plan,

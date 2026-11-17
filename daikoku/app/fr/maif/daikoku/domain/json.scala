@@ -3612,8 +3612,7 @@ object json {
         JsSuccess(
           TeamCreationAttempt(
             demand = (json \ "demand").as(using SubscriptionDemandIdFormat),
-            step = (json \ "step").as(using SubscriptionDemandStepIdFormat),
-            motivation = (json \ "motivation").as[String]
+            step = (json \ "step").as(using SubscriptionDemandStepIdFormat)
           )
         )
       } recover { case e =>
@@ -3624,8 +3623,7 @@ object json {
     override def writes(o: TeamCreationAttempt): JsValue =
       Json.obj(
         "demand" -> o.demand.value,
-        "step" -> o.step.value,
-        "motivation" -> o.motivation
+        "step" -> o.step.value
       )
   }
 

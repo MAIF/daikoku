@@ -649,8 +649,7 @@ class TeamService(
         action = NotificationAction
           .TeamCreationAttempt(
             teamCreation.id,
-            _step.id,
-            ""
+            _step.id
           )
       )
 
@@ -864,7 +863,7 @@ class TeamService(
       result <- runTeamCreationProcess(
         demand.id,
         tenant
-      ).leftMap(error => AppError.BadRequestError(
+      ).leftMap[AppError](error => AppError.BadRequestError(
         s"The validation was recorded, but the workflow could not complete: ${error.getErrorMessage()}"
       ))
     } yield result
@@ -1034,7 +1033,7 @@ class TeamService(
         env.dataStore.notificationRepo.forTenant(ctx.tenant)
           .save(notification.copy(status = NotificationStatus.Accepted()))
       )
-      _ <- runTeamCreationProcess(demand.id, ctx.tenant).leftMap(error =>
+      _ <- runTeamCreationProcess(demand.id, ctx.tenant).leftMap[AppError](error =>
         AppError.BadRequestError(
           s"The validation was recorded, but the workflow could not complete: ${error.getErrorMessage()}"
         )

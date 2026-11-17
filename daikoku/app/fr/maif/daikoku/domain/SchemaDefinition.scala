@@ -3414,11 +3414,6 @@ object SchemaDefinition {
                   case Some(d) => d.steps.find(_.id == ctx.value.step)
                   case None    => None
                 }
-          ),
-          Field(
-            "motivation",
-            OptionType(StringType),
-            resolve = _.value.motivation.some
           )
         )
       )

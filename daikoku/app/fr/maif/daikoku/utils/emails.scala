@@ -40,7 +40,7 @@ sealed trait Mailer {
   lazy val logger = Logger("daikoku-console-mailer")
   protected def checkResponse(response: WSResponse): Unit =
     if (response.status < 200 || response.status >= 300)
-      throw new jakarta.mail.MessagingException(
+      throw new java.io.IOException(
         s"Mail service returned HTTP status ${response.status}."
       )
 

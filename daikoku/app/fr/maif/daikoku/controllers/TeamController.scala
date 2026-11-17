@@ -218,47 +218,6 @@ class TeamController(
       }
     }
 
-  //  def createTeam() =
-//      (for {
-//
-//        _ <- EitherT.liftF(
-//          env.dataStore.accountCreationRepo.save(
-//            AccountCreation(
-//              id = accountCreationId,
-//              randomId = randomId,
-//              email = email,
-//              avatar = avatar,
-//              name = name,
-//              password = BCrypt.hashpw(password, BCrypt.gensalt()),
-//              creationDate = DateTime.now(),
-//              validUntil = DateTime.now().plusMinutes(15),
-//              steps = ctx.tenant.accountCreationProcess.map(step =>
-//                SubscriptionDemandStep(
-//                  id = SubscriptionDemandStepId(IdGenerator.token),
-//                  state = step match {
-//                    case _: ValidationStep.Form =>
-//                      SubscriptionDemandState.Accepted
-//                    case _ => SubscriptionDemandState.Waiting
-//                  },
-//                  step = step
-//                )
-//              ),
-//              state = SubscriptionDemandState.Waiting,
-//              value = body - "confirmPassword" - "password",
-//              fromTenant = ctx.tenant.id,
-//              preferredDomains = Map(ctx.tenant.id -> ctx.tenant.hostFor(env.requestHost(ctx.request).some))
-//            )
-//          )
-//        )
-//        result <- accountCreationService.runAccountCreationProcess(
-//          accountCreationId,
-//          ctx.tenant
-//        )
-//      } yield result)
-//        .leftMap(_.render())
-//        .merge
-//    }
-
   def createTeamOLD(): Action[JsValue] =
     DaikokuAction.async(parse.json) { ctx =>
       PublicUserAccess(

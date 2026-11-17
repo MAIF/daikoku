@@ -166,7 +166,7 @@ class NotificationController(
                     step
                   )
                 )
-              case TeamCreationAttempt(demand, step, _) =>
+              case TeamCreationAttempt(demand, step) =>
                 EitherT(
                   teamService.acceptTeamCreationAttempt(
                     demand,
@@ -620,7 +620,7 @@ class NotificationController(
           case None => rejectNotificationOfMe(notification)
           case Some(team) =>
             notification.action match {
-              case TeamCreationAttempt(demand, step, _) =>
+              case TeamCreationAttempt(demand, step) =>
                 TeamAdminOnly(
                   AuditTrailEvent(s"@{user.name} has rejected team creation ${demand.value}")
                 )(team.value, ctx) { _ =>
