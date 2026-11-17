@@ -5,7 +5,7 @@ import cats.implicits.catsSyntaxOptionId
 import fr.maif.daikoku.actions.DaikokuActionContext
 import fr.maif.daikoku.controllers.AppError
 import fr.maif.daikoku.domain.*
-import fr.maif.daikoku.domain.SubscriptionDemandState.Accepted
+import fr.maif.daikoku.domain.WorkflowState.Accepted
 import fr.maif.daikoku.domain.TeamPermission.Administrator
 import fr.maif.daikoku.env.Env
 import fr.maif.daikoku.utils.Cypher.encrypt
@@ -141,7 +141,7 @@ class AccountCreationService {
   ): EitherT[Future, AppError, Result] = {
 
     def processStep(
-        step: SubscriptionDemandStep,
+        step: WorkflowStep,
         accountCreation: AccountCreation
     ): EitherT[Future, AppError, Result] =
       step.step match {
@@ -191,7 +191,7 @@ class AccountCreationService {
 
   private def sendEmail(
       s: ValidationStep.Email,
-      step: SubscriptionDemandStep,
+      step: WorkflowStep,
       accountCreation: AccountCreation,
       tenant: Tenant
   )(implicit
@@ -207,7 +207,7 @@ class AccountCreationService {
       tenant = tenant.id,
       token = IdGenerator.token,
       step = step.id,
-      subscriptionDemand = accountCreation.id,
+      demandId = accountCreation.id,
       metadata = Json.obj("email" -> accountCreation.email)
     )
 
@@ -280,7 +280,7 @@ class AccountCreationService {
 
   def callHttpRequestStep(
       step: ValidationStep.HttpRequest,
-      _step: SubscriptionDemandStep,
+      _step: WorkflowStep,
       demand: AccountCreation,
       tenant: Tenant
   )(implicit
@@ -297,10 +297,10 @@ class AccountCreationService {
           env.dataStore.accountCreationRepo
             .save(
               demand.copy(
-                state = SubscriptionDemandState.Refused,
+                state = WorkflowState.Refused,
                 steps = demand.steps.map(s =>
                   if (s.id == _step.id)
-                    s.copy(state = SubscriptionDemandState.Refused)
+                    s.copy(state = WorkflowState.Refused)
                   else s
                 )
               )
@@ -361,7 +361,7 @@ class AccountCreationService {
 
   def notifyTenantAdminteam(
       step: ValidationStep.TeamAdmin,
-      _step: SubscriptionDemandStep,
+      _step: WorkflowStep,
       accountCreation: AccountCreation,
       tenant: Tenant
   )(implicit
@@ -468,7 +468,7 @@ class AccountCreationService {
   }
 
   def validateStep(
-      step: SubscriptionDemandStep,
+      step: WorkflowStep,
       demand: AccountCreation,
       metadata: Option[JsObject] = None
   )(implicit
@@ -480,7 +480,7 @@ class AccountCreationService {
       updatedDemand = demand.copy(
         steps = demand.steps.map(s =>
           if (s.id == step.id)
-            s.copy(state = SubscriptionDemandState.Accepted)
+            s.copy(state = WorkflowState.Accepted)
           else s
         ),
         metadata = demand.metadata ++ metadata
@@ -502,7 +502,7 @@ class AccountCreationService {
   }
 
   def rejectStep(
-      step: SubscriptionDemandStep,
+      step: WorkflowStep,
       accountCreation: AccountCreation,
       tenant: Tenant,
       message: Option[String]
@@ -526,10 +526,10 @@ class AccountCreationService {
     for {
       _ <- step.check()
       updatedDemand = accountCreation.copy(
-        state = SubscriptionDemandState.Refused,
+        state = WorkflowState.Refused,
         steps = accountCreation.steps.map(s =>
           if (s.id == step.id)
-            s.copy(state = SubscriptionDemandState.Refused)
+            s.copy(state = WorkflowState.Refused)
           else s
         )
       )
@@ -571,7 +571,7 @@ class AccountCreationService {
     for {
       demand <- EitherT.fromOptionF(
         env.dataStore.accountCreationRepo
-          .findById(validator.subscriptionDemand),
+          .findById(validator.demandId),
         AppError.EntityNotFound("Subscription demand Validator")
       )
       step <- EitherT.fromOption[Future](
@@ -604,7 +604,7 @@ class AccountCreationService {
     for {
       demand <- EitherT.fromOptionF(
         env.dataStore.accountCreationRepo
-          .findById(validator.subscriptionDemand),
+          .findById(validator.demandId),
         AppError.EntityNotFound("Subscription demand Validator")
       )
       step <- EitherT.fromOption[Future](
@@ -622,7 +622,7 @@ class AccountCreationService {
 
   def acceptAccountCreationAttempt(
       accountCreation: DemandId,
-      subscriptionDemandStepId: SubscriptionDemandStepId
+      workflowStepId: WorkflowStepId
   )(implicit
       ctx: DaikokuActionContext[JsValue],
       env: Env,
@@ -640,7 +640,7 @@ class AccountCreationService {
         AppError.EntityNotFound("Subscription demand")
       )
       step <- EitherT.fromOption[Future](
-        demand.steps.find(_.id == subscriptionDemandStepId),
+        demand.steps.find(_.id == workflowStepId),
         AppError.EntityNotFound("Validation Step")
       )
       _ <- validateStep(step, demand)
@@ -652,7 +652,7 @@ class AccountCreationService {
 
   def declineAccountCreationAttempt(
       accountCreation: DemandId,
-      subscriptionDemandStepId: SubscriptionDemandStepId,
+      workflowStepId: WorkflowStepId,
       tenant: Tenant,
       message: Option[String]
   )(implicit
@@ -671,7 +671,7 @@ class AccountCreationService {
         AppError.EntityNotFound("Subscription demand")
       )
       step <- EitherT.fromOption[Future](
-        demand.steps.find(_.id == subscriptionDemandStepId),
+        demand.steps.find(_.id == workflowStepId),
         AppError.EntityNotFound("Validation Step")
       )
       _ <- rejectStep(step, demand, tenant, message)

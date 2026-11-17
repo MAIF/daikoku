@@ -764,7 +764,7 @@ class NotificationController(
 
   def acceptApiSubscription(
       subscriptionDemandId: DemandId,
-      subscriptionDemandStepId: SubscriptionDemandStepId,
+      workflowStepId: WorkflowStepId,
       teamRequestId: TeamId,
       apiId: ApiId,
       plan: UsagePlanId,
@@ -815,8 +815,8 @@ class NotificationController(
         adminCustomName =
           ctx.request.body.getBodyField[String]("adminCustomName"),
         steps = demand.steps.map(s =>
-          if (s.id == subscriptionDemandStepId)
-            s.copy(state = SubscriptionDemandState.Accepted)
+          if (s.id == workflowStepId)
+            s.copy(state = WorkflowState.Accepted)
           else s
         )
       )
@@ -863,8 +863,8 @@ class NotificationController(
           .findByStates(
             tenant.id,
             Seq(
-              SubscriptionDemandState.InProgress,
-              SubscriptionDemandState.Waiting
+              WorkflowState.InProgress,
+              WorkflowState.Waiting
             ),
             apis = versions.map(_.id).some
           )

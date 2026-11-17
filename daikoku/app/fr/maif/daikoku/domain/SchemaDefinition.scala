@@ -2515,19 +2515,19 @@ object SchemaDefinition {
       )
     )
 
-    lazy val SubscriptionDemandStepType: ObjectType[
+    lazy val WorkflowStepType: ObjectType[
       (DataStore, DaikokuActionContext[JsValue]),
-      SubscriptionDemandStep
+      WorkflowStep
     ] = ObjectType[
       (DataStore, DaikokuActionContext[JsValue]),
-      SubscriptionDemandStep
+      WorkflowStep
     ](
       "SubscriptionDemandStep",
-      "A subscription demand step",
+      "A workflow step shared by subscription, account and team requests",
       () =>
         fields[
           (DataStore, DaikokuActionContext[JsValue]),
-          SubscriptionDemandStep
+          WorkflowStep
         ](
           Field("id", StringType, resolve = _.value.id.value),
           Field("step", ValidationStepInterfaceType, resolve = _.value.step),
@@ -2561,7 +2561,7 @@ object SchemaDefinition {
           ),
           Field(
             "steps",
-            ListType(SubscriptionDemandStepType),
+            ListType(WorkflowStepType),
             resolve = _.value.steps
           ),
           Field("state", StringType, resolve = _.value.state.name),
@@ -3250,7 +3250,7 @@ object SchemaDefinition {
         "steps",
         Field(
           "steps",
-          ListType(SubscriptionDemandStepType),
+          ListType(WorkflowStepType),
           resolve = _.value.steps
         )
       ),
@@ -3325,7 +3325,7 @@ object SchemaDefinition {
         "steps",
         Field(
           "steps",
-          ListType(SubscriptionDemandStepType),
+          ListType(WorkflowStepType),
           resolve = _.value.steps
         )
       ),
@@ -3369,7 +3369,7 @@ object SchemaDefinition {
           ),
           Field(
             "step",
-            OptionType(SubscriptionDemandStepType),
+            OptionType(WorkflowStepType),
             resolve = ctx =>
               ctx.ctx._1.accountCreationRepo // FIXME: use defer ?
                 .findById(ctx.value.demand)
@@ -3406,7 +3406,7 @@ object SchemaDefinition {
           ),
           Field(
             "step",
-            OptionType(SubscriptionDemandStepType),
+            OptionType(WorkflowStepType),
             resolve = ctx =>
               ctx.ctx._1.teamCreationRepo // FIXME: use defer ?
                 .findById(ctx.value.demand)
@@ -5026,8 +5026,8 @@ object SchemaDefinition {
                       .findByStatesPaginated(
                         tenant.id,
                         Seq(
-                          SubscriptionDemandState.InProgress,
-                          SubscriptionDemandState.Waiting
+                          WorkflowState.InProgress,
+                          WorkflowState.Waiting
                         ),
                         apis = apis.map(_.id).some,
                         page = ctx.arg(OFFSET),
@@ -5067,8 +5067,8 @@ object SchemaDefinition {
                 .findByStatesPaginated(
                   tenant.id,
                   Seq(
-                    SubscriptionDemandState.InProgress,
-                    SubscriptionDemandState.Waiting
+                    WorkflowState.InProgress,
+                    WorkflowState.Waiting
                   ),
                   teams = Seq(team.id).some,
                   page = ctx.arg(OFFSET),

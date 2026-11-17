@@ -1358,7 +1358,7 @@ class ApiController(
               env.dataStore.subscriptionDemandRepo
                 .findByStates(
                   ctx.tenant.id,
-                  Seq(SubscriptionDemandState.Waiting, SubscriptionDemandState.InProgress),
+                  Seq(WorkflowState.Waiting, WorkflowState.InProgress),
                   apis = Seq(api.id).some,
                   teams = teams.map(_.id).some
                 )

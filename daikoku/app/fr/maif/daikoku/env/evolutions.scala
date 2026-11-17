@@ -911,13 +911,13 @@ object evolution_1613_b extends EvolutionScript {
               steps = (plan \ "subscriptionProcess")
                 .as(using json.SeqValidationStepFormat)
                 .map(step =>
-                  SubscriptionDemandStep(
-                    id = SubscriptionDemandStepId(IdGenerator.token),
-                    state = SubscriptionDemandState.InProgress,
+                  WorkflowStep(
+                    id = WorkflowStepId(IdGenerator.token),
+                    state = WorkflowState.InProgress,
                     step = step
                   )
                 ),
-              state = SubscriptionDemandState.InProgress,
+              state = WorkflowState.InProgress,
               team = teamId,
               from = sender.id.get,
               date = date,

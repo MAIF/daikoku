@@ -218,7 +218,7 @@ object NotificationAction {
       plan: UsagePlanId,
       team: TeamId,
       demand: DemandId,
-      step: SubscriptionDemandStepId,
+      step: WorkflowStepId,
       keyring: Option[KeyringId] = None,
       motivation: Option[String]
   ) extends NotificationAction
@@ -231,13 +231,13 @@ object NotificationAction {
 
   case class AccountCreationAttempt(
       demand: DemandId,
-      step: SubscriptionDemandStepId,
+      step: WorkflowStepId,
       motivation: String
   ) extends NotificationAction
 
   case class TeamCreationAttempt(
       demand: DemandId,
-      step: SubscriptionDemandStepId
+      step: WorkflowStepId
   ) extends NotificationAction
 
   case class ApiSubscriptionTransferSuccess(
@@ -333,7 +333,7 @@ object NotificationAction {
       demand: DemandId,
       api: ApiId,
       plan: UsagePlanId,
-      step: SubscriptionDemandStepId
+      step: WorkflowStepId
   ) extends NotificationAction
 
   case class ApiDepreciationWarning(api: ApiId) extends NotificationAction

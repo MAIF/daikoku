@@ -2392,7 +2392,7 @@ trait SubscriptionDemandRepo
     */
   private def byStatesWhere(
       tenant: TenantId,
-      states: Seq[SubscriptionDemandState],
+      states: Seq[WorkflowState],
       apis: Option[Seq[ApiId]],
       teams: Option[Seq[TeamId]],
       plan: Option[UsagePlanId]
@@ -2424,7 +2424,7 @@ trait SubscriptionDemandRepo
 
   def findByStates(
       tenant: TenantId,
-      states: Seq[SubscriptionDemandState],
+      states: Seq[WorkflowState],
       apis: Option[Seq[ApiId]] = None,
       teams: Option[Seq[TeamId]] = None,
       plan: Option[UsagePlanId] = None
@@ -2467,8 +2467,8 @@ trait SubscriptionDemandRepo
       tenant: TenantId,
       api: ApiId,
       plan: UsagePlanId,
-      from: SubscriptionDemandState,
-      to: SubscriptionDemandState
+      from: WorkflowState,
+      to: WorkflowState
   )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Long] = {
     val repo = forTenant(tenant)
     repo.execute(
@@ -2485,7 +2485,7 @@ trait SubscriptionDemandRepo
     */
   def findByStatesPaginated(
       tenant: TenantId,
-      states: Seq[SubscriptionDemandState],
+      states: Seq[WorkflowState],
       apis: Option[Seq[ApiId]] = None,
       teams: Option[Seq[TeamId]] = None,
       page: Int,

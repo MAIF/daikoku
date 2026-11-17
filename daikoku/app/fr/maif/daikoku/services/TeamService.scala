@@ -5,7 +5,7 @@ import cats.implicits.catsSyntaxOptionId
 import fr.maif.daikoku.actions.DaikokuActionContext
 import fr.maif.daikoku.controllers.AppError
 import fr.maif.daikoku.domain.*
-import fr.maif.daikoku.domain.SubscriptionDemandState.Accepted
+import fr.maif.daikoku.domain.WorkflowState.Accepted
 import fr.maif.daikoku.domain.TeamPermission.Administrator
 import fr.maif.daikoku.env.Env
 import fr.maif.daikoku.logger.AppLogger
@@ -274,7 +274,7 @@ class TeamService(
             case Some(value) if !value.state.isClosed =>
               env.dataStore.teamCreationRepo.saveIfCurrent(
                 demand,
-                demand.copy(state = SubscriptionDemandState.Blocked)
+                demand.copy(state = WorkflowState.Blocked)
               ).map {
                 case true => ()
                 case false =>
@@ -341,7 +341,7 @@ class TeamService(
       messagesApi: MessagesApi
   ): EitherT[Future, AppError, Result] = {
     def processStep(
-        step: SubscriptionDemandStep,
+        step: WorkflowStep,
         teamCreation: TeamCreation
     ): EitherT[Future, AppError, Result] = {
 
@@ -373,7 +373,7 @@ class TeamService(
       )
       _ <- EitherT.cond[Future][AppError, Unit](
         teamCreation.fromTenant == tenant.id &&
-          teamCreation.state == SubscriptionDemandState.Waiting,
+          teamCreation.state == WorkflowState.Waiting,
         (),
         AppError.Forbidden("Team creation is closed")
       )
@@ -381,16 +381,16 @@ class TeamService(
         teamCreation.steps.find(_.state != Accepted)
       )
       result <- maybeStep match {
-        case Some(step) if step.state == SubscriptionDemandState.InProgress =>
+        case Some(step) if step.state == WorkflowState.InProgress =>
           EitherT.rightT[Future, AppError](Ok(Json.obj("creation" -> "waiting")))
         case Some(step) =>
-          val startedStep = step.copy(state = SubscriptionDemandState.InProgress)
+          val startedStep = step.copy(state = WorkflowState.InProgress)
           val started = teamCreation.copy(
             steps = teamCreation.steps.map(s => if (s.id == step.id) startedStep else s)
           )
           for {
             _ <- EitherT.cond[Future][AppError, Unit](
-              step.state == SubscriptionDemandState.Waiting,
+              step.state == WorkflowState.Waiting,
               (),
               AppError.EntityConflict("Team creation step is already closed")
             )
@@ -411,7 +411,7 @@ class TeamService(
             }
           } yield next
         case None =>
-          val finalizing = teamCreation.copy(state = SubscriptionDemandState.InProgress)
+          val finalizing = teamCreation.copy(state = WorkflowState.InProgress)
           for {
             _ <- saveTeamCreation(teamCreation, finalizing)
             finalized <- executeTeamCreation(finalizing, tenant)(
@@ -424,7 +424,7 @@ class TeamService(
 
   def callHttpRequestStep(
       step: ValidationStep.HttpRequest,
-      _step: SubscriptionDemandStep,
+      _step: WorkflowStep,
       demand: TeamCreation,
       tenant: Tenant
   )(implicit
@@ -461,7 +461,7 @@ class TeamService(
         updatedDemand = demand.copy(
           steps = demand.steps.map(s =>
             if (s.id == _step.id)
-              s.copy(state = SubscriptionDemandState.Accepted)
+              s.copy(state = WorkflowState.Accepted)
             else s
           ),
           metadata = mergedMetadata,
@@ -527,7 +527,7 @@ class TeamService(
 
   private def sendEmail(
       s: ValidationStep.Email,
-      step: SubscriptionDemandStep,
+      step: WorkflowStep,
       teamCreation: TeamCreation,
       tenant: Tenant
   )(implicit
@@ -543,7 +543,7 @@ class TeamService(
       tenant = tenant.id,
       token = IdGenerator.token,
       step = step.id,
-      subscriptionDemand = teamCreation.id,
+      demandId = teamCreation.id,
       metadata = Json.obj("email" -> teamCreation.email)
     )
 
@@ -622,7 +622,7 @@ class TeamService(
 
   def notifyTenantAdminteam(
       step: ValidationStep.TeamAdmin,
-      _step: SubscriptionDemandStep,
+      _step: WorkflowStep,
       teamCreation: TeamCreation,
       tenant: Tenant
   )(implicit
@@ -774,13 +774,13 @@ class TeamService(
   }
 
   private def checkTeamCreationStep(
-      step: SubscriptionDemandStep,
+      step: WorkflowStep,
       demand: TeamCreation
   ): EitherT[Future, AppError, Unit] =
     for {
       _ <- step.check()
       _ <- EitherT.cond[Future][AppError, Unit](
-        demand.state == SubscriptionDemandState.Waiting &&
+        demand.state == WorkflowState.Waiting &&
           demand.steps.find(_.state != Accepted).exists(_.id == step.id),
         (),
         AppError.EntityConflict("Team creation step is not awaiting a decision")
@@ -788,7 +788,7 @@ class TeamService(
     } yield ()
 
   def validateStep(
-      step: SubscriptionDemandStep,
+      step: WorkflowStep,
       demand: TeamCreation,
       metadata: Option[JsObject] = None
   )(implicit
@@ -814,7 +814,7 @@ class TeamService(
       updatedDemand = demand.copy(
         steps = demand.steps.map(s =>
           if (s.id == step.id)
-            s.copy(state = SubscriptionDemandState.Accepted)
+            s.copy(state = WorkflowState.Accepted)
           else s
         ),
         metadata = effectiveMetadata,
@@ -841,7 +841,7 @@ class TeamService(
     for {
       demand <- EitherT.fromOptionF(
         env.dataStore.teamCreationRepo
-          .findById(validator.subscriptionDemand),
+          .findById(validator.demandId),
         AppError.EntityNotFound("Subscription demand Validator")
       )
       step <- EitherT.fromOption[Future](
@@ -882,7 +882,7 @@ class TeamService(
     for {
       demand <- EitherT.fromOptionF(
         env.dataStore.teamCreationRepo
-          .findById(validator.subscriptionDemand),
+          .findById(validator.demandId),
         AppError.EntityNotFound("Subscription demand Validator")
       )
       step <- EitherT.fromOption[Future](
@@ -984,7 +984,7 @@ class TeamService(
 
   def acceptTeamCreationAttempt(
       teamCreation: DemandId,
-      subscriptionDemandStepId: SubscriptionDemandStepId,
+      workflowStepId: WorkflowStepId,
       notification: Notification
   )(implicit
       ctx: DaikokuActionContext[JsValue],
@@ -1005,7 +1005,7 @@ class TeamService(
         AppError.ForbiddenAction
       )
       step <- EitherT.fromOption[Future](
-        demand.steps.find(_.id == subscriptionDemandStepId),
+        demand.steps.find(_.id == workflowStepId),
         AppError.EntityNotFound("Validation Step")
       )
       _ <- EitherT.cond[Future][AppError, Unit](
@@ -1044,7 +1044,7 @@ class TeamService(
 
   def declineTeamCreationAttempt(
       teamCreation: DemandId,
-      subscriptionDemandStepId: SubscriptionDemandStepId,
+      workflowStepId: WorkflowStepId,
       tenant: Tenant,
       message: Option[String]
   )(implicit
@@ -1061,7 +1061,7 @@ class TeamService(
         AppError.EntityNotFound("Subscription demand")
       )
       step <- EitherT.fromOption[Future](
-        demand.steps.find(_.id == subscriptionDemandStepId),
+        demand.steps.find(_.id == workflowStepId),
         AppError.EntityNotFound("Validation Step")
       )
       _ <- EitherT.cond[Future][AppError, Unit](
@@ -1079,7 +1079,7 @@ class TeamService(
   }
 
   def rejectStep(
-      step: SubscriptionDemandStep,
+      step: WorkflowStep,
       teamCreation: TeamCreation,
       tenant: Tenant,
       message: Option[String]
@@ -1103,10 +1103,10 @@ class TeamService(
     for {
       _ <- checkTeamCreationStep(step, teamCreation)
       updatedDemand = teamCreation.copy(
-        state = SubscriptionDemandState.Refused,
+        state = WorkflowState.Refused,
         steps = teamCreation.steps.map(s =>
           if (s.id == step.id)
-            s.copy(state = SubscriptionDemandState.Refused)
+            s.copy(state = WorkflowState.Refused)
           else s
         )
       )

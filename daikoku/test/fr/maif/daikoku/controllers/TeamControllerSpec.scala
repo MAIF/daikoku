@@ -53,9 +53,9 @@ class TeamControllerSpec()
       creationDate = DateTime.now(),
       userId = user.id,
       steps = Seq(
-        SubscriptionDemandStep(
-          SubscriptionDemandStepId(step.id),
-          SubscriptionDemandState.Waiting,
+        WorkflowStep(
+          WorkflowStepId(step.id),
+          WorkflowState.Waiting,
           step
         )
       ),
@@ -284,7 +284,7 @@ class TeamControllerSpec()
         tenant = tenant.id,
         token = "team-workflow-validation-token",
         step = demand.steps.head.id,
-        subscriptionDemand = demand.id
+        demandId = demand.id
       )
       setupEnvBlocking(
         tenants = Seq(tenant),

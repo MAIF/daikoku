@@ -195,13 +195,13 @@ class TeamController(
                   creationDate = DateTime.now(),
                   userId = ctx.user.id,
                   steps = ctx.tenant.teamCreationProcess.map(step =>
-                    SubscriptionDemandStep(
-                      id = SubscriptionDemandStepId(IdGenerator.token),
-                      state = SubscriptionDemandState.Waiting,
+                    WorkflowStep(
+                      id = WorkflowStepId(IdGenerator.token),
+                      state = WorkflowState.Waiting,
                       step = step
                     )
                   ),
-                  state = SubscriptionDemandState.Waiting,
+                  state = WorkflowState.Waiting,
                   value = body - "confirmPassword" - "password",
                   fromTenant = ctx.tenant.id,
                   creationSecurity = ctx.tenant.creationSecurity
@@ -1112,10 +1112,10 @@ class TeamController(
         teamCreation <-
           EitherT.fromOptionF[Future, AppError, TeamCreation](
             env.dataStore.teamCreationRepo
-              .findById(validator.subscriptionDemand),
+              .findById(validator.demandId),
             AppError.EntityNotFound("Team creation")
           )
-        step <- EitherT.fromOption[Future][AppError, SubscriptionDemandStep](
+        step <- EitherT.fromOption[Future][AppError, WorkflowStep](
           teamCreation.steps.find(_.id == validator.step),
           AppError.EntityNotFound("Team creation step")
         )
@@ -1128,7 +1128,7 @@ class TeamController(
         }
 
         val messageId = (isEmailConfirm, teamCreation.state) match {
-          case (true, SubscriptionDemandState.Accepted) =>
+          case (true, WorkflowState.Accepted) =>
             "team-creation-validation-email"
           case (true, _) => "team-creation-validation-email-waiting"
           case _         => "team-creation-accept"

@@ -574,7 +574,7 @@ object json {
       override def writes(o: ThirdPartyPaymentSettingsId): JsValue =
         JsString(o.value)
     }
-  val SubscriptionDemandIdFormat = new Format[DemandId] {
+  val DemandIdFormat = new Format[DemandId] {
     override def reads(json: JsValue): JsResult[DemandId] =
       Try {
         JsSuccess(DemandId(json.as[String]))
@@ -584,15 +584,15 @@ object json {
 
     override def writes(o: DemandId): JsValue = JsString(o.value)
   }
-  val SubscriptionDemandStepIdFormat = new Format[SubscriptionDemandStepId] {
-    override def reads(json: JsValue): JsResult[SubscriptionDemandStepId] =
+  val WorkflowStepIdFormat = new Format[WorkflowStepId] {
+    override def reads(json: JsValue): JsResult[WorkflowStepId] =
       Try {
-        JsSuccess(SubscriptionDemandStepId(json.as[String]))
+        JsSuccess(WorkflowStepId(json.as[String]))
       } recover { case e =>
         JsError(e.getMessage)
       } get
 
-    override def writes(o: SubscriptionDemandStepId): JsValue =
+    override def writes(o: WorkflowStepId): JsValue =
       JsString(o.value)
   }
   val TeamTypeFormat = new Format[TeamType] {
@@ -2771,19 +2771,19 @@ object json {
         )
     }
 
-  val SubscriptionDemandStateFormat = new Format[SubscriptionDemandState] {
+  val WorkflowStateFormat = new Format[WorkflowState] {
     override def reads(json: JsValue) =
       json.as[String] match {
-        case "waiting"    => JsSuccess(SubscriptionDemandState.Waiting)
-        case "inProgress" => JsSuccess(SubscriptionDemandState.InProgress)
-        case "canceled"   => JsSuccess(SubscriptionDemandState.Canceled)
-        case "accepted"   => JsSuccess(SubscriptionDemandState.Accepted)
-        case "refused"    => JsSuccess(SubscriptionDemandState.Refused)
-        case "blocked"    => JsSuccess(SubscriptionDemandState.Blocked)
-        case str          => JsError(s"Bad SubscriptionDemandState value: $str")
+        case "waiting"    => JsSuccess(WorkflowState.Waiting)
+        case "inProgress" => JsSuccess(WorkflowState.InProgress)
+        case "canceled"   => JsSuccess(WorkflowState.Canceled)
+        case "accepted"   => JsSuccess(WorkflowState.Accepted)
+        case "refused"    => JsSuccess(WorkflowState.Refused)
+        case "blocked"    => JsSuccess(WorkflowState.Blocked)
+        case str          => JsError(s"Bad WorkflowState value: $str")
       }
 
-    override def writes(o: SubscriptionDemandState): JsValue = JsString(o.name)
+    override def writes(o: WorkflowState): JsValue = JsString(o.name)
   }
 
   val ApiSubscriptionStateFormat = new Format[ApiSubscriptionState] {
@@ -2805,7 +2805,7 @@ object json {
         "_tenant" -> o.tenant.asJson,
         "api" -> o.api.asJson,
         "plan" -> o.plan.asJson,
-        "steps" -> SeqSubscriptionDemanStepFormat.writes(o.steps),
+        "steps" -> SeqWorkflowStepFormat.writes(o.steps),
         "state" -> o.state.name,
         "team" -> o.team.asJson,
         "from" -> o.from.asJson,
@@ -2858,12 +2858,12 @@ object json {
       Try {
         JsSuccess(
           SubscriptionDemand(
-            id = (json \ "_id").as(using SubscriptionDemandIdFormat),
+            id = (json \ "_id").as(using DemandIdFormat),
             tenant = (json \ "_tenant").as(using TenantIdFormat),
             api = (json \ "api").as(using ApiIdFormat),
             plan = (json \ "plan").as(using UsagePlanIdFormat),
-            steps = (json \ "steps").as(using SeqSubscriptionDemanStepFormat),
-            state = (json \ "state").as(using SubscriptionDemandStateFormat),
+            steps = (json \ "steps").as(using SeqWorkflowStepFormat),
+            state = (json \ "state").as(using WorkflowStateFormat),
             team = (json \ "team").as(using TeamIdFormat),
             from = (json \ "from").as(using UserIdFormat),
             date = (json \ "date").as(using DateTimeFormat),
@@ -2889,8 +2889,8 @@ object json {
       } get
   }
 
-  val SubscriptionDemandStepFormat = new Format[SubscriptionDemandStep] {
-    override def writes(o: SubscriptionDemandStep): JsValue =
+  val WorkflowStepFormat = new Format[WorkflowStep] {
+    override def writes(o: WorkflowStep): JsValue =
       Json.obj(
         "_id" -> o.id.asJson,
         "state" -> o.state.name,
@@ -2898,12 +2898,12 @@ object json {
         "metadata" -> o.metadata
       )
 
-    override def reads(json: JsValue): JsResult[SubscriptionDemandStep] =
+    override def reads(json: JsValue): JsResult[WorkflowStep] =
       Try {
         JsSuccess(
-          SubscriptionDemandStep(
-            id = (json \ "_id").as(using SubscriptionDemandStepIdFormat),
-            state = (json \ "state").as(using SubscriptionDemandStateFormat),
+          WorkflowStep(
+            id = (json \ "_id").as(using WorkflowStepIdFormat),
+            state = (json \ "state").as(using WorkflowStateFormat),
             step = (json \ "step").as(using ValidationStepFormat),
             metadata = (json \ "metadata").as[JsObject]
           )
@@ -2921,7 +2921,8 @@ object json {
         "_tenant" -> o.tenant.asJson,
         "token" -> o.token,
         "step" -> o.step.asJson,
-        "subscriptionDemand" -> o.subscriptionDemand.asJson,
+        // Keep the persisted key compatible with existing validation tokens.
+        "subscriptionDemand" -> o.demandId.asJson,
         "metadata" -> o.metadata
       )
 
@@ -2932,9 +2933,9 @@ object json {
             id = (json \ "_id").as(using DatastoreIdFormat),
             tenant = (json \ "_tenant").as(using TenantIdFormat),
             token = (json \ "token").as[String],
-            step = (json \ "step").as(using SubscriptionDemandStepIdFormat),
-            subscriptionDemand = (json \ "subscriptionDemand").as(using
-              SubscriptionDemandIdFormat
+            step = (json \ "step").as(using WorkflowStepIdFormat),
+            demandId = (json \ "subscriptionDemand").as(using
+              DemandIdFormat
             ),
             metadata = (json \ "metadata").as[JsObject]
           )
@@ -3367,10 +3368,10 @@ object json {
       Try {
         JsSuccess(
           CheckoutForSubscription(
-            demand = (json \ "demand").as(using SubscriptionDemandIdFormat),
+            demand = (json \ "demand").as(using DemandIdFormat),
             api = (json \ "api").as(using ApiIdFormat),
             plan = (json \ "plan").as(using UsagePlanIdFormat),
-            step = (json \ "step").as(using SubscriptionDemandStepIdFormat)
+            step = (json \ "step").as(using WorkflowStepIdFormat)
           )
         )
       } recover { case e =>
@@ -3555,8 +3556,8 @@ object json {
             api = (json \ "api").as(using ApiIdFormat),
             plan = (json \ "plan").as(using UsagePlanIdFormat),
             team = (json \ "team").as(using TeamIdFormat),
-            demand = (json \ "demand").as(using SubscriptionDemandIdFormat),
-            step = (json \ "step").as(using SubscriptionDemandStepIdFormat),
+            demand = (json \ "demand").as(using DemandIdFormat),
+            step = (json \ "step").as(using WorkflowStepIdFormat),
             keyring = (json \ "keyring").asOpt(using KeyringIdFormat),
             motivation = (json \ "motivation").asOpt[String]
           )
@@ -3571,8 +3572,8 @@ object json {
         "api" -> ApiIdFormat.writes(o.api),
         "plan" -> UsagePlanIdFormat.writes(o.plan),
         "team" -> TeamIdFormat.writes(o.team),
-        "demand" -> SubscriptionDemandIdFormat.writes(o.demand),
-        "step" -> SubscriptionDemandStepIdFormat.writes(o.step),
+        "demand" -> DemandIdFormat.writes(o.demand),
+        "step" -> WorkflowStepIdFormat.writes(o.step),
         "keyring" -> o.keyring
           .map(KeyringIdFormat.writes)
           .getOrElse(JsNull)
@@ -3588,8 +3589,8 @@ object json {
       Try {
         JsSuccess(
           AccountCreationAttempt(
-            demand = (json \ "demand").as(using SubscriptionDemandIdFormat),
-            step = (json \ "step").as(using SubscriptionDemandStepIdFormat),
+            demand = (json \ "demand").as(using DemandIdFormat),
+            step = (json \ "step").as(using WorkflowStepIdFormat),
             motivation = (json \ "motivation").as[String]
           )
         )
@@ -3611,8 +3612,8 @@ object json {
       Try {
         JsSuccess(
           TeamCreationAttempt(
-            demand = (json \ "demand").as(using SubscriptionDemandIdFormat),
-            step = (json \ "step").as(using SubscriptionDemandStepIdFormat)
+            demand = (json \ "demand").as(using DemandIdFormat),
+            step = (json \ "step").as(using WorkflowStepIdFormat)
           )
         )
       } recover { case e =>
@@ -4383,7 +4384,7 @@ object json {
         Try {
           JsSuccess(
             AccountCreation(
-              id = (json \ "_id").as(using SubscriptionDemandIdFormat),
+              id = (json \ "_id").as(using DemandIdFormat),
               randomId = (json \ "randomId").as[String],
               email = (json \ "email").as[String],
               name = (json \ "name").as[String],
@@ -4391,8 +4392,8 @@ object json {
               password = (json \ "password").as[String],
               creationDate = (json \ "creationDate").as(using DateTimeFormat),
               validUntil = (json \ "validUntil").as(using DateTimeFormat),
-              steps = (json \ "steps").as(using SeqSubscriptionDemanStepFormat),
-              state = (json \ "state").as(using SubscriptionDemandStateFormat),
+              steps = (json \ "steps").as(using SeqWorkflowStepFormat),
+              state = (json \ "state").as(using WorkflowStateFormat),
               value = (json \ "value").as[JsObject],
               fromTenant = (json \ "fromTenant").as(using TenantIdFormat),
               preferredDomains = (json \ "preferedDomains")
@@ -4415,8 +4416,8 @@ object json {
           "password" -> o.password,
           "creationDate" -> DateTimeFormat.writes(o.creationDate),
           "validUntil" -> DateTimeFormat.writes(o.validUntil),
-          "steps" -> SeqSubscriptionDemanStepFormat.writes(o.steps),
-          "state" -> SubscriptionDemandStateFormat.writes(o.state),
+          "steps" -> SeqWorkflowStepFormat.writes(o.steps),
+          "state" -> WorkflowStateFormat.writes(o.state),
           "value" -> o.value,
           "fromTenant" -> o.fromTenant.value,
           "preferredDomains" -> JsObject(o.preferredDomains.map { case (k, v) =>
@@ -4458,15 +4459,15 @@ object json {
         Try {
           JsSuccess(
             TeamCreation(
-              id = (json \ "_id").as(using SubscriptionDemandIdFormat),
+              id = (json \ "_id").as(using DemandIdFormat),
               randomId = (json \ "randomId").as[String],
               email = (json \ "email").as[String],
               name = (json \ "name").as[String],
               avatar = (json \ "avatar").as[String],
               userId = (json \ "userId").as(using UserIdFormat),
               creationDate = (json \ "creationDate").as(using DateTimeFormat),
-              steps = (json \ "steps").as(using SeqSubscriptionDemanStepFormat),
-              state = (json \ "state").as(using SubscriptionDemandStateFormat),
+              steps = (json \ "steps").as(using SeqWorkflowStepFormat),
+              state = (json \ "state").as(using WorkflowStateFormat),
               value = (json \ "value").as[JsObject],
               fromTenant = (json \ "fromTenant").as(using TenantIdFormat),
               metadata = (json \ "metadata")
@@ -4494,8 +4495,8 @@ object json {
           "avatar" -> o.avatar,
           "userId" -> UserIdFormat.writes(o.userId),
           "creationDate" -> DateTimeFormat.writes(o.creationDate),
-          "steps" -> SeqSubscriptionDemanStepFormat.writes(o.steps),
-          "state" -> SubscriptionDemandStateFormat.writes(o.state),
+          "steps" -> SeqWorkflowStepFormat.writes(o.steps),
+          "state" -> WorkflowStateFormat.writes(o.state),
           "value" -> o.value,
           "fromTenant" -> o.fromTenant.value,
           "metadata" -> o.metadata,
@@ -5480,10 +5481,10 @@ object json {
       Reads.seq(using ValidationStepFormat),
       Writes.seq(using ValidationStepFormat)
     )
-  val SeqSubscriptionDemanStepFormat =
+  val SeqWorkflowStepFormat =
     Format(
-      Reads.seq(using SubscriptionDemandStepFormat),
-      Writes.seq(using SubscriptionDemandStepFormat)
+      Reads.seq(using WorkflowStepFormat),
+      Writes.seq(using WorkflowStepFormat)
     )
   val SeqSubscriptionDemandFormat =
     Format(
