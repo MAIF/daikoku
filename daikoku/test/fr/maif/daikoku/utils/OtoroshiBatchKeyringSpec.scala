@@ -4,7 +4,7 @@ import cats.implicits.catsSyntaxOptionId
 import com.dimafeng.testcontainers.GenericContainer.FileSystemBind
 import com.dimafeng.testcontainers.{ForAllTestContainer, GenericContainer}
 import fr.maif.daikoku.domain.*
-import fr.maif.daikoku.env.{evolution_1900_f, evolutions}
+import fr.maif.daikoku.env.{evolution_1920, evolutions}
 import fr.maif.daikoku.testUtils.DaikokuSpecHelper
 import org.joda.time.DateTime
 import org.scalatest.BeforeAndAfter
@@ -122,9 +122,9 @@ class OtoroshiBatchKeyringSpec
           )
         )
         Await.result(store.tenantRepo.save(legacyTenant), 5.seconds) mustBe true
-        evolutions.list must contain(evolution_1900_f)
+        evolutions.list must contain(evolution_1920)
         Await.result(
-          evolution_1900_f.provisionTenant(legacyTenant, store, client),
+          evolution_1920.provisionTenant(legacyTenant, store, client),
           30.seconds
         )
         val migratedTenant =
@@ -141,7 +141,7 @@ class OtoroshiBatchKeyringSpec
           10.seconds
         ) mustBe Right(migratedGroup)
         Await.result(
-          evolution_1900_f.provisionTenant(migratedTenant, store, client),
+          evolution_1920.provisionTenant(migratedTenant, store, client),
           30.seconds
         )
         Await
@@ -305,7 +305,7 @@ class OtoroshiBatchKeyringSpec
         ) mustBe true
         val error = intercept[IllegalStateException] {
           Await.result(
-            evolution_1900_f.provisionTenant(legacyTenant, store, client),
+            evolution_1920.provisionTenant(legacyTenant, store, client),
             30.seconds
           )
         }
@@ -322,7 +322,7 @@ class OtoroshiBatchKeyringSpec
         )
         Await.result(store.tenantRepo.save(repaired), 5.seconds) mustBe true
         Await.result(
-          evolution_1900_f.provisionTenant(repaired, store, client),
+          evolution_1920.provisionTenant(repaired, store, client),
           30.seconds
         )
         val saved =
