@@ -92,13 +92,19 @@ is transactional. The parent summary is derived from independent item outcomes, 
 not close other unfinished items.
 
 The multi-API consumer flow first reuses the team-selection modal, then opens the API key
-preparation workspace at `/apis/subscriptions/keyrings`. The UI presents keyrings as API keys,
-with a destination list and a detail panel. Consumers can prepare multiple named new keys or
-search and import several existing team keys. Existing access is shown separately from requested
+preparation workspace at `/apis/subscriptions/keyrings`. Catalog selection is retained across
+cancellation and return navigation until successful submission, within the current application
+session (not across page reloads). The UI presents keyrings as API keys, with a destination list
+and a detail panel. Consumers can prepare multiple named new keys or search and import several
+existing team keys. Existing access is shown separately from requested
 additions and cannot be removed from this workspace. Individual or selected plans can be dragged
 onto a destination; checkboxes and Enter on a destination provide a non-drag alternative.
 Removing a key from the draft returns its requested plans to the unassigned list without deleting
 the existing keyring or subscriptions.
+
+The catalog excludes admin-only APIs and APIs without an eligible authorized team from batch
+selection. The team selector shows only teams authorized for every selected API; a selection
+without a common team remains possible but cannot proceed.
 
 In environment mode, unassigned plans are grouped by environment. "Arrange by environment"
 preserves existing assignments and reuses compatible draft destinations, preferring imported keys,

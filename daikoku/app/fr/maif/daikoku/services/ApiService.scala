@@ -17,15 +17,7 @@ import fr.maif.daikoku.storage.drivers.postgres.PostgresDataStore
 import fr.maif.daikoku.utils.Cypher.{decrypt, encrypt}
 import fr.maif.daikoku.utils.StringImplicits.BetterString
 import fr.maif.daikoku.utils.future.EnhancedObject
-import fr.maif.daikoku.jobs.{ApiKeyStatsJob, OtoroshiSynchronizerJob}
-import fr.maif.daikoku.utils.{
-  IdGenerator,
-  JsonOperationsHelper,
-  OtoroshiClient,
-  SubscriptionDemandPreparation,
-  Translator,
-  metadataObjectToMap
-}
+import fr.maif.daikoku.utils.*
 import org.apache.pekko.http.scaladsl.util.FastFuture
 import org.joda.time.DateTime
 import play.api.i18n.MessagesApi
@@ -690,15 +682,18 @@ class ApiService(
                         }
                     case Right(_) =>
                       keyringService
-                        .deleteKeyringIfEmpty(tenantId, keyringId)
+                        .deleteKeyringIfEmpty(tenant, keyringId)
+                        .value
                         .flatMap {
-                          case true =>
+                          case Left(error) =>
+                            Future.successful(Left(error))
+                          case Right(true) =>
                             markBatchKeyringFinalized(
                               tenantId,
                               batch.id,
                               creationId
                             )
-                          case false =>
+                          case Right(false) =>
                             Future.successful(
                               Left(
                                 AppError.EntityConflict(
@@ -1175,7 +1170,7 @@ class ApiService(
           prepared ++ materialized.map(_._2.map(_ => ())) ++ progressed
         )
       )
-      batch <- EitherT.fromOptionF(
+      batch <- EitherT.fromOptionF[Future, AppError, SubscriptionBatchDemand](
         env.dataStore.subscriptionBatchDemandRepo
           .forTenant(tenant.id)
           .findById(batchId),

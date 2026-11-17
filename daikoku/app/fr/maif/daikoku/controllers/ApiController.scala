@@ -1324,7 +1324,7 @@ class ApiController(
             AppError.EntityNotFound("Subscription demand")
           )
           _ <- deletionService.cancelSubscriptionDemand(
-            demand.id.value,
+            demand.id,
             ctx.tenant
           )
         } yield Ok(Json.obj("done" -> true)))

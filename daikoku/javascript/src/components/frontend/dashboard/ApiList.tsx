@@ -16,6 +16,7 @@ import { arrayStringToTOps } from "../../utils/function"
 import { Spinner } from "../../utils/Spinner"
 import StarsButton from "../api/StarsButton"
 import { SimpleTeamSelector } from "../api/SimpleTeamSelector"
+import { eligibleBatchTeams } from "../../utils/teams"
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -34,7 +35,18 @@ export const ApiList = (props: ApiListProps) => {
   const navigate = useNavigate()
 
   const queryClient = useQueryClient()
-  const [rowSelection, setRowSelection] = useState<RowSelectionState>({})
+  const selectionQueryKey = [
+    'api-catalog-selection', tenant._id, connectedUser._id, props.apiGroupId ?? '',
+  ]
+  const { data: selectedApis } = useQuery<IApiWithAuthorization[]>({
+    queryKey: selectionQueryKey,
+    initialData: [],
+    enabled: false,
+    gcTime: Infinity,
+  })
+  const [rowSelection, setRowSelection] = useState<RowSelectionState>(() =>
+    Object.fromEntries(selectedApis.map(({ api }) => [api._id, true]))
+  )
 
   const myTeamsRequest = useQuery({
     queryKey: ['myTeams'],
@@ -325,6 +337,8 @@ export const ApiList = (props: ApiListProps) => {
   if (myTeamsRequest.isLoading) return <Spinner />
   if (!myTeamsRequest.data || isError(myTeamsRequest.data)) return <div>oops</div>
 
+  const myTeams = myTeamsRequest.data
+
   return (
     <DynamicTable<IApiWithAuthorization>
       queryKey={['apis']}
@@ -339,20 +353,19 @@ export const ApiList = (props: ApiListProps) => {
       persistSelectionAcrossPages
       rowSelection={rowSelection}
       setRowSelection={setRowSelection}
+      initialSelectedRows={selectedApis}
+      onSelectionChange={(apis) => queryClient.setQueryData(selectionQueryKey, apis)}
       isRowSelectable={(row) =>
         ['published', 'deprecated'].includes(row.api.state) &&
-        row.api.possibleUsagePlans.length > 0
+        row.api.possibleUsagePlans.length > 0 &&
+        eligibleBatchTeams(myTeams, [row], tenant.subscriptionSecurity).length > 0
       }
       bulkActions={[
         {
           label: translate('subscription.batch.select.apis.action'),
+          resetSelectionOnSuccess: false,
           onClick: async (selectedApis) => {
-            const teams = myTeamsRequest.data && !isError(myTeamsRequest.data)
-              ? myTeamsRequest.data.filter((team) =>
-                  team.type !== 'Admin' &&
-                  (!tenant.subscriptionSecurity || team.type !== 'Personal')
-                )
-              : [];
+            const teams = eligibleBatchTeams(myTeams, selectedApis, tenant.subscriptionSecurity);
             openCustomModal({
               title: translate('team.selection.title'),
               content: (
@@ -360,24 +373,14 @@ export const ApiList = (props: ApiListProps) => {
                   <p>{translate('subscription.batch.no.available.team')}</p>
                 ) : (
                   <SimpleTeamSelector
-                    teams={teams.map((team) => ({
-                      team,
-                      disabledFor: selectedApis.every(({ api, authorizations }) =>
-                        api.team._id === team._id ||
-                        api.visibility === 'Public' ||
-                        (api.visibility === 'AdminOnly'
-                          ? connectedUser.isDaikokuAdmin
-                          : authorizations.some((authorization) =>
-                              authorization.team === team._id && authorization.authorized
-                            ))
-                      ) ? [] : [translate('subscription.batch.no.available.team')],
-                    }))}
+                    teams={teams.map((team) => ({ team, disabledFor: [] }))}
                     showApiKeySelectModal={(teamId) => {
                       const team = teams.find((candidate) => candidate._id === teamId);
                       if (!team) return;
                       close();
+                      queryClient.removeQueries({ queryKey: selectionQueryKey, exact: true });
                       navigate('/apis/subscriptions/keyrings', {
-                        state: { apis: selectedApis, team },
+                        state: { apis: selectedApis, team, selectionQueryKey },
                       });
                     }}
                   />

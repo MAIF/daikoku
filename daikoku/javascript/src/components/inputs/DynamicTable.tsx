@@ -116,6 +116,8 @@ export type BulkActionContext = {
 
 export type BulkAction<T> = {
   label: string;
+  /** Disable when the action only opens a preparation or confirmation flow. */
+  resetSelectionOnSuccess?: boolean;
   onClick: (rows: T[], selectAll: boolean, ctx: BulkActionContext) => Promise<void>;
 };
 
@@ -230,6 +232,8 @@ export type DynamicTableProps<T extends RowData> = {
   tableClassName?: string;
   rowSelection?: RowSelectionState;
   setRowSelection?: OnChangeFn<RowSelectionState>;
+  /** Restore off-page row data alongside a controlled selection on remount. */
+  initialSelectedRows?: T[];
   onSelectionChange?: (selected: T[]) => void;
   isRowSelectable?: (row: T, selectedRows: T[]) => boolean;
   ariaLabel?: string;
@@ -266,6 +270,7 @@ export function DynamicTable<T extends RowData>({
   onSelectionChange,
   rowSelection: controlledRowSelection,
   setRowSelection: controlledSetRowSelection,
+  initialSelectedRows = [],
   isRowSelectable,
   persistSelectionAcrossPages = false,
 }: DynamicTableProps<T>) {
@@ -295,7 +300,7 @@ export function DynamicTable<T extends RowData>({
   const rowSelection = controlledRowSelection ?? internalRowSelection;
   const setRowSelection = controlledSetRowSelection ?? setInternalRowSelection;
   const [selectedRowCache, setSelectedRowCache] = useState<ReadonlyMap<string, T>>(
-    () => new Map()
+    () => new Map(getRowId ? initialSelectedRows.map(row => [getRowId(row), row]) : [])
   );
 
 
@@ -477,8 +482,10 @@ export function DynamicTable<T extends RowData>({
       resetFilters: () => setColumnFilters(defaultFilters),
     };
     await action.onClick(actionSelectedRows, selectAll, ctx);
-    table.resetRowSelection();
-    setSelectAll(false);
+    if (action.resetSelectionOnSuccess !== false) {
+      table.resetRowSelection();
+      setSelectAll(false);
+    }
   };
 
   const renderFilterToolbar = () => {

@@ -2677,7 +2677,7 @@ object json {
           .filter(JsError("Missing shell creation"))(_.trim.nonEmpty)
         pending <- (value \ "pendingItems")
           .validate[Seq[SubscriptionBatchReference]](using
-            Reads.seq(SubscriptionBatchReferenceFormat)
+            Reads.seq(using SubscriptionBatchReferenceFormat)
           )
         _ <-
           if (pending.distinct.size == pending.size) JsSuccess(())
@@ -2744,7 +2744,7 @@ object json {
               },
             enabled = (json \ "enabled").asOpt[Boolean].getOrElse(true),
             metadata = readTextMetadata(json),
-            shell = shell
+            shell = (json \ "shell").asOpt(using KeyringShellProvenanceFormat)
           )
         )
       } recover { case e =>
@@ -4042,7 +4042,7 @@ object json {
         Try {
           val items =
             (json \ "items").as[Seq[SubscriptionBatchApprovalItem]](
-              Reads.seq(using SubscriptionBatchApprovalItemFormat)
+              using Reads.seq(using SubscriptionBatchApprovalItemFormat)
             )
           if (items.isEmpty)
             JsError(

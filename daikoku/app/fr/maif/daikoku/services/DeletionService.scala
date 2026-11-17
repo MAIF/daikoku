@@ -20,7 +20,6 @@ class DeletionService(
     apiKeyStatsJob: ApiKeyStatsJob,
     otoroshiClient: OtoroshiClient,
     otoroshiSynchronizerJob: OtoroshiSynchronizerJob,
-    keyringService: KeyringService,
     apiService: ApiService
 ) {
 
