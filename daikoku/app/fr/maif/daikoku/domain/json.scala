@@ -2744,7 +2744,7 @@ object json {
               },
             enabled = (json \ "enabled").asOpt[Boolean].getOrElse(true),
             metadata = readTextMetadata(json),
-            shell = (json \ "shell").asOpt(using KeyringShellProvenanceFormat)
+            shell = (json \ "shell").validateOpt(using KeyringShellProvenanceFormat).get
           )
         )
       } recover { case e =>
