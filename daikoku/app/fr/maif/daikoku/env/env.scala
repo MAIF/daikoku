@@ -586,6 +586,11 @@ class Config(val underlying: Configuration) {
       .filter(_.nonEmpty)
   }
 
+  lazy val subscriptionBatchReservationDuration: FiniteDuration = underlying
+    .getOptional[Long]("daikoku.subscriptionBatch.reservationDuration")
+    .map(_.millis)
+    .getOrElse(10.minutes)
+
   lazy val otoroshiSyncKey: String = underlying
     .getOptional[String]("daikoku.otoroshi.sync.key")
     .getOrElse("secret")

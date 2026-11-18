@@ -26,7 +26,7 @@ import scala.concurrent.{ExecutionContext, Future}
 class KeyringService(
     env: Env,
     otoroshiClient: OtoroshiClient,
-    deletionService: DeletionService
+    deletionService: => DeletionService
 ) {
 
   implicit val ec: ExecutionContext = env.defaultExecutionContext
@@ -129,6 +129,24 @@ class KeyringService(
         }
       } yield ()
     }
+
+  /** Physically delete the keyring when no subscription references it anymore.
+   */
+  def deleteKeyringIfEmpty(
+                            tenant: Tenant,
+                            keyring: KeyringId
+                          ): EitherT[Future, AppError, Boolean] = {
+    for {
+      _keyring <- EitherT.fromOptionF(env.dataStore.keyringRepo.forTenant(tenant)
+        .findById(keyring), AppError.EntityNotFound("API key"))
+      count <- EitherT.right[AppError](env.dataStore.apiSubscriptionRepo
+        .countByKeyring(tenant.id, keyring))
+      result <- if (count == 0L)
+        deleteKeyring(tenant, _keyring).map(_ => true)
+      else
+        EitherT.pure[Future, AppError](false)
+    } yield result
+  }
 
   def toggleKeyringRotation(
       tenant: Tenant,

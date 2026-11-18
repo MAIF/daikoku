@@ -39,3 +39,45 @@ Example (from the `daikoku/` directory):
 ```sbt
 ~run -Dconfig.resource=local.conf -Ddaikoku.init.data.from=../dev/config/daikoku_state_local.ndjson
 ```
+
+### Manual batch-subscription scenarios
+
+`config/daikoku_state_ldap_full_apis_environment.ndjson` and
+`config/daikoku_state_ldap_full_apis_default.ndjson` extend the LDAP seed with comparable
+scenarios. Both keep `subscriptionSecurity` disabled. In environment mode, plan names are limited
+to the configured environments (`dev`, `preprod`, `prod`), and each API has at most one plan per
+environment. Plan descriptions identify the scenarios.
+
+Use the LDAP infrastructure and an **empty, isolated** PostgreSQL database. The seed is imported
+only when the datastore is empty; changing the path on an existing database does not reload it.
+For example, start the backend from `daikoku/` with:
+
+```bash
+DAIKOKU_INIT_DATA_FROM=../dev/config/daikoku_state_ldap_full_apis_environment.ndjson sbt run -Dconfig.resource=local.conf
+```
+
+Replace `environment` with `default` for the other display mode. The normal
+`mise run dev --mode ldap` backend selects the standard LDAP seed instead of these files.
+
+Sign in as Jim Halpert to test the catalog: Jim belongs to Vendeurs, Logistique and his personal
+team. Sign in as Michael Scott to test the API Division owner and administrator views. The added
+APIs are tagged `manual-batch` and start with `Manual -`.
+
+| API / scenario | Expected behavior |
+|---|---|
+| Public mixed plans | All eligible teams can select the API. Its plans include public, Vendeurs-only and Logistique-only choices. In default mode it also has an owner-only plan; in environment mode that plan is on the separate Public owner-only plan API. |
+| Public no seller plans | Vendeurs can select the API but has no authorized plan; Logistique can use its private plan. |
+| Auth no teams | Jim can see the API but cannot select it; API Division can select it as owner. |
+| Auth sellers / Auth logistics | Jim can select each individually, but there is no eligible team common to both. |
+| Auth sellers and logistics | Both organizations are eligible; its private plan is restricted to Vendeurs. Combine it with either preceding API to test a common team. |
+| Auth Jim personal | Only Jim's personal team is authorized. Enable the tenant's subscription security to exclude that team and disable selection. |
+| Private sellers / Private owner only | Vendeurs can access the first; Jim cannot see the owner-only API. API Division can access both as owner. |
+| Public no plans / Public deprecated / Public blocked | Test no plans, a selectable deprecated API and a blocked API. The blocked API is hidden from regular consumers. |
+| Public compatible | `dev` can share a key with other compatible `dev` plans. The isolated plan (`preprod` in environment mode) disallows sharing; the read-only plan (`prod` in environment mode) requires a separate key from read-write plans. |
+| Public pending sellers | Vendeurs has a pending request for `prod`, so that plan is unavailable in batch selection; `dev` remains available. |
+| Existing API papier and API Commande | Their existing Vendeurs `dev` subscriptions and shared keyring allow testing already-subscribed plans and key import. |
+| Existing admin-only APIs | Visible to administrators but unavailable for batch selection. |
+
+Plan availability is checked after the team is selected. API owners retain access to their own
+private plans even without an explicit plan authorization. The pre-existing subscriptions and
+pending demand are test data; use an isolated environment before submitting or approving requests.

@@ -175,7 +175,20 @@ class DatastoreUpgradeSpec extends PlaySpec {
                   .map(_ => ())
               )
           }
-          _ <- insert("tenants", Json.obj("_id" -> "upgrade-tenant"))
+          _ <- insert(
+            "tenants",
+            Json.obj(
+              "_id" -> "upgrade-tenant",
+              "enabled" -> true,
+              "name" -> "Upgrade tenant",
+              "domain" -> "upgrade.localhost",
+              "contact" -> "admin@upgrade.localhost",
+              "authProvider" -> "Local",
+              "authProviderSettings" -> Json.obj(),
+              "otoroshiSettings" -> Json.arr(),
+              "adminApi" -> "legacy-admin-api"
+            )
+          )
           _ <- insert(
             "apis",
             Json.obj(

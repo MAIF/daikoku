@@ -65,6 +65,18 @@ type NotificationActionGQL =
     demand: ISubscriptionDemandGQL;
   }
   | {
+    __typename: 'ApiSubscriptionBatch';
+    api: IApiGQL;
+    team: ITeamFullGql;
+    phase: number;
+    items: Array<{
+      item: string;
+      demand: string;
+      step: string;
+      plan: Pick<IUsagePlan, '_id' | 'customName'> | null;
+    }>;
+  }
+  | {
     __typename: 'NewCommentOnIssueV2';
     api: IApiGQL;
     issue: Issue
@@ -204,6 +216,7 @@ export const NotificationList = () => {
     { type: "ApiKeyRotationInProgressV2" },
     { type: "NewSubscription" },
     { type: "ApiSubscription" },
+    { type: "ApiSubscriptionBatch" },
     { type: "ApiSubscriptionAccept" },
     { type: "ApiSubscriptionReject" },
     { type: "ApiSubscriptionTransferSuccess" },
@@ -375,6 +388,44 @@ export const NotificationList = () => {
           return <div className="action-container">{statusFormatter(notification.status)}</div>;
         }
       }
+      case 'ApiSubscriptionBatch':
+        if (notification.status.status === 'Pending') {
+          return (
+            <div className="action-container">
+              <div className="d-flex justify-content-end gap-2">
+                <FeedbackButton
+                  className="btn --tertiary --small --icon-only"
+                  title={translate('Accept')}
+                  aria-label={translate('Accept')}
+                  onPress={() => accept(notification._id)}
+                >
+                  <Check />
+                </FeedbackButton>
+                <button
+                  className="btn --tertiary --small --icon-only"
+                  title={translate('Reject')}
+                  aria-label={translate('Reject')}
+                  onClick={() => {
+                    openFormModal<{ message: string }>({
+                      title: translate('Message'),
+                      schema: {
+                        message: {
+                          type: type.string, format: format.text, label: null,
+                          constraints: [constraints.required()],
+                        },
+                      },
+                      onSubmit: ({ message }) => reject(notification._id, message),
+                      actionLabel: translate('Send')
+                    })
+                  }}
+                >
+                  <Ban />
+                </button>
+              </div>
+            </div>
+          );
+        }
+        return <div className="action-container">{statusFormatter(notification.status)}</div>;
       case 'CheckoutForSubscription': {
         const _checkoutDemand = notification.action.demand;
         return (
@@ -600,6 +651,16 @@ export const NotificationList = () => {
           </>
         );
       }
+      case 'ApiSubscriptionBatch':
+        return translate({
+          key: 'notif.api.subscription.batch',
+          replacements: [
+            notification.action.api.name,
+            notification.action.items
+              .map(item => item.plan?.customName ?? item.item)
+              .join(', ')
+          ]
+        });
       case 'ApiSubscriptionReject': {
         const desc = translate({ key: 'notif.api.demand.reject', replacements: [notification.action.plan.customName] });
         const _message = notification.action.message;
@@ -759,6 +820,7 @@ export const NotificationList = () => {
     switch (notification.action.__typename) {
       case "ApiAccess":
       case "ApiSubscription":
+      case "ApiSubscriptionBatch":
       case "ApiSubscriptionReject":
       case "ApiSubscriptionAccept":
       case "OtoroshiSyncApiError":

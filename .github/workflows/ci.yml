@@ -194,10 +194,12 @@ jobs:
           done
           echo "otoroshi is ready!"
 
-      - name: Install Playwright
+      - name: Install frontend and Playwright dependencies
         timeout-minutes: 10
         run: |
-          cd ./daikoku/javascript/tests
+          cd ./daikoku/javascript
+          npm ci
+          cd tests
           npm ci
 
       - name: Cache Playwright browsers
@@ -244,7 +246,7 @@ jobs:
           POSTGRES_DB: daikoku_demo_komainu
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: ${{ !cancelled() && failure() }}
         with:
           name: playwright-report

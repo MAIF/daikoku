@@ -1,11 +1,11 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query"
-import { createColumnHelper } from "@tanstack/react-table"
+import { createColumnHelper, RowSelectionState } from "@tanstack/react-table"
 import { MessageCircleMore, MoreVertical } from "lucide-react"
 import { useContext, useMemo, useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import { toast } from "sonner"
 
-import { I18nContext } from "../../../contexts"
+import { I18nContext, ModalContext } from "../../../contexts"
 import { GlobalContext } from "../../../contexts/globalContext"
 import * as Services from '../../../services'
 import { IApiAuthoWithCount, IApiWithAuthorization, TOption } from "../../../types"
@@ -15,6 +15,8 @@ import { ActionWithTeamSelector } from "../../utils"
 import { arrayStringToTOps } from "../../utils/function"
 import { Spinner } from "../../utils/Spinner"
 import StarsButton from "../api/StarsButton"
+import { SimpleTeamSelector } from "../api/SimpleTeamSelector"
+import { eligibleBatchTeams } from "../../utils/teams"
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -27,10 +29,24 @@ type ApiListProps = {
 export const ApiList = (props: ApiListProps) => {
   const pageSize = 20;
 
-  const { customGraphQLClient, connectedUser } = useContext(GlobalContext)
+  const { customGraphQLClient, connectedUser, tenant } = useContext(GlobalContext)
   const { translate } = useContext(I18nContext)
+  const { openCustomModal, close } = useContext(ModalContext)
+  const navigate = useNavigate()
 
   const queryClient = useQueryClient()
+  const selectionQueryKey = [
+    'api-catalog-selection', tenant._id, connectedUser._id, props.apiGroupId ?? '',
+  ]
+  const { data: selectedApis } = useQuery<IApiWithAuthorization[]>({
+    queryKey: selectionQueryKey,
+    initialData: [],
+    enabled: false,
+    gcTime: Infinity,
+  })
+  const [rowSelection, setRowSelection] = useState<RowSelectionState>(() =>
+    Object.fromEntries(selectedApis.map(({ api }) => [api._id, true]))
+  )
 
   const myTeamsRequest = useQuery({
     queryKey: ['myTeams'],
@@ -55,6 +71,34 @@ export const ApiList = (props: ApiListProps) => {
     const myTeams = myTeamsRequest.data && !isError(myTeamsRequest.data) ? myTeamsRequest.data : []
 
     return [
+      ...(connectedUser.isGuest
+        ? []
+        : [
+            columnHelper.display({
+              id: 'select',
+              enableColumnFilter: false,
+              header: ({ table }) => (
+                <input
+                  type="checkbox"
+                  aria-label={translate('table.select.page.label')}
+                  checked={table.getIsAllPageRowsSelected()}
+                  onChange={table.getToggleAllPageRowsSelectedHandler()}
+                />
+              ),
+              cell: ({ row }) => (
+                <input
+                  type="checkbox"
+                  aria-label={translate({
+                    key: 'table.select.row.label',
+                    replacements: [row.original.api.name],
+                  })}
+                  checked={row.getIsSelected()}
+                  disabled={!row.getCanSelect()}
+                  onChange={row.getToggleSelectedHandler()}
+                />
+              ),
+            }),
+          ]),
       columnHelper.display({
         id: 'favorite',
         enableColumnFilter: false,
@@ -293,6 +337,8 @@ export const ApiList = (props: ApiListProps) => {
   if (myTeamsRequest.isLoading) return <Spinner />
   if (!myTeamsRequest.data || isError(myTeamsRequest.data)) return <div>oops</div>
 
+  const myTeams = myTeamsRequest.data
+
   return (
     <DynamicTable<IApiWithAuthorization>
       queryKey={['apis']}
@@ -303,6 +349,47 @@ export const ApiList = (props: ApiListProps) => {
       getRowId={row => row.api._id}
       getRowAriaLabel={row => row.api.name}
       countLabelKey="API"
+      enableRowSelection={!connectedUser.isGuest}
+      persistSelectionAcrossPages
+      rowSelection={rowSelection}
+      setRowSelection={setRowSelection}
+      initialSelectedRows={selectedApis}
+      onSelectionChange={(apis) => queryClient.setQueryData(selectionQueryKey, apis)}
+      isRowSelectable={(row) =>
+        ['published', 'deprecated'].includes(row.api.state) &&
+        row.api.possibleUsagePlans.length > 0 &&
+        eligibleBatchTeams(myTeams, [row], tenant.subscriptionSecurity).length > 0
+      }
+      bulkActions={[
+        {
+          label: translate('subscription.batch.select.apis.action'),
+          resetSelectionOnSuccess: false,
+          onClick: async (selectedApis) => {
+            const teams = eligibleBatchTeams(myTeams, selectedApis, tenant.subscriptionSecurity);
+            openCustomModal({
+              title: translate('team.selection.title'),
+              content: (
+                teams.length === 0 ? (
+                  <p>{translate('subscription.batch.no.available.team')}</p>
+                ) : (
+                  <SimpleTeamSelector
+                    teams={teams.map((team) => ({ team, disabledFor: [] }))}
+                    showApiKeySelectModal={(teamId) => {
+                      const team = teams.find((candidate) => candidate._id === teamId);
+                      if (!team) return;
+                      close();
+                      queryClient.removeQueries({ queryKey: selectionQueryKey, exact: true });
+                      navigate('/apis/subscriptions/keyrings', {
+                        state: { apis: selectedApis, team, selectionQueryKey },
+                      });
+                    }}
+                  />
+                )
+              ),
+            })
+          },
+        },
+      ]}
     />
   )
 }

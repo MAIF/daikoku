@@ -1323,18 +1323,9 @@ class ApiController(
               .findById(demandId),
             AppError.EntityNotFound("Subscription demand")
           )
-          _ <- EitherT.right[AppError](
-            env.dataStore.subscriptionDemandRepo
-              .forTenant(ctx.tenant)
-              .deleteById(demand.id)
-          )
-          _ <- EitherT.right[AppError](
-            env.dataStore.stepValidatorRepo
-              .deleteByDemand(ctx.tenant.id, demand.id)
-          )
-          _ <- EitherT.right[AppError](
-            env.dataStore.notificationRepo
-              .deleteByDemand(ctx.tenant.id, demand.id)
+          _ <- deletionService.cancelSubscriptionDemand(
+            demand.id,
+            ctx.tenant
           )
         } yield Ok(Json.obj("done" -> true)))
           .leftMap(_.render())

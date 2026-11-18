@@ -2,7 +2,9 @@ import { nanoid } from "nanoid"
 import { IApi } from "../../src/types"
 import { adminApikeyId, adminApikeySecret, apiDivision, exposedPort, tenant } from "./utils"
 
-export const saveApi = (api?: IApi): Promise<Response> => {
+export const saveApi = (
+  api?: IApi | { _id: string; [key: string]: unknown }
+): Promise<Response> => {
   if (!api) {
     return Promise.reject({ error: "no api" })
   }

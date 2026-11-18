@@ -130,6 +130,24 @@ case class DemandId(value: String) extends ValueType with CanJson[DemandId] {
   def asJson: JsValue = JsString(value)
 }
 
+case class SubscriptionBatchDemandId(value: String)
+    extends ValueType
+    with CanJson[SubscriptionBatchDemandId] {
+  def asJson: JsValue = JsString(value)
+}
+
+case class SubscriptionBatchItemId(value: String)
+    extends ValueType
+    with CanJson[SubscriptionBatchItemId] {
+  def asJson: JsValue = JsString(value)
+}
+
+case class SubscriptionBatchKeyringId(value: String)
+    extends ValueType
+    with CanJson[SubscriptionBatchKeyringId] {
+  def asJson: JsValue = JsString(value)
+}
+
 case class SubscriptionDemandStepId(value: String)
     extends ValueType
     with CanJson[SubscriptionDemandStepId] {
@@ -192,6 +210,9 @@ enum JobName(val value: String):
   case NotificationPurge extends JobName("NotificationPurge")
   case AuditTrailPurge extends JobName("AuditTrailPurge")
   case ApiKeyStatsCollector extends JobName("ApiKeyStatsCollector")
+  // Kept to read job history persisted before event-driven batch processing.
+  case SubscriptionBatchMaterialization
+      extends JobName("SubscriptionBatchMaterialization")
 
 case class JobInformation(
     id: DatastoreId,

@@ -5,6 +5,7 @@ import { useSearchParams } from 'react-router-dom';
 import Select, { MultiValue, OptionProps, ValueContainerProps, components } from 'react-select';
 import AsyncSelect from 'react-select/async';
 import Pagination from '../utils/Pagination';
+import { updateSelectedRowCache } from './tableSelection';
 import {
   ColumnDef,
   ColumnFiltersState,
@@ -115,6 +116,8 @@ export type BulkActionContext = {
 
 export type BulkAction<T> = {
   label: string;
+  /** Disable when the action only opens a preparation or confirmation flow. */
+  resetSelectionOnSuccess?: boolean;
   onClick: (rows: T[], selectAll: boolean, ctx: BulkActionContext) => Promise<void>;
 };
 
@@ -221,7 +224,6 @@ export type DynamicTableProps<T extends RowData> = {
   pageSize?: number;
   persistFiltersInUrl?: boolean;
   toolbar?: ReactNode;
-  getRowId?: (row: T) => string;
   getRowAriaLabel?: (row: T) => string;
   /** Extra CSS class added to the `<div>` wrapping the rows (`.dynamic-table__data` is always applied). */
   dataClassName?: string;
@@ -230,10 +232,22 @@ export type DynamicTableProps<T extends RowData> = {
   tableClassName?: string;
   rowSelection?: RowSelectionState;
   setRowSelection?: OnChangeFn<RowSelectionState>;
+  /** Restore off-page row data alongside a controlled selection on remount. */
+  initialSelectedRows?: T[];
   onSelectionChange?: (selected: T[]) => void;
   isRowSelectable?: (row: T, selectedRows: T[]) => boolean;
   ariaLabel?: string;
-};
+} & (
+  | {
+    /** Bulk actions include selected rows from other pages. */
+    persistSelectionAcrossPages: true;
+    getRowId: (row: T) => string;
+  }
+  | {
+    persistSelectionAcrossPages?: false;
+    getRowId?: (row: T) => string;
+  }
+);
 
 export function DynamicTable<T extends RowData>({
   queryKey,
@@ -256,7 +270,9 @@ export function DynamicTable<T extends RowData>({
   onSelectionChange,
   rowSelection: controlledRowSelection,
   setRowSelection: controlledSetRowSelection,
-  isRowSelectable
+  initialSelectedRows = [],
+  isRowSelectable,
+  persistSelectionAcrossPages = false,
 }: DynamicTableProps<T>) {
   const { translate } = useContext(I18nContext);
   const queryClient = useQueryClient();
@@ -283,6 +299,9 @@ export function DynamicTable<T extends RowData>({
   const [internalRowSelection, setInternalRowSelection] = useState<RowSelectionState>({});
   const rowSelection = controlledRowSelection ?? internalRowSelection;
   const setRowSelection = controlledSetRowSelection ?? setInternalRowSelection;
+  const [selectedRowCache, setSelectedRowCache] = useState<ReadonlyMap<string, T>>(
+    () => new Map(getRowId ? initialSelectedRows.map(row => [getRowId(row), row]) : [])
+  );
 
 
   // id->label cache per async multiselect filter, used to render the labels of
@@ -302,10 +321,6 @@ export function DynamicTable<T extends RowData>({
     });
     return vals;
   });
-
-  useEffect(() => {
-    onSelectionChange?.(table.getSelectedRowModel().rows.map(row => row.original));
-  }, [rowSelection]);
 
   const isFirstRender = useRef(true);
   useEffect(() => {
@@ -348,6 +363,24 @@ export function DynamicTable<T extends RowData>({
   const totalSelectable = dataQuery.data?.totalSelectable ?? 0;
   const filterCounts = dataQuery.data?.filterCounts;
 
+  const currentSelectedRowCache = useMemo(
+    () => persistSelectionAcrossPages && getRowId
+      ? updateSelectedRowCache(selectedRowCache, items, rowSelection, getRowId)
+      : selectedRowCache,
+    [persistSelectionAcrossPages, getRowId, selectedRowCache, items, rowSelection]
+  );
+
+  useEffect(() => {
+    setSelectedRowCache(currentSelectedRowCache);
+  }, [currentSelectedRowCache]);
+
+  const selectedRows = useMemo(
+    () => persistSelectionAcrossPages
+      ? [...currentSelectedRowCache.values()]
+      : items.filter((item, index) => rowSelection[getRowId ? getRowId(item) : String(index)]),
+    [persistSelectionAcrossPages, currentSelectedRowCache, items, rowSelection, getRowId]
+  );
+
   const resolvedColumns = useMemo(
     () => typeof columns === 'function' ? columns({ setColumnFilters, selectAll, seedFilterLabels }) : columns,
     // setColumnFilters and seedFilterLabels are stable
@@ -376,10 +409,15 @@ export function DynamicTable<T extends RowData>({
     onRowSelectionChange: setRowSelection,
   });
 
-  const selectedRows = useMemo(
-    () => items.filter(item => rowSelection[getRowId ? getRowId(item) : '']),
-    [items, rowSelection, getRowId]
-  );
+  useEffect(() => {
+    onSelectionChange?.(persistSelectionAcrossPages
+      ? selectedRows
+      : table.getSelectedRowModel().rows.map(row => row.original));
+  }, [
+    rowSelection,
+    persistSelectionAcrossPages ? dataQuery.data : undefined,
+    currentSelectedRowCache,
+  ]);
 
   // Filter helpers
   const handleSelectChange = (data: MultiValue<FilterOption>, id: string) => {
@@ -431,17 +469,23 @@ export function DynamicTable<T extends RowData>({
     bulkActions.length > 0 &&
     enableRowSelection !== undefined &&
     enableRowSelection !== false;
-  const someSelected = table.getIsSomeRowsSelected() || table.getIsAllRowsSelected();
+  const actionSelectedRows = persistSelectionAcrossPages
+    ? selectedRows
+    : table.getSelectedRowModel().rows.map(row => row.original);
+  const someSelected = persistSelectionAcrossPages
+    ? selectedRows.length > 0
+    : table.getIsSomeRowsSelected() || table.getIsAllRowsSelected();
 
   const handleBulkAction = async (action: BulkAction<T>) => {
-    const rows = table.getSelectedRowModel().rows.map(r => r.original);
     const ctx: BulkActionContext = {
       refetch: () => queryClient.invalidateQueries({ queryKey }),
       resetFilters: () => setColumnFilters(defaultFilters),
     };
-    await action.onClick(rows, selectAll, ctx);
-    table.resetRowSelection();
-    setSelectAll(false);
+    await action.onClick(actionSelectedRows, selectAll, ctx);
+    if (action.resetSelectionOnSuccess !== false) {
+      table.resetRowSelection();
+      setSelectAll(false);
+    }
   };
 
   const renderFilterToolbar = () => {
@@ -665,11 +709,11 @@ export function DynamicTable<T extends RowData>({
           <span>
             {translate({
               key: 'table.rows.selected.count.label',
-              plural: (selectAll ? totalSelectable : table.getSelectedRowModel().rows.length) > 1,
+              plural: (selectAll ? totalSelectable : actionSelectedRows.length) > 1,
               replacements: [
                 selectAll
                   ? `${totalSelectable}`
-                  : `${table.getSelectedRowModel().rows.length}`,
+                  : `${actionSelectedRows.length}`,
               ],
             })}
           </span>
@@ -684,7 +728,19 @@ export function DynamicTable<T extends RowData>({
               {action.label}
             </button>
           ))}
-        {!selectAll &&
+        {persistSelectionAcrossPages && someSelected && (
+          <button
+            type="button"
+            className="btn --secondary --small ms-2"
+            onClick={() => {
+              setRowSelection({});
+              setSelectAll(false);
+            }}
+          >
+            {translate('table.selection.clear.label')}
+          </button>
+        )}
+        {!persistSelectionAcrossPages && !selectAll &&
           table.getIsAllPageRowsSelected() &&
           table.getSelectedRowModel().rows.length < totalSelectable && (
             <button
@@ -734,7 +790,7 @@ export function DynamicTable<T extends RowData>({
       }
     });
     if (noRowSelectable) {
-      setRowSelection({});
+      if (!persistSelectionAcrossPages) setRowSelection({});
       return
     }
     setRowSelection(newSelection);

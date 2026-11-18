@@ -1059,7 +1059,15 @@ class TenantControllerSpec()
       val oto = fr.maif.daikoku.domain.json.OtoroshiSettingsFormat
         .reads(respGet.json)
       oto.isSuccess mustBe true
-      oto.get mustBe otoroshiSettings
+      oto.get.keyringEmptyGroup mustBe None
+      (respGet.json \ "keyringEmptyGroup").toOption mustBe None
+      Await
+        .result(
+          daikokuComponents.env.dataStore.tenantRepo.findById(tenant.id),
+          5.seconds
+        )
+        .flatMap(_.otoroshiSettings.find(_.id == otoroshiSettings.id))
+        .flatMap(_.keyringEmptyGroup) mustBe defined
 
     }
     "update otoroshi instance" in {
@@ -1107,6 +1115,30 @@ class TenantControllerSpec()
         .reads(respGet.json)
       oto.isSuccess mustBe true
       oto.get.url mustBe "new-url"
+      val savedSettings = Await
+        .result(
+          daikokuComponents.env.dataStore.tenantRepo.findById(tenant.id),
+          5.seconds
+        )
+        .flatMap(_.otoroshiSettings.find(_.id == otoroshiSettings.id))
+        .get
+      val managedGroup = savedSettings.keyringEmptyGroup.get
+      (respGet.json \ "keyringEmptyGroup").toOption mustBe None
+
+      val repeatedUpdate = httpJsonCallBlocking(
+        path =
+          s"/api/tenants/${tenant.id.value}/otoroshis/${otoroshiSettings.id.value}?skipValidation=true",
+        method = "PUT",
+        body = Some(otoroshiSettings.copy(url = "third-url").asJson)
+      )(using tenant, session)
+      repeatedUpdate.status mustBe 200
+      Await
+        .result(
+          daikokuComponents.env.dataStore.tenantRepo.findById(tenant.id),
+          5.seconds
+        )
+        .flatMap(_.otoroshiSettings.find(_.id == otoroshiSettings.id))
+        .flatMap(_.keyringEmptyGroup) mustBe Some(managedGroup)
     }
     "delete otoroshi instance" in {
       val otoroshiSettings = OtoroshiSettings(
