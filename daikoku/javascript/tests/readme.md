@@ -1,5 +1,12 @@
 # Front office tests
 
+## Dependencies
+
+Install dependencies in both `daikoku/javascript` and `daikoku/javascript/tests`
+with `npm ci`, as the CI test job does. Specs importing frontend source modules
+need dependencies resolved from `daikoku/javascript/node_modules`; installing
+them only in `tests/node_modules` is not sufficient.
+
 ## ReDoc internal links
 
 From `daikoku/javascript/tests`, run `../node_modules/.bin/playwright test --config playwright.redoc.config.js`.
