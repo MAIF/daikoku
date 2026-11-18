@@ -17,7 +17,6 @@ import './style/main.scss';
 
 import 'bootstrap';
 import { Option, ReactFormsProvider } from "@maif/react-forms";
-import { Plus } from "lucide-react";
 
 (window as any).$ = jQuery;
 (window as any).jQuery = jQuery;

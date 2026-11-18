@@ -185,7 +185,9 @@ export const SubscriptionBatchPlanSelectionModal = ({ apis, team, onSubmitted }:
             <section key={api.api._id}>
               <h6>{api.api.name}</h6>
               {plans.length === 0 && (
-                <p className="text-muted">{translate('subscription.batch.no.plans')}</p>
+                <div className="alert alert-info" role='alert'>
+                  {translate('subscription.batch.no.plans')}
+                </div>
               )}
               {plans.map((plan) => {
                 const key = planKey(api.api._id, plan._id);

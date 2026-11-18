@@ -6,6 +6,7 @@
   h1 {
     font-size: 1.65rem;
   }
+
   h2 {
     font-size: 1.1rem;
   }
@@ -71,7 +72,7 @@
       border-color: $primary-color;
     }
 
-    > small {
+    >small {
       display: block;
       padding: 0 0.75rem 0.75rem;
     }
@@ -105,7 +106,7 @@
     }
   }
 
-  &__layout > &__zone {
+  &__layout>&__zone {
     max-height: 65vh;
     overflow-y: auto;
   }
@@ -123,9 +124,10 @@
       border-color: $primary-color;
       background: $info-color-bg;
     }
+
     &.--invalid {
-      border-color: $danger-color;
-      background: $danger-color-bg;
+      border-color: $neutral-color;
+      background: $neutral-color-bg;
     }
   }
 
@@ -143,6 +145,7 @@
     &.--selected {
       outline: 2px solid $primary-color;
     }
+
     &.--unavailable {
       background: $level2_bg-color;
       color: $level2_text-color;
@@ -153,6 +156,7 @@
         cursor: not-allowed;
       }
     }
+
     label {
       cursor: pointer;
       min-width: 0;
@@ -174,24 +178,37 @@
     background: transparent;
     color: inherit;
     border: none;
-    cursor: grab;
+    cursor: move !important;
+    /* fallback if grab cursor is unsupported */
+    cursor: grab !important;
     touch-action: none;
     padding: 0.4rem 0;
+
+    &:active {
+      :active {
+        cursor: grabbing;
+        cursor: -moz-grabbing;
+        cursor: -webkit-grabbing;
+      }
+    }
   }
 
   &__folder-icon {
     color: $primary-color;
     flex-shrink: 0;
   }
+
   &__hint {
     padding: 1.5rem 0;
     text-align: center;
   }
+
   &__empty {
     text-align: center;
     padding: 3rem 1rem;
     color: $level2_text-color;
   }
+
   &__drag-overlay {
     display: flex;
     gap: 0.5rem;
@@ -201,6 +218,7 @@
     color: $level3_text-color;
     border: 2px solid $primary-color;
   }
+
   &__footer {
     justify-content: space-between;
     margin-top: 1rem;
@@ -238,7 +256,7 @@
     border-bottom: 1px solid $form-border-color;
     overflow-wrap: anywhere;
 
-    > * {
+    >* {
       min-width: 0;
     }
   }
@@ -269,10 +287,10 @@
     &__layout {
       grid-template-columns: 1fr;
     }
-    &__layout > &__zone,
+
+    &__layout>&__zone,
     &__detail {
       max-height: 55vh;
     }
   }
 }
-

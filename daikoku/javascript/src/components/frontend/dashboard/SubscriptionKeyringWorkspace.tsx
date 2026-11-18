@@ -15,7 +15,9 @@ import {
   Layers,
   LockKeyhole,
   Plus,
+  Trash2,
   Undo2,
+  Users,
   WandSparkles,
   X,
 } from 'lucide-react';
@@ -41,6 +43,7 @@ import { SubscriptionKeyringProposal } from './SubscriptionKeyringProposal';
 import { SubscriptionKeyringReview } from './SubscriptionKeyringReview';
 import { useSubscriptionBatch } from './useSubscriptionBatch';
 import './subscriptionKeyringWorkspace.scss';
+import { Callout } from '../../inputs/Callout';
 
 export type KeyringWorkspaceLocationState = {
   apis: IApiWithAuthorization[];
@@ -81,7 +84,7 @@ function WorkspaceDropZone({
     <section
       ref={setNodeRef}
       aria-label={label}
-      className={`keyring-workspace__zone ${className} ${isOver ? (compatible === false ? '--invalid' : '--over') : ''}`}
+      className={`keyring-workspace__zone ${className} ${compatible === false ? '--invalid' : isOver ? '--over' : ''}`}
     >
       {children}
     </section>
@@ -573,9 +576,10 @@ function KeyringWorkspace({ apis, team }: KeyringWorkspaceLocationState) {
       <header className="d-flex flex-wrap align-items-start justify-content-between gap-3 mb-3">
         <div>
           <h1>{translate('subscription.workspace.title')}</h1>
-          <p className="text-muted mb-0">
-            {translate('Team')}: <strong>{team.name}</strong>
-          </p>
+          <div className="d-flex flex-row gap-2">
+            <div className="badge --info --ghost"><strong><Users /> {team.name}</strong></div>
+            <div className="badge --info"><strong>Brouillon</strong></div>
+          </div>
         </div>
         <div className="d-flex gap-2 flex-wrap">
           <Link className={`btn --secondary ${submitting ? 'disabled' : ''}`} to="/apis">
@@ -668,9 +672,12 @@ function KeyringWorkspace({ apis, team }: KeyringWorkspaceLocationState) {
             {availablePlanSets
               .filter(({ plans }) => plans.length === 0)
               .map(({ api }) => (
-                <p key={api.api._id} className="text-muted">
-                  {api.api.name}: {translate('subscription.batch.no.plans')}
-                </p>
+                <Callout
+                  key={api.api._id}
+                  level="info"
+                  title={api.api.name}
+                  body={translate('subscription.batch.no.plans')}
+                />
               ))}
             <input
               type="search"
@@ -702,51 +709,51 @@ function KeyringWorkspace({ apis, team }: KeyringWorkspaceLocationState) {
               .map(([name, items]) => {
                 const selection = bulkSelection(items);
                 return (
-                <div
-                  key={name ?? 'all'}
-                  data-environment={name}
-                  className={name === undefined ? undefined : 'mb-3'}
-                >
-                  {name !== undefined && (
-                    <div className="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
-                      <h3 className="h6 mb-0">
-                        {name} <small>({items.length})</small>
-                      </h3>
-                      <button
-                        type="button"
-                        className="btn --secondary --small"
-                        aria-label={translate({
-                          key: 'subscription.workspace.select.environment',
-                          replacements: [name],
-                        })}
-                        disabled={
-                          submitting ||
-                          selection.requiresProcessChoice ||
-                          selection.keys.length === 0 ||
-                          selection.keys.every((key) => selectedKeys.includes(key))
-                        }
-                        title={selection.requiresProcessChoice ? translate('subscription.workspace.selection.process.choose') : undefined}
-                        onClick={() =>
-                          setSelectedKeys((current) => [
-                            ...new Set([...current, ...selection.keys]),
-                          ])
-                        }
-                      >
-                        {translate('subscription.workspace.select.all')}
-                      </button>
-                    </div>
-                  )}
-                  {items.map((item) => (
-                    <WorkspacePlanCard
-                      key={workspacePlanKey(item)}
-                      item={item}
-                      selected={selectedKeys.includes(workspacePlanKey(item))}
-                      disabled={submitting || !canSelectPlan(item)}
-                      selectionError={canSelectPlan(item) ? undefined : 'subscription.workspace.incompatible.process'}
-                      onSelect={() => toggleSelection(workspacePlanKey(item))}
-                    />
-                  ))}
-                </div>
+                  <div
+                    key={name ?? 'all'}
+                    data-environment={name}
+                    className={name === undefined ? undefined : 'mb-3'}
+                  >
+                    {name !== undefined && (
+                      <div className="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
+                        <h3 className="h6 mb-0">
+                          {name} <small>({items.length})</small>
+                        </h3>
+                        <button
+                          type="button"
+                          className="btn --secondary --small"
+                          aria-label={translate({
+                            key: 'subscription.workspace.select.environment',
+                            replacements: [name],
+                          })}
+                          disabled={
+                            submitting ||
+                            selection.requiresProcessChoice ||
+                            selection.keys.length === 0 ||
+                            selection.keys.every((key) => selectedKeys.includes(key))
+                          }
+                          title={selection.requiresProcessChoice ? translate('subscription.workspace.selection.process.choose') : undefined}
+                          onClick={() =>
+                            setSelectedKeys((current) => [
+                              ...new Set([...current, ...selection.keys]),
+                            ])
+                          }
+                        >
+                          {translate('subscription.workspace.select.all')}
+                        </button>
+                      </div>
+                    )}
+                    {items.map((item) => (
+                      <WorkspacePlanCard
+                        key={workspacePlanKey(item)}
+                        item={item}
+                        selected={selectedKeys.includes(workspacePlanKey(item))}
+                        disabled={submitting || !canSelectPlan(item)}
+                        selectionError={canSelectPlan(item) ? undefined : 'subscription.workspace.incompatible.process'}
+                        onSelect={() => toggleSelection(workspacePlanKey(item))}
+                      />
+                    ))}
+                  </div>
                 );
               })}
           </WorkspaceDropZone>
@@ -809,9 +816,9 @@ function KeyringWorkspace({ apis, team }: KeyringWorkspaceLocationState) {
                           aria-description={
                             selectedKeys.length > 0
                               ? translate({
-                                  key: 'subscription.workspace.assign.selection',
-                                  replacements: [folder.name],
-                                })
+                                key: 'subscription.workspace.assign.selection',
+                                replacements: [folder.name],
+                              })
                               : undefined
                           }
                           aria-pressed={selectedFolder?.id === folder.id}
@@ -850,8 +857,8 @@ function KeyringWorkspace({ apis, team }: KeyringWorkspaceLocationState) {
                     activeKeys.length > 0 ? prepareMove(activeKeys, folder.id).error : undefined;
                   const existingAccess = folder.keyring
                     ? (subscriptionsQuery.data?.subscriptions.filter(
-                        (subscription) => subscription.keyring?._id === folder.keyring?._id
-                      ) ?? [])
+                      (subscription) => subscription.keyring?._id === folder.keyring?._id
+                    ) ?? [])
                     : [];
                   return (
                     <WorkspaceDropZone
@@ -902,7 +909,7 @@ function KeyringWorkspace({ apis, team }: KeyringWorkspaceLocationState) {
                             );
                           }}
                         >
-                          <X size={16} />
+                          <Trash2 size={16} />
                         </button>
                       </div>
                       <p className="text-muted">

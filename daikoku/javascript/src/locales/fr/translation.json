@@ -115,6 +115,7 @@
   "subscription.batch.no.available.team": "Aucune équipe ne peut accéder à toutes les APIs sélectionnées",
   "subscription.batch.plans.failed": "Impossible de charger les plans des APIs sélectionnées",
   "subscription.batch.no.plans": "Aucun plan disponible pour cette équipe (déjà souscrit, demande en cours ou plan non éligible)",
+  "subscription.workspace.show.explanation": "Afficher l'explication pour %s",
   "subscription.batch.keyring.choice": "Trousseau pour ce plan d'API",
   "subscription.batch.keyring.groups.title": "Trousseaux par environnement",
   "subscription.batch.keyring.groups.description": "Les plans de même nom partagent un nouveau trousseau ou un trousseau existant lorsque leur cible Otoroshi et leurs règles d'agrégation le permettent. Les plans incompatibles utilisent des trousseaux distincts.",

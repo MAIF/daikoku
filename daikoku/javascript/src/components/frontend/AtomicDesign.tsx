@@ -1,6 +1,7 @@
 import { useState } from "react";
 import Pagination from "../utils/Pagination";
 import Select from "react-select";
+import { Callout } from "../inputs/Callout";
 
 export const AtomicDesign = () => {
   const [page, setPage] = useState(0);
@@ -159,6 +160,14 @@ export const AtomicDesign = () => {
               <span className="badge --finished --state">finished state badge</span>
               <span className="badge --inactive --state">inactive state badge</span>
             </div>
+
+            <h1 className="mt-3">Callout</h1>
+              <Callout level="primary" title="Primary callout" body="test"/>
+              <Callout level="info" title="Info callout" body="test"/>
+              <Callout level="warning" title="Warning callout" body="test"/>
+              <Callout level="danger" title="Danger callout" body="test"/>
+              <Callout level="success" title="Success callout" body="test"/>
+              <Callout level="neutral" title="Neutral callout" body="test"/>
 
             <h1 className="mt-3">Number indicator</h1>
             <div className="d-flex gap-2">

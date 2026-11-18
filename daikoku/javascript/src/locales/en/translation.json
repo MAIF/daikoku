@@ -115,6 +115,7 @@
   "subscription.batch.no.available.team": "No team can access all selected APIs",
   "subscription.batch.plans.failed": "Could not load plans for the selected APIs",
   "subscription.batch.no.plans": "No plans available for this team (already subscribed, request pending or ineligible plan)",
+  "subscription.workspace.show.explanation": "Show explanation for %s",
   "subscription.batch.keyring.choice": "Keyring for this API plan",
   "subscription.batch.keyring.groups.title": "Keyrings by environment",
   "subscription.batch.keyring.groups.description": "Plans with the same name share one new or existing keyring when their Otoroshi binding and aggregation rules allow it. Incompatible plans use separate keyrings.",
