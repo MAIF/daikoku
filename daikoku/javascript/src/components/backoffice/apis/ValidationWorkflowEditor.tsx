@@ -1,7 +1,16 @@
 import { CodeInput, constraints, Form, format, Schema, type } from '@maif/react-forms';
 import { nanoid } from 'nanoid';
 import React, { useContext, useEffect, useRef, useState } from 'react';
-import { CreditCard, Globe, FileText, Mail, ShieldCheck, Flag, KeyRound } from 'lucide-react';
+import {
+  CreditCard,
+  Globe,
+  FileText,
+  Mail,
+  ShieldCheck,
+  Flag,
+  KeyRound,
+  LucideIcon
+} from 'lucide-react';
 
 import { toast } from 'sonner';
 import { I18nContext } from '../../../contexts/i18n-context';
@@ -202,24 +211,55 @@ const PaymentStep = (props: ValidationStepProps) => {
 
 type EmailOption = { option: 'all' | 'oneOf' };
 
-type SubProcessProps = {
+type ValidationWorkflowEditorProps = {
   save: (process: Array<IValidationStep>) => Promise<void>;
   process: Array<IValidationStep>;
   team: string;
   tenant: ITenant;
   allowFormStep?: boolean;
   documentation?: React.ComponentType<{ close: () => void, updateProcess: (process: IValidationStep[]) => void }>
+  iconTarget?: LucideIcon;
+  fixedFormStep?: boolean;
+  fixedFormSchema?: Schema;
+  hideFormConfiguration?: boolean;
+  hiddenSteps?: Array<IValidationStep['type']>
 };
 type IValidationStepEmail = IValidationStep & { type: 'email' };
 type IValidationStepForm = IValidationStep & { type: 'form' };
 type IValidationStepTeamAdmin = IValidationStep & { type: 'teamAdmin' };
 type IValidationStepHttpRequest = IValidationStep & { type: 'httpRequest' };
 
-export const SubscriptionProcessEditor = (props: SubProcessProps) => {
+export const ValidationWorkflowEditor = ({ iconTarget: IconTarget = KeyRound, ...props }: ValidationWorkflowEditorProps) => {
   const { translate } = useContext(I18nContext);
   const { openCustomModal, openFormModal, close } = useContext(ModalContext);
 
+  const [fixedFormStep] = useState<IValidationStepForm | undefined>(() => {
+    if (!props.fixedFormStep) return undefined;
+
+    const step: IValidationStepForm = props.process.find(
+      (step): step is IValidationStepForm => step.type === 'form'
+    ) ?? {
+      type: 'form',
+      id: nanoid(32),
+      title: 'Form',
+      schema: {},
+      formatter: '',
+    };
+
+    return props.fixedFormSchema
+      ? { ...step, schema: props.fixedFormSchema }
+      : step;
+  });
+
+  const normalizeProcess = (process: IValidationStep[]): IValidationStep[] =>
+    fixedFormStep
+      ? [fixedFormStep, ...process.filter(step => step.type !== 'form' )]
+      : process;
+
   const [draft, setDraft] = useState(() => {
+
+    if (fixedFormStep) return normalizeProcess(props.process);
+
     const formIndex = props.process.findIndex(step => step.type === 'form');
     if (formIndex <= 0) return props.process;
 
@@ -236,12 +276,18 @@ export const SubscriptionProcessEditor = (props: SubProcessProps) => {
     switch (name) {
       case 'email':
         return openFormModal({
-          title: translate('subscription.process.add.email.step.title'),
+          title: translate('validation.workflow.add.email.step.title'),
+          value: {
+            emails: [''],
+            title: translate('validation.workflow.email.step.title.defaultValue'),
+            message: '',
+            option: 'oneOf',
+          },
           schema: {
             title: {
               type: type.string,
-              label: translate('subscription.process.email.step.title.label'),
-              defaultValue: translate('subscription.process.email.step.title.defaultValue'),
+              label: translate('validation.workflow.email.step.title.label'),
+              defaultValue: translate('validation.workflow.email.step.title.defaultValue'),
               constraints: [
                 constraints.required(translate('constraints.required.value')),
               ],
@@ -249,7 +295,7 @@ export const SubscriptionProcessEditor = (props: SubProcessProps) => {
             emails: {
               type: type.string,
               format: format.email,
-              label: translate('subscription.process.email.step.emails.label'),
+              label: translate('validation.workflow.email.step.emails.label'),
               array: true,
               constraints: [
                 constraints.required(translate('constraints.required.value')),
@@ -267,11 +313,11 @@ export const SubscriptionProcessEditor = (props: SubProcessProps) => {
             },
             message: {
               type: type.string,
-              label: translate('subscription.process.email.step.message.label'),
+              label: translate('validation.workflow.email.step.message.label'),
               format: format.text,
             },
           },
-          onSubmit: (data: IValidationStep & { type: 'email' } & EmailOption) => {
+          onSubmit: (data: Omit<IValidationStepEmail, 'id' | 'type'> & EmailOption) => {
             if (data.option === 'oneOf') {
               const step: IValidationStepEmail = {
                 type: 'email',
@@ -300,7 +346,7 @@ export const SubscriptionProcessEditor = (props: SubProcessProps) => {
           options: {
             actions: {
               add: {
-                label: translate('subscription.process.email.step.add.label')
+                label: translate('validation.workflow.email.step.add.label')
               }
             }
           },
@@ -363,13 +409,12 @@ export const SubscriptionProcessEditor = (props: SubProcessProps) => {
           type: 'httpRequest',
           id: nanoid(32),
           title: 'Admin',
-          url: 'https://changeit.io',
+          url: '',
           headers: {},
         };
-        //http://step.validation.oto.tools:8080
 
         return openFormModal({
-          title: translate('subscription.process.add.httpRequest.step.title'),
+          title: translate('validation.workflow.add.httpRequest.step.title'),
           schema: {
             title: {
               type: type.string,
@@ -402,10 +447,12 @@ export const SubscriptionProcessEditor = (props: SubProcessProps) => {
 
   const editMailStep = (value: IValidationStepEmail) => {
     return openFormModal({
-      title: translate('subscription.process.update.email.step.title'),
+      title: translate('validation.workflow.update.email.step.title'),
       schema: {
         emails: {
           type: type.string,
+          constraints: [
+            constraints.required(translate('constraints.required.value'))],
           array: true,
         },
         message: {
@@ -422,13 +469,16 @@ export const SubscriptionProcessEditor = (props: SubProcessProps) => {
         }));
       },
       actionLabel: translate('Update'),
-      value,
+      value: {
+        ...value,
+        emails: value.emails?.length ? value.emails : [''],
+      },
     });
   };
 
   const editHttpRequestStep = (value: IValidationStepHttpRequest) => {
     return openFormModal({
-      title: translate('subscription.process.update.email.step.title'),
+      title: translate('validation.workflow.update.email.step.title'),
       schema: {
         title: {
           type: type.string,
@@ -475,38 +525,41 @@ export const SubscriptionProcessEditor = (props: SubProcessProps) => {
 
   const cardTypes: CardTypeCatalog<IValidationStep> = {
     email: {
-      label: translate('subscription.process.email'),
+      label: translate('validation.workflow.email'),
       icon: <Mail size={20} />,
       getTitle: step => step.title,
       Content: MailCard,
       onEdit: editMailStep,
     },
     httpRequest: {
-      label: translate('subscription.process.httpRequest'),
+      label: translate('validation.workflow.httpRequest'),
       icon: <Globe size={20} />,
       getTitle: step => step.title,
       Content: HttpCard,
       onEdit: editHttpRequestStep,
     },
     form: {
-      label: translate('subscription.process.form'),
+      label: translate('validation.workflow.form'),
       icon: <FileText size={20} />,
       getTitle: step => step.title,
-      Content: FormCard,
+      Content: ({ data }) => (
+        <FormCard data={data} hideConfiguration={props.hideFormConfiguration} />
+      ),
       onEdit: editFormStep,
       canAdd: props.allowFormStep !== false && !draft.some(step => step.type === 'form'),
-      unavailableReason: translate('subscription.process.palette.form.exists'),
+      unavailableReason: translate('validation.workflow.palette.form.exists'),
       canMove: false,
       canDelete: false,
+      canEdit: !props.fixedFormStep,
     },
     teamAdmin: {
-      label: translate('subscription.process.team.admin'),
+      label: translate('validation.workflow.team.admin'),
       icon: <ShieldCheck size={20} />,
       getTitle: step => step.title,
       Content: ValidationCard,
       canEdit: false,
       canAdd: props.allowFormStep === false || !draft.some(step => step.type === 'teamAdmin'),
-      unavailableReason: translate('subscription.process.palette.admin.exists'),
+      unavailableReason: translate('validation.workflow.palette.admin.exists'),
     },
     payment: {
       label: translate('Payment'),
@@ -518,11 +571,15 @@ export const SubscriptionProcessEditor = (props: SubProcessProps) => {
         index={draft.findIndex(step => step.id === data.id) + 1}
       />,
       canAdd: false,
-      unavailableReason: translate('subscription.process.palette.payment.unavailable'),
+      unavailableReason: translate('validation.workflow.palette.payment.unavailable'),
     },
   };
 
   const Documentation = props.documentation ?? React.Fragment
+  const visibleCardTypes = { ...cardTypes };
+  for (const stepType of props.hiddenSteps ?? []) {
+    delete visibleCardTypes[stepType];
+  }
   return (
     <div>
       {props.documentation && <button
@@ -535,18 +592,18 @@ export const SubscriptionProcessEditor = (props: SubProcessProps) => {
         value={draft}
         onChange={setDraft}
         onAdd={editProcess}
-        cardTypes={cardTypes}
+        cardTypes={visibleCardTypes}
         labels={{
-          palette: translate('subscription.process.palette.title'),
-          hint: translate('subscription.process.palette.hint'),
-          insert: position => `${translate('subscription.process.palette.insert')} ${position}`,
-          unavailable: translate('subscription.process.palette.unavailable'),
+          palette: translate('validation.workflow.palette.title'),
+          hint: translate('validation.workflow.palette.hint'),
+          insert: position => `${translate('validation.workflow.palette.insert')} ${position}`,
+          unavailable: translate('validation.workflow.palette.unavailable'),
         }}
         start={<span className="badge rounded-pill bg-light text-dark border p-2">
-          <Flag size={15} aria-hidden="true" /> {translate('subscription.process.start')}
+          <Flag size={15} aria-hidden="true" /> {translate('validation.workflow.start')}
         </span>}
         end={<span className="badge rounded-pill bg-light text-dark border p-2">
-          <KeyRound size={15} aria-hidden="true" /> {translate('subscription.process.end')}
+          <IconTarget size={15} aria-hidden="true" />{translate('validation.workflow.end')}
         </span>}
         canInsertAt={(type, index) => {
           const hasForm = draft.some(step => step.type === 'form');
@@ -559,9 +616,9 @@ export const SubscriptionProcessEditor = (props: SubProcessProps) => {
           return card.type === 'form' ? destination === 0 : destination > 0;
         }}
       />
-      {showDocumentation && <Documentation close={() => setShowDocumentation(false)} updateProcess={(steps) => setDraft(steps)} />}
+      {showDocumentation && <Documentation close={() => setShowDocumentation(false)} updateProcess={(steps) => setDraft(normalizeProcess(steps))} />}
       {(!!draft.length || !!props.process.length) && (
-        <button className='btn --primary' onClick={() => props.save(draft)}>{translate("Save")}</button>
+        <button className='btn --primary' onClick={() => props.save(normalizeProcess(draft))}>{translate("Save")}</button>
       )}
     </div>
   );

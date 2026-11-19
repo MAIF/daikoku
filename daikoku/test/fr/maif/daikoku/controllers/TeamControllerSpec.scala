@@ -206,8 +206,7 @@ class TeamControllerSpec()
         sender = user.asNotificationSender,
         action = NotificationAction.TeamCreationAttempt(
           demand.id,
-          demand.steps.head.id,
-          "Approve team"
+          demand.steps.head.id
         )
       )
       setupEnvBlocking(
@@ -324,31 +323,6 @@ class TeamControllerSpec()
           5.seconds
         )
       }
-    }
-
-    "return an explicit error when an email validation step has no recipients" in {
-      val workflowTenant = tenant.copy(
-        teamCreationProcess = Seq(
-          ValidationStep.Email(
-            id = "team-workflow-email-without-recipient",
-            emails = Seq.empty,
-            message = None,
-            title = "Team validation"
-          )
-        )
-      )
-      setupEnvBlocking(
-        tenants = Seq(workflowTenant),
-        users = Seq(user, tenantAdmin),
-        teams = Seq(defaultAdminTeam)
-      )
-
-      val response =
-        submitTeamCreation(workflowTenant, "Team without email recipient")
-
-      response.status mustBe 400
-      (response.json \ "error").as[String] mustBe
-        "Team creation email step must have at least one recipient."
     }
 
     "return a client error when an HTTP validation response has no accept field" in {

@@ -138,11 +138,11 @@ mail.team.creation.mail.confirmation.body = Merci de <a href="[urlAccept]">confi
 mail.team.creation.error.title = Échec de création d''équipe
 mail.team.creation.error.body = Une erreur technique est survenue pour la demande de création d''équipe [demandId]. Aucune action de relance n''est disponible.
 mail.team.creation.mail.validation.body = Bonjour, </br>\
-Une nouvelle équipe vient de s''inscrire sur [Nom de l''application].</br>\
+Une nouvelle équipe vient de s''inscrire sur [tenant].</br>\
 Informations sur l'équipe :</br>\
 Nom : [userName]</br>\
 Email : [userEmail]</br>\
-Vous pouvez <a href="[urlAccept]" target="_blank">accepter</a>\ ou <a href="[urlDecline]" target="_blank">refuser</a>\ la création de l''équipe.
+Vous pouvez <a href="[urlAccept]" target="_blank">accepter</a> ou <a href="[urlDecline]" target="_blank">refuser</a> la création de l''équipe.
 
 mail.team.creation.mail.rejected.title = Votre inscription sur [tenant] n''a pas été validée
 mail.team.creation.mail.rejected.body = Bonjour [userName], </br>\

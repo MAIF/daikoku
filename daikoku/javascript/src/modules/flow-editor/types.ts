@@ -19,7 +19,7 @@ export type CardTypeDefinition<Data> = {
 };
 
 export type CardTypeCatalog<Card extends FlowEditorCard> = {
-  [Type in Card['type']]: CardTypeDefinition<Card & { type: Type }>;
+  [Type in Card['type']]?: CardTypeDefinition<Card & { type: Type }>;
 };
 
 export type FlowEditorProps<Card extends FlowEditorCard> = {

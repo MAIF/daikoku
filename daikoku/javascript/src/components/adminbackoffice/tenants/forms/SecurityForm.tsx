@@ -7,11 +7,11 @@ import { I18nContext, ModalContext } from '../../../../contexts';
 import { GlobalContext } from '../../../../contexts/globalContext';
 import * as Services from '../../../../services';
 import { Display, IOtoroshiSettings, isError, ISimpleOtoroshiSettings, ITeamFullGql, ITenant, ITenantFull, IValidationStep } from '../../../../types';
-import { SubscriptionProcessEditor } from '../../../backoffice/apis/SubscriptionProcessEditor';
+import { ValidationWorkflowEditor } from '../../../backoffice/apis/ValidationWorkflowEditor';
 import { Spinner } from '../../../utils';
 import { OtoroshiEntitiesSelector } from '../../teams/TeamList';
 import { toast } from 'sonner';
-import { DiagramFlowHorizontal } from "lucide-react";
+import {DiagramFlowHorizontal, KeyRound, UserGroup} from "lucide-react";
 
 
 export const SecurityForm = (props: {
@@ -19,7 +19,7 @@ export const SecurityForm = (props: {
   updateTenant: UseMutationResult<any, unknown, ITenantFull, unknown>;
 }) => {
   const { translate } = useContext(I18nContext);
-  const { alert, openRightPanel, openFormModal } = useContext(ModalContext);
+  const { alert, openRightPanel, closeRightPanel, openFormModal } = useContext(ModalContext);
   const { customGraphQLClient, tenant } = useContext(GlobalContext);
 
   const teamQuery = useQuery({
@@ -202,16 +202,16 @@ export const SecurityForm = (props: {
         </p>
         <ul>
           <li>
-            <strong>{translate('subscription.process.form')}</strong> : {translate('tenant.security.account.creation.process.doc.step.form')}
+            <strong>{translate('validation.workflow.form')}</strong> : {translate('tenant.security.account.creation.process.doc.step.form')}
           </li>
           <li>
-            <strong>{translate('subscription.process.email')}</strong> : {translate('tenant.security.account.creation.process.doc.step.email')}
+            <strong>{translate('validation.workflow.email')}</strong> : {translate('tenant.security.account.creation.process.doc.step.email')}
           </li>
           <li>
-            <strong>{translate('subscription.process.httpRequest')}</strong> : {translate('tenant.security.account.creation.process.doc.step.http')}
+            <strong>{translate('validation.workflow.httpRequest')}</strong> : {translate('tenant.security.account.creation.process.doc.step.http')}
           </li>
           <li>
-            <strong>{translate('subscription.process.team.admin')}</strong> : {translate('tenant.security.account.creation.process.doc.step.admin')}
+            <strong>{translate('validation.workflow.team.admin')}</strong> : {translate('tenant.security.account.creation.process.doc.step.admin')}
           </li>
         </ul>
         <hr />
@@ -255,13 +255,13 @@ export const SecurityForm = (props: {
         </p>
         <ul>
           <li>
-            <strong>{translate('subscription.process.email')}</strong> : {translate('tenant.security.account.creation.process.doc.step.email')}
+            <strong>{translate('validation.workflow.email')}</strong> : {translate('tenant.security.account.creation.process.doc.step.email')}
           </li>
           <li>
-            <strong>{translate('subscription.process.httpRequest')}</strong> : {translate('tenant.security.account.creation.process.doc.step.http')}
+            <strong>{translate('validation.workflow.httpRequest')}</strong> : {translate('tenant.security.account.creation.process.doc.step.http')}
           </li>
           <li>
-            <strong>{translate('subscription.process.team.admin')}</strong> : {translate('tenant.security.account.creation.process.doc.step.admin')}
+            <strong>{translate('validation.workflow.team.admin')}</strong> : {translate('tenant.security.account.creation.process.doc.step.admin')}
           </li>
         </ul>
         <hr />
@@ -280,12 +280,13 @@ export const SecurityForm = (props: {
   const editAccountProcess = () => {
     openRightPanel({
       title: translate("tenant.security.account.creation.process.panel.title"),
-      content: <SubscriptionProcessEditor
+      content: <ValidationWorkflowEditor
         save={accountCreationProcess => props.updateTenant.mutateAsync({ ..._tenant, accountCreationProcess })}
         process={props.tenant?.accountCreationProcess ?? []}
         team={teamQuery.data!._id}
         tenant={props.tenant as ITenant}
         documentation={AccountCreationProcessDocumentation}
+        iconTarget={KeyRound}
       />,
       defaultSize: 90
     })
@@ -294,13 +295,22 @@ export const SecurityForm = (props: {
   const editTeamProcess = () => {
     openRightPanel({
       title: translate("tenant.security.team.creation.process.panel.title"),
-      content: <SubscriptionProcessEditor
-        save={teamCreationProcess => props.updateTenant.mutateAsync({ ..._tenant, teamCreationProcess })}
+      content: <ValidationWorkflowEditor
+        save={teamCreationProcess => props.updateTenant.mutateAsync({ ..._tenant, teamCreationProcess }).then(closeRightPanel)}
         process={props.tenant?.teamCreationProcess ?? []}
         team={teamQuery.data!._id}
         tenant={props.tenant as ITenant}
         documentation={TeamCreationProcessDocumentation}
-        allowFormStep={false}
+        allowFormStep={true}
+        iconTarget={UserGroup}
+        hideFormConfiguration
+        fixedFormStep={true}
+        fixedFormSchema={{
+          name: { type: type.string },
+          contact: { type: type.string },
+          avatar: { type: type.string },
+        }}
+        hiddenSteps={['payment']}
       />,
       defaultSize: 90
     })

@@ -175,7 +175,7 @@ class TeamController(
           _ <- EitherT.cond[Future][AppError, Unit](
             ctx.tenant.teamCreationProcess.forall {
               case _: ValidationStep.Email | _: ValidationStep.HttpRequest |
-                  _: ValidationStep.TeamAdmin => true
+                  _: ValidationStep.TeamAdmin | _: ValidationStep.Form => true
               case _ => false
             },
             (),
@@ -197,7 +197,10 @@ class TeamController(
                   steps = ctx.tenant.teamCreationProcess.map(step =>
                     WorkflowStep(
                       id = WorkflowStepId(IdGenerator.token),
-                      state = WorkflowState.Waiting,
+                      state = step match {
+                        case _: ValidationStep.Form => WorkflowState.Accepted
+                        case _ => WorkflowState.Waiting
+                      },
                       step = step
                     )
                   ),

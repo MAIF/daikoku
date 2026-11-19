@@ -5,7 +5,17 @@ import classNames from 'classnames';
 import { GraphQLClient } from 'graphql-request';
 import cloneDeep from 'lodash/cloneDeep';
 import difference from 'lodash/difference';
-import { CopyPlus, Download, EllipsisVertical, ExternalLink, KeyRound, Pencil, Plus, Trash2 } from 'lucide-react';
+import {
+  CopyPlus,
+  DiagramFlowHorizontal,
+  Download,
+  EllipsisVertical,
+  ExternalLink,
+  KeyRound,
+  Pencil,
+  Plus,
+  Trash2
+} from 'lucide-react';
 import { nanoid } from 'nanoid';
 import { ReactNode, useContext, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -36,7 +46,7 @@ import {
   OtoroshiEntitiesSelectorProps,
   OtoroshiEntity
 } from '../../../types';
-import { SubscriptionProcessEditor } from '../../backoffice/apis/SubscriptionProcessEditor';
+import { ValidationWorkflowEditor } from '../../backoffice/apis/ValidationWorkflowEditor';
 import { DynamicTable, DynamicTableFeatures, FetchData, FetchResult } from "../../inputs";
 import {
   access,
@@ -1763,7 +1773,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
       editProcess: () => {
         openRightPanel({
           title: translate("api.pricings.subscription.process.table.title"),
-          content: <SubscriptionProcessEditor
+          content: <ValidationWorkflowEditor
             save={updatedProcess => {
               return Promise.resolve(savePlan(convertIUsagePlanGQLToIUsagePlan({ ...plan, subscriptionProcess: updatedProcess })))
             }}
@@ -2016,7 +2026,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
                       <Can I={manage} a={API} team={props.ownerTeam}>
                         <button className='dropdown-item d-flex gap-1 align-items-center'
                           onClick={() => actions(plan).editProcess()}>
-                          <Pencil size={16} />
+                          <DiagramFlowHorizontal size={16} />
                           {translate('pricing.edit.process.btn.label')}
                         </button>
                       </Can>

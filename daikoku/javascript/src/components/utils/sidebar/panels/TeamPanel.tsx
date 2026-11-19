@@ -25,6 +25,7 @@ const Teams = () => {
 
 
   const createTeam = () => {
+    const hasMailorAdminStep = tenant.teamCreationProcess.some((step) => step.type === "email" || step.type === "teamAdmin")
     if (!tenant.teamCreationSecurity) {
       Services.fetchNewTeam()
         .then((team) => openFormModal({
@@ -37,11 +38,9 @@ const Teams = () => {
               } else {
                 queryClient.invalidateQueries({ queryKey: ['teams'] })
                 queryClient.invalidateQueries({ queryKey: ['myTeams'] })
-                toast.info(translate("mailValidation.sent.body"))
-                if (!tenant.teamCreationProcess.some((step) => step.type === "email")){
-                  toast.success(translate({ key: "team.created.success", replacements: [data.name] }))
-                }
-                toast.success(translate({ key: "team.creation.demand.success", replacements: [data.name] }))
+                hasMailorAdminStep ?
+                  toast.success(translate({ key: "team.creation.demand.success", replacements: [data.name] }))
+                  : toast.success(translate({ key: "team.created.success", replacements: [data.name] }))
               }
             }),
           actionLabel: translate('Create'),

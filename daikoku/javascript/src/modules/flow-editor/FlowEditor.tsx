@@ -297,6 +297,8 @@ export const FlowEditor = <Card extends FlowEditorCard>({
         <div className="flow-editor__palette-types d-flex flex-wrap align-items-center gap-2">
           {catalogTypes.map((type) => {
             const definition = cardTypes[type];
+            if (!definition) return null;
+
             const unavailable = definition.canAdd === false;
             const reason = unavailable
               ? (definition.unavailableReason ?? labels.unavailable)

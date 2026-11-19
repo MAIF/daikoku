@@ -579,13 +579,6 @@ class TeamService(
       "tenant_data" -> tenant.asJson
     )
     for {
-      _ <- EitherT.cond[Future][AppError, Unit](
-        s.emails.exists(_.trim.nonEmpty),
-        (),
-        AppError.BadRequestError(
-          "Team creation email step must have at least one recipient."
-        )
-      )
       title <- EitherT.right[AppError](
         translator.translate(
           s"mail.team.creation.mail.$mailType.title",
@@ -766,9 +759,6 @@ class TeamService(
           tenant,
           mailData
         )
-      )
-      _ <- EitherT.liftF(
-        tenant.mailer.send(title, Seq(teamCreation.email), body, tenant)
       )
     } yield Ok(Json.obj("message" -> "team.validated.success"))
   }

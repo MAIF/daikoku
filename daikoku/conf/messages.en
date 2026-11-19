@@ -149,7 +149,7 @@ A new team just registered on [tenant].</br>\
 Team details :</br>\
 Nom : [userName]</br>\
 Email : [userEmail]</br>\
-You can <a href="[urlAccept]" target="_blank">approve</a>\ or <a href="[urlDecline]" target="_blank">reject</a>\ this team creation.
+You can <a href="[urlAccept]" target="_blank">approve</a> or <a href="[urlDecline]" target="_blank">reject</a> this team creation.
 
 
 mail.api.depreciation.warning.title = the API [apiName] has been deprecated
