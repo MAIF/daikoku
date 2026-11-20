@@ -523,6 +523,38 @@ trait AccountCreationRepo extends Repo[AccountCreation, DemandId] {
     )
 }
 
+trait TeamCreationRepo extends Repo[TeamCreation, DemandId] {
+  def saveIfCurrent(previous: TeamCreation, updated: TeamCreation)(implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Boolean] =
+    queryTyped(
+      s"""UPDATE $tableName SET content = $$1::text::jsonb
+         |WHERE _id = $$2 AND content->>'fromTenant' = $$3
+         |AND content->'steps' = $$4::text::jsonb AND content->>'state' = $$5
+         |RETURNING content""".stripMargin,
+      Seq(
+        Json.stringify(updated.asJson),
+        previous.id.value,
+        previous.fromTenant.value,
+        Json.stringify((previous.asJson \ "steps").get),
+        previous.state.name
+      )
+    ).map(_.nonEmpty)
+
+  def findByRandomId(
+      randomId: String
+  )(implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Option[TeamCreation]] =
+    queryOne(
+      s"SELECT content FROM $tableName " +
+        "WHERE content->>'randomId' = $1 LIMIT 1",
+      Seq(randomId)
+    )
+}
+
 trait TenantRepo extends Repo[Tenant, TenantId] {
 
   /** Resolves the tenant serving a given hostname. */
@@ -2360,7 +2392,7 @@ trait SubscriptionDemandRepo
     */
   private def byStatesWhere(
       tenant: TenantId,
-      states: Seq[SubscriptionDemandState],
+      states: Seq[WorkflowState],
       apis: Option[Seq[ApiId]],
       teams: Option[Seq[TeamId]],
       plan: Option[UsagePlanId]
@@ -2392,7 +2424,7 @@ trait SubscriptionDemandRepo
 
   def findByStates(
       tenant: TenantId,
-      states: Seq[SubscriptionDemandState],
+      states: Seq[WorkflowState],
       apis: Option[Seq[ApiId]] = None,
       teams: Option[Seq[TeamId]] = None,
       plan: Option[UsagePlanId] = None
@@ -2435,8 +2467,8 @@ trait SubscriptionDemandRepo
       tenant: TenantId,
       api: ApiId,
       plan: UsagePlanId,
-      from: SubscriptionDemandState,
-      to: SubscriptionDemandState
+      from: WorkflowState,
+      to: WorkflowState
   )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Long] = {
     val repo = forTenant(tenant)
     repo.execute(
@@ -2453,7 +2485,7 @@ trait SubscriptionDemandRepo
     */
   def findByStatesPaginated(
       tenant: TenantId,
-      states: Seq[SubscriptionDemandState],
+      states: Seq[WorkflowState],
       apis: Option[Seq[ApiId]] = None,
       teams: Option[Seq[TeamId]] = None,
       page: Int,
@@ -2666,6 +2698,8 @@ trait DataStore {
   def passwordResetRepo: PasswordResetRepo
 
   def accountCreationRepo: AccountCreationRepo
+
+  def teamCreationRepo: TeamCreationRepo
 
   def messageRepo: MessageRepo
 

@@ -4,9 +4,9 @@ import {
   IApi,
   IAuthorizedEntities,
   IRotation,
-  ISubscriptionDemandState,
   IValidationStep,
 } from './api';
+import type { IWorkflowState } from './workflow';
 import { ITeamSimple, TeamPermission } from './team';
 import { ITenant } from './tenant';
 
@@ -139,7 +139,7 @@ export interface ISubscriptionDemandGQL {
   plan: IUsagePlanGQL;
   steps: Array<{
     id: string;
-    state: ISubscriptionDemandState;
+    state: IWorkflowState;
     step: IValidationStep;
   }>;
   state: string;
@@ -162,13 +162,29 @@ export interface IAccountCreationGQL {
   validUntil: number;
   steps: Array<{
     id: string;
-    state: ISubscriptionDemandState;
+    state: IWorkflowState;
     step: IValidationStep;
   }>;
-  state: ISubscriptionDemandState;
+  state: IWorkflowState;
   value: object;
   fromTenant: ITenant;
   metadata: object;
+}
+
+export interface ITeamCreationGQL {
+  _id: string;
+  email: string;
+  name: string;
+  avatar: string;
+  value: object;
+  metadata: Record<string, string>;
+  authorizedOtoroshiEntities:
+    | ITeamFullGql['authorizedOtoroshiEntities']
+    | null;
+  creationSecurity: boolean;
+  steps: Array<{
+    step: IValidationStep;
+  }>;
 }
 
 export interface ApiKeysListForApiProps {
@@ -231,7 +247,7 @@ export interface IKeyringDemandGql {
   plan: { _id: string; customName: string } | null;
   steps: Array<{
     id: string;
-    state: ISubscriptionDemandState;
+    state: IWorkflowState;
     step: { name: string };
   }>;
 }

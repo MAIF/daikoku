@@ -142,6 +142,7 @@ export const TeamList = () => {
     ])
       .then(([newTeam, otoroshis]) => {
         const _otoroshis = isError(otoroshis) ? [] : otoroshis
+        const hasMailorAdminStep = tenant.teamCreationProcess.some((step) => step.type === "email" || step.type === "teamAdmin")
         openFormModal({
           title: translate('Create a new team'),
           actionLabel: translate('Create'),
@@ -152,9 +153,10 @@ export const TeamList = () => {
               if (r.error) {
                 toast.error(r.error)
               } else {
-                queryClient.invalidateQueries({ queryKey: ['teams'] });
-                toast.info(translate("mailValidation.sent.body"))
-                toast.success(translate({ key: "team.created.success", replacements: [data.name] }))
+                 queryClient.invalidateQueries({ queryKey: ['teams'] });
+                hasMailorAdminStep ?
+                  toast.success(translate({ key: "team.creation.demand.success", replacements: [data.name] }))
+                : toast.success(translate({ key: "team.created.success", replacements: [data.name] }))
               }
             }),
           value: newTeam

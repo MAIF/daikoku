@@ -4158,16 +4158,16 @@ class AdminApiControllerSpec
           api = defaultApi.api.id,
           plan = UsagePlanId("5"),
           steps = Seq(
-            SubscriptionDemandStep(
-              id = SubscriptionDemandStepId(IdGenerator.token(10)),
-              state = SubscriptionDemandState.Waiting,
+            WorkflowStep(
+              id = WorkflowStepId(IdGenerator.token(10)),
+              state = WorkflowState.Waiting,
               step = ValidationStep.TeamAdmin(
                 id = IdGenerator.token(10),
                 team = teamOwner.id
               )
             )
           ),
-          state = SubscriptionDemandState.Waiting,
+          state = WorkflowState.Waiting,
           team = teamConsumerId,
           from = user.id,
           date = DateTime.now()
@@ -4199,16 +4199,16 @@ class AdminApiControllerSpec
           api = defaultApi.api.id,
           plan = UsagePlanId("5"),
           steps = Seq(
-            SubscriptionDemandStep(
-              id = SubscriptionDemandStepId(IdGenerator.token(10)),
-              state = SubscriptionDemandState.Waiting,
+            WorkflowStep(
+              id = WorkflowStepId(IdGenerator.token(10)),
+              state = WorkflowState.Waiting,
               step = ValidationStep.TeamAdmin(
                 id = IdGenerator.token(10),
                 team = teamOwner.id
               )
             )
           ),
-          state = SubscriptionDemandState.Waiting,
+          state = WorkflowState.Waiting,
           team = teamConsumerId,
           from = user.id,
           date = DateTime.now()
@@ -4282,16 +4282,16 @@ class AdminApiControllerSpec
           api = defaultApi.api.id,
           plan = UsagePlanId("5"),
           steps = Seq(
-            SubscriptionDemandStep(
-              id = SubscriptionDemandStepId(IdGenerator.token(10)),
-              state = SubscriptionDemandState.Waiting,
+            WorkflowStep(
+              id = WorkflowStepId(IdGenerator.token(10)),
+              state = WorkflowState.Waiting,
               step = ValidationStep.TeamAdmin(
                 id = IdGenerator.token(10),
                 team = teamOwner.id
               )
             )
           ),
-          state = SubscriptionDemandState.Waiting,
+          state = WorkflowState.Waiting,
           team = teamConsumerId,
           from = user.id,
           date = DateTime.now()
@@ -4341,16 +4341,16 @@ class AdminApiControllerSpec
           api = defaultApi.api.id,
           plan = UsagePlanId("5"),
           steps = Seq(
-            SubscriptionDemandStep(
-              id = SubscriptionDemandStepId(IdGenerator.token(10)),
-              state = SubscriptionDemandState.Waiting,
+            WorkflowStep(
+              id = WorkflowStepId(IdGenerator.token(10)),
+              state = WorkflowState.Waiting,
               step = ValidationStep.TeamAdmin(
                 id = IdGenerator.token(10),
                 team = teamOwner.id
               )
             )
           ),
-          state = SubscriptionDemandState.Waiting,
+          state = WorkflowState.Waiting,
           team = teamConsumerId,
           from = user.id,
           date = DateTime.now()
@@ -4381,16 +4381,16 @@ class AdminApiControllerSpec
           api = defaultApi.api.id,
           plan = UsagePlanId("5"),
           steps = Seq(
-            SubscriptionDemandStep(
-              id = SubscriptionDemandStepId(IdGenerator.token(10)),
-              state = SubscriptionDemandState.Waiting,
+            WorkflowStep(
+              id = WorkflowStepId(IdGenerator.token(10)),
+              state = WorkflowState.Waiting,
               step = ValidationStep.TeamAdmin(
                 id = IdGenerator.token(10),
                 team = teamOwner.id
               )
             )
           ),
-          state = SubscriptionDemandState.Waiting,
+          state = WorkflowState.Waiting,
           team = teamConsumerId,
           from = user.id,
           date = DateTime.now()
@@ -4431,16 +4431,16 @@ class AdminApiControllerSpec
           api = defaultApi.api.id,
           plan = UsagePlanId("5"),
           steps = Seq(
-            SubscriptionDemandStep(
-              id = SubscriptionDemandStepId(IdGenerator.token(10)),
-              state = SubscriptionDemandState.Waiting,
+            WorkflowStep(
+              id = WorkflowStepId(IdGenerator.token(10)),
+              state = WorkflowState.Waiting,
               step = ValidationStep.TeamAdmin(
                 id = IdGenerator.token(10),
                 team = teamOwner.id
               )
             )
           ),
-          state = SubscriptionDemandState.Waiting,
+          state = WorkflowState.Waiting,
           team = teamConsumerId,
           from = user.id,
           date = DateTime.now()
@@ -4457,7 +4457,7 @@ class AdminApiControllerSpec
           users = Seq(user)
         )
 
-        val updated = demand.copy(state = SubscriptionDemandState.InProgress)
+        val updated = demand.copy(state = WorkflowState.InProgress)
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/subscription-demands/${demand.id.value}",
           method = "PUT",
@@ -4482,16 +4482,16 @@ class AdminApiControllerSpec
           api = defaultApi.api.id,
           plan = UsagePlanId("5"),
           steps = Seq(
-            SubscriptionDemandStep(
-              id = SubscriptionDemandStepId(IdGenerator.token(10)),
-              state = SubscriptionDemandState.Waiting,
+            WorkflowStep(
+              id = WorkflowStepId(IdGenerator.token(10)),
+              state = WorkflowState.Waiting,
               step = ValidationStep.TeamAdmin(
                 id = IdGenerator.token(10),
                 team = teamOwner.id
               )
             )
           ),
-          state = SubscriptionDemandState.Waiting,
+          state = WorkflowState.Waiting,
           team = teamConsumerId,
           from = user.id,
           date = DateTime.now()
@@ -4507,7 +4507,7 @@ class AdminApiControllerSpec
           subscriptionDemands = Seq(demand),
           users = Seq(user)
         )
-        val updated = demand.copy(state = SubscriptionDemandState.InProgress)
+        val updated = demand.copy(state = WorkflowState.InProgress)
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/subscription-demands/${demand.id.value}",
           method = "PATCH",
@@ -4517,7 +4517,7 @@ class AdminApiControllerSpec
               Json.obj(
                 "op" -> "replace",
                 "path" -> "/state",
-                "value" -> SubscriptionDemandState.InProgress.name
+                "value" -> WorkflowState.InProgress.name
               )
             )
             .some
@@ -4540,16 +4540,16 @@ class AdminApiControllerSpec
           api = defaultApi.api.id,
           plan = UsagePlanId("5"),
           steps = Seq(
-            SubscriptionDemandStep(
-              id = SubscriptionDemandStepId(IdGenerator.token(10)),
-              state = SubscriptionDemandState.Waiting,
+            WorkflowStep(
+              id = WorkflowStepId(IdGenerator.token(10)),
+              state = WorkflowState.Waiting,
               step = ValidationStep.TeamAdmin(
                 id = IdGenerator.token(10),
                 team = teamOwner.id
               )
             )
           ),
-          state = SubscriptionDemandState.Waiting,
+          state = WorkflowState.Waiting,
           team = teamConsumerId,
           from = user.id,
           date = DateTime.now()
@@ -4581,21 +4581,21 @@ class AdminApiControllerSpec
 
       "DELETE :: cleans up step validators and notifications" in {
         val demandId = DemandId(IdGenerator.token(10))
-        val stepId = SubscriptionDemandStepId(IdGenerator.token(10))
+        val stepId = WorkflowStepId(IdGenerator.token(10))
         val demand = SubscriptionDemand(
           id = demandId,
           tenant = tenant.id,
           api = defaultApi.api.id,
           plan = defaultApi.plans.head.id,
           steps = Seq(
-            SubscriptionDemandStep(
+            WorkflowStep(
               id = stepId,
-              state = SubscriptionDemandState.Waiting,
+              state = WorkflowState.Waiting,
               step = ValidationStep
                 .TeamAdmin(id = IdGenerator.token(10), team = teamOwner.id)
             )
           ),
-          state = SubscriptionDemandState.Waiting,
+          state = WorkflowState.Waiting,
           team = teamConsumerId,
           from = user.id,
           date = DateTime.now()
@@ -4605,7 +4605,7 @@ class AdminApiControllerSpec
           tenant = tenant.id,
           token = IdGenerator.token(32),
           step = stepId,
-          subscriptionDemand = demandId
+          demandId = demandId
         )
         val demandNotif = Notification(
           id = NotificationId("notif-demand"),
@@ -4723,14 +4723,14 @@ class AdminApiControllerSpec
           api = defaultApi.api.id,
           plan = subscribedPlan,
           steps = Seq(
-            SubscriptionDemandStep(
-              id = SubscriptionDemandStepId("admin"),
-              state = SubscriptionDemandState.Waiting,
+            WorkflowStep(
+              id = WorkflowStepId("admin"),
+              state = WorkflowState.Waiting,
               step = ValidationStep
                 .TeamAdmin(id = IdGenerator.token(10), team = teamOwner.id)
             )
           ),
-          state = SubscriptionDemandState.InProgress,
+          state = WorkflowState.InProgress,
           team = teamConsumerId,
           from = user.id,
           motivation = None
@@ -4746,7 +4746,7 @@ class AdminApiControllerSpec
             plan = defaultApi.plans.reverse.head.id,
             team = teamConsumerId,
             demand = DemandId("test"),
-            step = SubscriptionDemandStepId("admin"),
+            step = WorkflowStepId("admin"),
             motivation = None
           )
         )
@@ -4934,14 +4934,14 @@ class AdminApiControllerSpec
           api = defaultApi.api.id,
           plan = subscribedPlan,
           steps = Seq(
-            SubscriptionDemandStep(
-              id = SubscriptionDemandStepId("admin"),
-              state = SubscriptionDemandState.Waiting,
+            WorkflowStep(
+              id = WorkflowStepId("admin"),
+              state = WorkflowState.Waiting,
               step = ValidationStep
                 .TeamAdmin(id = IdGenerator.token(10), team = teamOwner.id)
             )
           ),
-          state = SubscriptionDemandState.InProgress,
+          state = WorkflowState.InProgress,
           team = teamConsumerId,
           from = user.id,
           motivation = None
@@ -4957,7 +4957,7 @@ class AdminApiControllerSpec
             plan = defaultApi.plans.reverse.head.id,
             team = teamConsumerId,
             demand = DemandId("test"),
-            step = SubscriptionDemandStepId("admin"),
+            step = WorkflowStepId("admin"),
             motivation = None
           )
         )
@@ -5070,14 +5070,14 @@ class AdminApiControllerSpec
           api = defaultApi.api.id,
           plan = defaultApi.plans.reverse.head.id,
           steps = Seq(
-            SubscriptionDemandStep(
-              id = SubscriptionDemandStepId("admin"),
-              state = SubscriptionDemandState.Waiting,
+            WorkflowStep(
+              id = WorkflowStepId("admin"),
+              state = WorkflowState.Waiting,
               step = ValidationStep
                 .TeamAdmin(id = IdGenerator.token(10), team = teamOwner.id)
             )
           ),
-          state = SubscriptionDemandState.InProgress,
+          state = WorkflowState.InProgress,
           team = teamConsumerId,
           from = user.id,
           motivation = None
@@ -5093,7 +5093,7 @@ class AdminApiControllerSpec
             plan = defaultApi.plans.reverse.head.id,
             team = teamConsumerId,
             demand = DemandId("test"),
-            step = SubscriptionDemandStepId("admin"),
+            step = WorkflowStepId("admin"),
             motivation = None
           )
         )
@@ -5286,14 +5286,14 @@ class AdminApiControllerSpec
           api = defaultApi.api.id,
           plan = subscribedPlan.id,
           steps = Seq(
-            SubscriptionDemandStep(
-              id = SubscriptionDemandStepId("admin"),
-              state = SubscriptionDemandState.Waiting,
+            WorkflowStep(
+              id = WorkflowStepId("admin"),
+              state = WorkflowState.Waiting,
               step = ValidationStep
                 .TeamAdmin(id = IdGenerator.token(10), team = teamOwner.id)
             )
           ),
-          state = SubscriptionDemandState.InProgress,
+          state = WorkflowState.InProgress,
           team = teamConsumerId,
           from = user.id,
           motivation = None
@@ -5309,7 +5309,7 @@ class AdminApiControllerSpec
             plan = subscribedPlan.id,
             team = teamConsumerId,
             demand = DemandId("test"),
-            step = SubscriptionDemandStepId("admin"),
+            step = WorkflowStepId("admin"),
             motivation = None
           )
         )
@@ -5508,21 +5508,21 @@ class AdminApiControllerSpec
           keyring = keyring.id
         )
         val demandId = DemandId("notif-demand")
-        val stepId = SubscriptionDemandStepId("notif-step")
+        val stepId = WorkflowStepId("notif-step")
         val demand = SubscriptionDemand(
           id = demandId,
           tenant = tenant.id,
           api = api.id,
           plan = plan.id,
           steps = Seq(
-            SubscriptionDemandStep(
-              id = SubscriptionDemandStepId("admin"),
-              state = SubscriptionDemandState.Waiting,
+            WorkflowStep(
+              id = WorkflowStepId("admin"),
+              state = WorkflowState.Waiting,
               step = ValidationStep
                 .TeamAdmin(id = IdGenerator.token(10), team = teamOwner.id)
             )
           ),
-          state = SubscriptionDemandState.InProgress,
+          state = WorkflowState.InProgress,
           team = teamConsumerId,
           from = user.id,
           motivation = None

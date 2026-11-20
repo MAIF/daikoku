@@ -321,6 +321,7 @@ case class Tenant(
     environments: Set[String] = Set.empty,
     clientNamePattern: Option[String] = None,
     accountCreationProcess: Seq[ValidationStep] = Seq.empty,
+    teamCreationProcess: Seq[ValidationStep] = Seq.empty,
     defaultAuthorizedOtoroshiEntities: Option[Seq[TeamAuthorizedEntities]] =
       None
 ) extends CanJson[Tenant] {
@@ -439,6 +440,9 @@ case class Tenant(
       ),
       "accountCreationProcess" -> SeqValidationStepFormat.writes(
         accountCreationProcess
+      ),
+      "teamCreationProcess" -> SeqValidationStepFormat.writes(
+        teamCreationProcess
       ),
       "isPrivate" -> isPrivate,
       "teamCreationSecurity" -> teamCreationSecurity

@@ -459,6 +459,7 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: Pool)
     "tenants",
     "password_reset",
     "account_creation",
+    "team_creation",
     "teams",
     "apis",
     "translations",
@@ -552,6 +553,8 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: Pool)
     new PostgresReportsInfoRepo(env, reactivePg)
   private val _accountCreationRepo: AccountCreationRepo =
     new PostgresAccountCreationRepo(env, reactivePg)
+  private val _teamCreationRepo: TeamCreationRepo =
+    new PostgresTeamCreationRepo(env, reactivePg)
   private val _translationRepo: TranslationRepo =
     PostgresTenantCapableTranslationRepo(
       () => new PostgresTranslationRepo(env, reactivePg),
@@ -657,6 +660,7 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: Pool)
   override def reportsInfoRepo: ReportsInfoRepo = _reportsInfoRepo
 
   override def accountCreationRepo: AccountCreationRepo = _accountCreationRepo
+  override def teamCreationRepo: TeamCreationRepo = _teamCreationRepo
 
   override def translationRepo: TranslationRepo = _translationRepo
 
@@ -996,6 +1000,7 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: Pool)
       userRepo,
       passwordResetRepo,
       accountCreationRepo,
+      teamCreationRepo,
       userSessionRepo,
       evolutionRepo
     )
@@ -1073,6 +1078,8 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: Pool)
               evolutionRepo.save(EvolutionFormat.reads(payload).get)
             case ("accountcreation", payload) =>
               accountCreationRepo.save(AccountCreationFormat.reads(payload).get)
+            case ("teamcreation", payload) =>
+              teamCreationRepo.save(TeamCreationFormat.reads(payload).get)
             case ("users", payload) =>
               userRepo.save(UserFormat.reads(payload).get)
             case ("teams", payload) =>
@@ -1217,6 +1224,15 @@ class PostgresAccountCreationRepo(env: Env, reactivePg: ReactivePg)
   override def format: Format[AccountCreation] = json.AccountCreationFormat
 
   override def extractId(value: AccountCreation): String = value.id.value
+}
+class PostgresTeamCreationRepo(env: Env, reactivePg: ReactivePg)
+    extends PostgresRepo[TeamCreation, DemandId](env, reactivePg)
+    with TeamCreationRepo {
+  override def tableName: String = "team_creation"
+
+  override def format: Format[TeamCreation] = json.TeamCreationFormat
+
+  override def extractId(value: TeamCreation): String = value.id.value
 }
 
 class PostgresTenantTeamRepo(env: Env, reactivePg: ReactivePg, tenant: TenantId)

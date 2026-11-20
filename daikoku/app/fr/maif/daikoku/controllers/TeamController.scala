@@ -6,7 +6,9 @@ import fr.maif.daikoku.controllers.AppError
 import fr.maif.daikoku.actions.{
   DaikokuAction,
   DaikokuActionContext,
-  DaikokuActionMaybeWithGuest
+  DaikokuActionMaybeWithGuest,
+  DaikokuTenantAction,
+  DaikokuUnauthenticatedAction
 }
 import fr.maif.daikoku.audit.AuditTrailEvent
 import fr.maif.daikoku.controllers.authorizations.async.*
@@ -32,7 +34,9 @@ import scala.concurrent.{ExecutionContext, Future}
 
 class TeamController(
     DaikokuAction: DaikokuAction,
+    DaikokuTenantAction: DaikokuTenantAction,
     DaikokuActionMaybeWithGuest: DaikokuActionMaybeWithGuest,
+    DaikokuUnauthenticatedAction: DaikokuUnauthenticatedAction,
     env: Env,
     cc: ControllerComponents,
     translator: Translator,
@@ -120,7 +124,104 @@ class TeamController(
       }
     }
 
-  def createTeam(): Action[JsValue] =
+  def validateTeamCreationForm(
+      name: String,
+      email: String
+  ): Either[AppError, Unit] = {
+
+    if (name.trim().isEmpty()) {
+      Left(AppError.BadRequestError("Name should not be empty"))
+    } else if (email.trim().isEmpty()) {
+      Left(AppError.BadRequestError("Email address should not be empty"))
+    } else {
+      Right(())
+    }
+  }
+
+  def createTeam() =
+    DaikokuAction.async(parse.json) { ctx =>
+      PublicUserAccess(
+        AuditTrailEvent(
+          s"@{user.name} have create team @{team.name} - @{team.id}"
+        )
+      )(ctx) {
+        val body = ctx.request.body.as[JsObject]
+        val email = (body \ "contact").as[String]
+        val name = (body \ "name").as[String]
+        val avatar =
+          (body \ "avatar").asOpt[String].getOrElse(User.DEFAULT_IMAGE)
+
+        (for {
+          maybeTeam <- EitherT.liftF[Future, AppError, Seq[Team]](
+            env.dataStore.teamRepo.findByUser(
+              tenant = ctx.tenant.id,
+              user = ctx.user.id,
+              excludePersonal = true
+            )
+          )
+          _ <- EitherT.cond[Future](
+            !maybeTeam.exists(_.name == name),
+            (),
+            AppError.EntityConflict("Team already exists")
+          )
+          randomId = IdGenerator.token(128)
+          teamCreationId = DemandId(IdGenerator.token(32))
+          _ <- EitherT.fromEither[Future](
+            validateTeamCreationForm(
+              name,
+              email
+            )
+          )
+          _ <- EitherT.cond[Future][AppError, Unit](
+            ctx.tenant.teamCreationProcess.forall {
+              case _: ValidationStep.Email | _: ValidationStep.HttpRequest |
+                  _: ValidationStep.TeamAdmin | _: ValidationStep.Form => true
+              case _ => false
+            },
+            (),
+            AppError.BadRequestError(
+              "Team creation only supports Email, HTTP and Admin steps."
+            )
+          )
+          _ <- EitherT.liftF(
+            env.dataStore.teamCreationRepo
+              .save(
+                TeamCreation(
+                  id = teamCreationId,
+                  randomId = randomId,
+                  email = email,
+                  avatar = avatar,
+                  name = name,
+                  creationDate = DateTime.now(),
+                  userId = ctx.user.id,
+                  steps = ctx.tenant.teamCreationProcess.map(step =>
+                    WorkflowStep(
+                      id = WorkflowStepId(IdGenerator.token),
+                      state = step match {
+                        case _: ValidationStep.Form => WorkflowState.Accepted
+                        case _ => WorkflowState.Waiting
+                      },
+                      step = step
+                    )
+                  ),
+                  state = WorkflowState.Waiting,
+                  value = body - "confirmPassword" - "password",
+                  fromTenant = ctx.tenant.id,
+                  creationSecurity = ctx.tenant.creationSecurity
+                )
+              )
+          )
+          result <- teamService.runTeamCreationProcess(
+            teamCreationId,
+            ctx.tenant
+          )
+        } yield result)
+          .leftMap(_.render())
+          .merge
+      }
+    }
+
+  def createTeamOLD(): Action[JsValue] =
     DaikokuAction.async(parse.json) { ctx =>
       PublicUserAccess(
         AuditTrailEvent(
@@ -990,5 +1091,107 @@ class TeamController(
             )
         }
       }
+    }
+
+  def validateTeamCreationAttempt(): Action[AnyContent] =
+    DaikokuUnauthenticatedAction.async { ctx =>
+      (for {
+        encryptedToken <- EitherT.fromOption[Future][AppError, String](
+          ctx.request.getQueryString("token"),
+          AppError.EntityNotFound("token from query")
+        )
+        token <- EitherT.pure[Future, AppError](
+          decrypt(env.config.cypherSecret, encryptedToken, ctx.tenant)
+        )
+        validator <- EitherT.fromOptionF[Future, AppError, StepValidator](
+          env.dataStore.stepValidatorRepo
+            .findByToken(ctx.tenant.id, token),
+          AppError.EntityNotFound("token")
+        )
+        _ <- teamService.validateTeamCreationWithStepValidator(
+          validator,
+          ctx.tenant
+        )
+        teamCreation <-
+          EitherT.fromOptionF[Future, AppError, TeamCreation](
+            env.dataStore.teamCreationRepo
+              .findById(validator.demandId),
+            AppError.EntityNotFound("Team creation")
+          )
+        step <- EitherT.fromOption[Future][AppError, WorkflowStep](
+          teamCreation.steps.find(_.id == validator.step),
+          AppError.EntityNotFound("Team creation step")
+        )
+      } yield {
+        val isEmailConfirm = step.step match {
+          case ValidationStep.Email(_, _, _, title)
+              if title.toLowerCase().contains("confirmation") =>
+            true
+          case _ => false
+        }
+
+        val messageId = (isEmailConfirm, teamCreation.state) match {
+          case (true, WorkflowState.Accepted) =>
+            "team-creation-validation-email"
+          case (true, _) => "team-creation-validation-email-waiting"
+          case _         => "team-creation-accept"
+        }
+        Redirect(
+          env.getDaikokuUrl(
+            ctx.tenant,
+            s"/informations?message=$messageId",
+            request = ctx.request
+          )
+        )
+      }).leftMap(error =>
+        Redirect(
+          env.getDaikokuUrl(
+            ctx.tenant,
+            s"/informations?error=${error.getErrorMessage()}",
+            request = ctx.request
+          )
+        )
+      ).merge
+    }
+
+  def declineTeamCreationAttempt() =
+    DaikokuUnauthenticatedAction.async { ctx =>
+      (for {
+        encryptedToken <- EitherT.fromOption[Future](
+          ctx.request.getQueryString("token"),
+          AppError.EntityNotFound("token from query")
+        )
+        token <- EitherT.pure[Future, AppError](
+          decrypt(env.config.cypherSecret, encryptedToken, ctx.tenant)
+        )
+        validator <- EitherT.fromOptionF(
+          env.dataStore.stepValidatorRepo
+            .findByToken(ctx.tenant.id, token),
+          AppError.EntityNotFound("token")
+        )
+        _ <- teamService.declineTeamCreationWithStepValidator(
+          validator,
+          ctx.tenant
+        )
+        result <- EitherT.pure[Future, AppError](
+          Redirect(
+            env.getDaikokuUrl(
+              ctx.tenant,
+              "/informations?message=team-creation-decline",
+              request = ctx.request
+            )
+          )
+        )
+      } yield result)
+        .leftMap(error =>
+          Redirect(
+            env.getDaikokuUrl(
+              ctx.tenant,
+              s"/informations?error=${error.getErrorMessage()}",
+              request = ctx.request
+            )
+          )
+        )
+        .merge
     }
 }

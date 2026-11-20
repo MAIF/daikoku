@@ -450,9 +450,9 @@ class NotificationControllerSpec()
         api = defaultApi.api.id,
         plan = plan.id,
         steps = Seq(
-          SubscriptionDemandStep(
-            id = SubscriptionDemandStepId("demandStep_1"),
-            state = SubscriptionDemandState.InProgress,
+          WorkflowStep(
+            id = WorkflowStepId("demandStep_1"),
+            state = WorkflowState.InProgress,
             step = ValidationStep.TeamAdmin(
               id = "step_1",
               team = defaultApi.api.team,
@@ -461,7 +461,7 @@ class NotificationControllerSpec()
             metadata = Json.obj()
           )
         ),
-        state = SubscriptionDemandState.InProgress,
+        state = WorkflowState.InProgress,
         team = teamConsumerId,
         from = userAdmin.id,
         date = DateTime.now().minusDays(1),
@@ -552,13 +552,13 @@ class NotificationControllerSpec()
         api = defaultApi.api.id,
         plan = plan.id,
         steps = process.steps.map(s =>
-          SubscriptionDemandStep(
-            SubscriptionDemandStepId(s.id),
-            SubscriptionDemandState.InProgress,
+          WorkflowStep(
+            WorkflowStepId(s.id),
+            WorkflowState.InProgress,
             s
           )
         ),
-        state = SubscriptionDemandState.InProgress,
+        state = WorkflowState.InProgress,
         team = teamConsumerId,
         from = userAdmin.id,
         date = DateTime.now().minusDays(1)
@@ -770,13 +770,13 @@ class NotificationControllerSpec()
         api = defaultApi.api.id,
         plan = plan.id,
         steps = process.steps.map(s =>
-          SubscriptionDemandStep(
-            SubscriptionDemandStepId(s.id),
-            SubscriptionDemandState.InProgress,
+          WorkflowStep(
+            WorkflowStepId(s.id),
+            WorkflowState.InProgress,
             s
           )
         ),
-        state = SubscriptionDemandState.InProgress,
+        state = WorkflowState.InProgress,
         team = teamConsumerId,
         from = userAdmin.id,
         date = DateTime.now().minusDays(1)
@@ -866,13 +866,13 @@ class NotificationControllerSpec()
         api = defaultApi.api.id,
         plan = plan.id,
         steps = process.map(s =>
-          SubscriptionDemandStep(
-            SubscriptionDemandStepId(s.id),
-            SubscriptionDemandState.InProgress,
+          WorkflowStep(
+            WorkflowStepId(s.id),
+            WorkflowState.InProgress,
             s
           )
         ),
-        state = SubscriptionDemandState.InProgress,
+        state = WorkflowState.InProgress,
         team = teamConsumerId,
         from = userAdmin.id,
         date = DateTime.now().minusDays(1)
@@ -1606,13 +1606,13 @@ class NotificationControllerSpec()
         api = defaultApi.api.id,
         plan = UsagePlanId("3"),
         steps = process.map(s =>
-          SubscriptionDemandStep(
-            SubscriptionDemandStepId(s.id),
-            SubscriptionDemandState.InProgress,
+          WorkflowStep(
+            WorkflowStepId(s.id),
+            WorkflowState.InProgress,
             s
           )
         ),
-        state = SubscriptionDemandState.InProgress,
+        state = WorkflowState.InProgress,
         team = teamConsumerId,
         from = userAdmin.id,
         date = DateTime.now().minusDays(1)
@@ -1687,13 +1687,13 @@ class NotificationControllerSpec()
         api = defaultApi.api.id,
         plan = UsagePlanId("3"),
         steps = process.map(s =>
-          SubscriptionDemandStep(
-            SubscriptionDemandStepId(s.id),
-            SubscriptionDemandState.InProgress,
+          WorkflowStep(
+            WorkflowStepId(s.id),
+            WorkflowState.InProgress,
             s
           )
         ),
-        state = SubscriptionDemandState.InProgress,
+        state = WorkflowState.InProgress,
         team = teamConsumerId,
         from = userAdmin.id,
         date = DateTime.now().minusDays(1)

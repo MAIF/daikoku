@@ -77,10 +77,6 @@
   flex-direction: column;
 }
 
-.validation-step__type {
-  font-weight: bold;
-}
-
 //*****************
 //*** DROPPABLE ***
 //*****************
@@ -160,15 +156,10 @@
 
 .validation-step__type {
   border: 2px solid variables.$level3_bg-color;
-  position: absolute;
-  display: flex;
-  justify-content: center;
-  align-items: center;
   top: -20px;
   left: calc(50% - 18px);
   width: 36px;
   height: 36px;
-  border-radius: 50%;
   background-color: variables.$level3_bg-color;
   color: variables.$level3_text-color
 }
@@ -180,31 +171,19 @@
 }
 
 .validation-step {
-  flex-grow: 1;
-  
-
   .validation-step__index {
     font-size: 24px;
-    font-weight: bold;
-    display: flex;
-    justify-content: center;
   }
 
   .validation-step__name {
     font-size: 12px;
-    font-weight: bold;
-    text-transform:uppercase;
-    display: flex;
-    justify-content: center;
     margin-bottom: 10px;
     
   }
 
   .validation-step__infos {
     font-size: 11px;
-    font-style: italic;
 
     overflow: scroll;
-    flex-grow: 1;
   }
 }

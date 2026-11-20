@@ -4,6 +4,16 @@ Go to `settings/Organizations settings` and then click `teams` on the left menu.
 
 `Teams` can be updated by admin, mainly to add metadata or authorizedEntities (2 properties editable only by a tenant admin). Users are the ones who create them
 
+## Team creation workflow
+
+The tenant security settings can require Email, HTTP and Admin validation steps.
+Steps run sequentially in the configured order, and each type can appear multiple times.
+Form and Payment steps are not supported. 
+
+HTTP steps require a 2xx response containing JSON with a boolean `accept` field.
+`false` rejects the request without creating a team. Invalid responses and unreachable
+services are technical errors.
+
 ## properties
 A team needs the following information:
 

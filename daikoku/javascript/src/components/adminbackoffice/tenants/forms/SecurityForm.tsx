@@ -7,17 +7,19 @@ import { I18nContext, ModalContext } from '../../../../contexts';
 import { GlobalContext } from '../../../../contexts/globalContext';
 import * as Services from '../../../../services';
 import { Display, IOtoroshiSettings, isError, ISimpleOtoroshiSettings, ITeamFullGql, ITenant, ITenantFull, IValidationStep } from '../../../../types';
-import { SubscriptionProcessEditor } from '../../../backoffice/apis/SubscriptionProcessEditor';
+import { ValidationWorkflowEditor } from '../../../backoffice/apis/ValidationWorkflowEditor';
 import { Spinner } from '../../../utils';
 import { OtoroshiEntitiesSelector } from '../../teams/TeamList';
 import { toast } from 'sonner';
+import {DiagramFlowHorizontal, KeyRound, UserGroup} from "lucide-react";
+
 
 export const SecurityForm = (props: {
   tenant: ITenantFull;
   updateTenant: UseMutationResult<any, unknown, ITenantFull, unknown>;
 }) => {
   const { translate } = useContext(I18nContext);
-  const { alert, openRightPanel, openFormModal } = useContext(ModalContext);
+  const { alert, openRightPanel, closeRightPanel, openFormModal } = useContext(ModalContext);
   const { customGraphQLClient, tenant } = useContext(GlobalContext);
 
   const teamQuery = useQuery({
@@ -51,21 +53,25 @@ export const SecurityForm = (props: {
     isPrivate: {
       type: type.bool,
       label: translate('Private tenant'),
+      className: 'tenant-security-toggle',
     },
     creationSecurity: {
       type: type.bool,
       label: translate('API creation security'),
       help: translate('creation.security.help'),
+      className: 'tenant-security-toggle',
     },
     teamCreationSecurity: {
       type: type.bool,
-      label: translate('team creation security'),
-      help: translate('team.creation.security.help'),
+      label: translate('tenant.security.team.creation.label'),
+      help: translate('tenant.security.team.creation.security.help'),
+      className: 'tenant-security-toggle',
     },
     subscriptionSecurity: {
       type: type.bool,
       label: translate('subscription security'),
       help: translate('subscription.security.help'),
+      className: 'tenant-security-toggle',
     },
     aggregationApiKeysSecurity: {
       type: type.bool,
@@ -78,13 +84,15 @@ export const SecurityForm = (props: {
           });
         }
       },
+      className: 'tenant-security-toggle',
     },
     environmentAggregationApiKeysSecurity: {
       type: type.bool,
       label: translate('aggregation api keys security for environment mode'),
       help: translate('aggregation.environment.api_key.security.notification'),
       deps: ['aggregationApiKeysSecurity'],
-      visible: ({ rawValues }) => rawValues.aggregationApiKeysSecurity && rawValues.display === Display.environment
+      visible: ({ rawValues }) => rawValues.aggregationApiKeysSecurity && rawValues.display === Display.environment,
+      className: 'tenant-security-toggle',
     },
     keyringQuotaConflictStrategy: {
       type: type.string,
@@ -96,11 +104,13 @@ export const SecurityForm = (props: {
         { value: 'HighestValue', label: translate('tenant.keyringQuotaConflictStrategy.highest') },
       ],
       defaultValue: 'LowestValue',
+      className: 'tenant-security-toggle',
     },
     apiReferenceHideForGuest: {
       type: type.bool,
       label: translate('API reference visibility'),
       help: translate('api.reference.visibility.help'),
+      className: 'tenant-security-toggle',
     }
   }
 
@@ -192,16 +202,66 @@ export const SecurityForm = (props: {
         </p>
         <ul>
           <li>
-            <strong>{translate('subscription.process.form')}</strong> : {translate('tenant.security.account.creation.process.doc.step.form')}
+            <strong>{translate('validation.workflow.form')}</strong> : {translate('tenant.security.account.creation.process.doc.step.form')}
           </li>
           <li>
-            <strong>{translate('subscription.process.email')}</strong> : {translate('tenant.security.account.creation.process.doc.step.email')}
+            <strong>{translate('validation.workflow.email')}</strong> : {translate('tenant.security.account.creation.process.doc.step.email')}
           </li>
           <li>
-            <strong>{translate('subscription.process.httpRequest')}</strong> : {translate('tenant.security.account.creation.process.doc.step.http')}
+            <strong>{translate('validation.workflow.httpRequest')}</strong> : {translate('tenant.security.account.creation.process.doc.step.http')}
           </li>
           <li>
-            <strong>{translate('subscription.process.team.admin')}</strong> : {translate('tenant.security.account.creation.process.doc.step.admin')}
+            <strong>{translate('validation.workflow.team.admin')}</strong> : {translate('tenant.security.account.creation.process.doc.step.admin')}
+          </li>
+        </ul>
+        <hr />
+        <div className="mb-0">
+          {translate('tenant.security.account.creation.process.doc.footer')}
+          <div className='d-flex flex-start gap-2'>
+            <button className="btn --tertiary" onClick={() => props.updateProcess(defaultWorkflow)}>{translate('tenant.security.account.creation.process.doc.default.workflow')}</button>
+            <button className="btn --tertiary" onClick={() => props.updateProcess(defaultWorkflowWithAdmin)}>{translate('tenant.security.account.creation.process.doc.default.workflow.admin')}</button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  const TeamCreationProcessDocumentation = (props: { close: () => void, updateProcess: (process: IValidationStep[]) => void }) => {
+    const defaultWorkflow: IValidationStep[] = [
+     {
+        id: nanoid(32),
+        type: 'email',
+        title: 'confirmation email',
+        emails: ["${form.email}"],
+        message: ""
+      },
+    ];
+
+    const defaultWorkflowWithAdmin: IValidationStep[] = [...defaultWorkflow, {
+      type: 'teamAdmin',
+      id: nanoid(),
+      title: 'admin validation',
+      team: teamQuery.data!._id
+    }];
+
+    return (
+      <div className="alert alert-info" role="alert">
+        <div className="d-flex justify-content-between">
+          <h5 className="alert-heading">{translate('tenant.security.account.creation.process.doc.title')}</h5>
+          <button type='button' aria-label={translate('tenant.security.account.creation.process.doc.close.aria')} className='btn-close' onClick={props.close} />
+        </div>
+        <p>
+          {translate('tenant.security.account.creation.process.doc.intro')}
+        </p>
+        <ul>
+          <li>
+            <strong>{translate('validation.workflow.email')}</strong> : {translate('tenant.security.account.creation.process.doc.step.email')}
+          </li>
+          <li>
+            <strong>{translate('validation.workflow.httpRequest')}</strong> : {translate('tenant.security.account.creation.process.doc.step.http')}
+          </li>
+          <li>
+            <strong>{translate('validation.workflow.team.admin')}</strong> : {translate('tenant.security.account.creation.process.doc.step.admin')}
           </li>
         </ul>
         <hr />
@@ -217,16 +277,42 @@ export const SecurityForm = (props: {
   }
 
   const _tenant = props.tenant
-  const editProcess = () => {
+  const editAccountProcess = () => {
     openRightPanel({
       title: translate("tenant.security.account.creation.process.panel.title"),
-      content: <SubscriptionProcessEditor
+      content: <ValidationWorkflowEditor
         save={accountCreationProcess => props.updateTenant.mutateAsync({ ..._tenant, accountCreationProcess })}
         process={props.tenant?.accountCreationProcess ?? []}
         team={teamQuery.data!._id}
         tenant={props.tenant as ITenant}
         documentation={AccountCreationProcessDocumentation}
-      />
+        iconTarget={KeyRound}
+      />,
+      defaultSize: 90
+    })
+  }
+
+  const editTeamProcess = () => {
+    openRightPanel({
+      title: translate("tenant.security.team.creation.process.panel.title"),
+      content: <ValidationWorkflowEditor
+        save={teamCreationProcess => props.updateTenant.mutateAsync({ ..._tenant, teamCreationProcess }).then(closeRightPanel)}
+        process={props.tenant?.teamCreationProcess ?? []}
+        team={teamQuery.data!._id}
+        tenant={props.tenant as ITenant}
+        documentation={TeamCreationProcessDocumentation}
+        allowFormStep={true}
+        iconTarget={UserGroup}
+        hideFormConfiguration
+        fixedFormStep={true}
+        fixedFormSchema={{
+          name: { type: type.string },
+          contact: { type: type.string },
+          avatar: { type: type.string },
+        }}
+        hiddenSteps={['payment']}
+      />,
+      defaultSize: 90
     })
   }
 
@@ -319,6 +405,7 @@ export const SecurityForm = (props: {
     return (
       <div className='d-flex flex-column gap-2'>
         <Form
+          className="tenant-security-form"
           schema={schema}
           onSubmit={(updatedTenant) =>
             props.updateTenant.mutateAsync(updatedTenant)
@@ -331,7 +418,10 @@ export const SecurityForm = (props: {
           }}
         />
         <div>
-          {tenant.authProvider === 'Local' && <button className='btn --secondary' onClick={() => editProcess()}>{translate("tenant.security.account.creation.process.button.label")}</button>}
+          {tenant.authProvider === 'Local' && <button className='btn --secondary' onClick={() => editAccountProcess()}><DiagramFlowHorizontal size={16}/>{translate("tenant.security.account.creation.process.button.label")}</button>}
+        </div>
+         <div>
+          {tenant.authProvider === 'Local' && <button className='btn --secondary' onClick={() => editTeamProcess()}><DiagramFlowHorizontal size={16}/>{translate("tenant.security.team.creation.process.button.label")}</button>}
         </div>
         <div>
           <button onClick={() => openModal(otoroshis)} className='btn --secondary'>{translate('tenant.security.configure.default.auth.otoroshi.entities.button.label')}</button>

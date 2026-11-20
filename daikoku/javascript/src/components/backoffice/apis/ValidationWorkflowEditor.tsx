@@ -1,17 +1,26 @@
 import { CodeInput, constraints, Form, format, Schema, type } from '@maif/react-forms';
-import classNames from 'classnames';
 import { nanoid } from 'nanoid';
 import React, { useContext, useEffect, useRef, useState } from 'react';
-import { AtSign, CreditCard, Globe, List, Plus, Settings, Trash, User } from 'lucide-react';
+import {
+  CreditCard,
+  Globe,
+  FileText,
+  Mail,
+  ShieldCheck,
+  Flag,
+  KeyRound,
+  LucideIcon
+} from 'lucide-react';
 
 import { toast } from 'sonner';
 import { I18nContext } from '../../../contexts/i18n-context';
 import { ModalContext } from '../../../contexts/modalContextInstance';
 import { IValidationStep } from '../../../types/api';
 import { ITenant } from '../../../types/tenant';
-import { addArrayIf, insertArrayIndex } from '../../utils/array';
-import { FixedItem, SortableItem, SortableList } from '../../utils/dnd/SortableList';
+import { insertArrayIndex } from '../../utils/array';
 import { Help } from '../apikeys';
+import { CardTypeCatalog, FlowEditor } from '../../../modules/flow-editor';
+import { FormCard, HttpCard, MailCard, ValidationCard } from './subscription-process/CardContents';
 
 type MotivationFormProps = {
   saveMotivation: (m: { schema: Schema; formatter: string, formKeysToMetadata?: Array<string>, info?: string }) => void;
@@ -143,7 +152,7 @@ const MotivationForm = (props: MotivationFormProps) => {
                     }
                   }}
                   onSubmit={d => {
-                      setFormKeysToMetadata(d.formKeysToMetadata);
+                    setFormKeysToMetadata(d.formKeysToMetadata);
                   }}
                   value={{ formKeysToMetadata: formKeysToMetadata }}
                   options={{ autosubmit: true, actions: { submit: { display: false } } }}
@@ -169,13 +178,12 @@ const MotivationForm = (props: MotivationFormProps) => {
 };
 
 type ValidationStepProps = {
-  step: IValidationStep;
+  step: Extract<IValidationStep, { type: 'payment' }>;
   tenant: ITenant;
-  update?: () => void;
   index: number;
 };
 
-const ValidationStep = (props: ValidationStepProps) => {
+const PaymentStep = (props: ValidationStepProps) => {
   const step = props.step;
   switch (step.type) {
     case 'payment':
@@ -184,109 +192,102 @@ const ValidationStep = (props: ValidationStepProps) => {
           (setting) => setting._id == step.thirdPartyPaymentSettingsId
         );
       return (
-        <div className="d-flex flex-column validation-step">
-          <span className="validation-step__index">
+        <div className="d-flex flex-column flex-grow-1 validation-step">
+          <span className="validation-step__index d-flex justify-content-center fw-bold">
             {String(props.index).padStart(2, '0')}
           </span>
-          <span className="validation-step__name">{step.title}</span>
-          <span className="validation-step__type">
+          <span className="validation-step__name d-flex justify-content-center fw-bold text-uppercase">{step.title}</span>
+          <span className="validation-step__type position-absolute d-flex justify-content-center align-items-center rounded-circle fw-bold">
             <CreditCard />
           </span>
-          <div className="d-flex flex-row validation-step__infos">
+          <div className="d-flex flex-grow-1 fst-italic validation-step__infos">
             <span>{thirdPartyPaymentSettings?.name}</span>
             <span>{thirdPartyPaymentSettings?.type}</span>
           </div>
         </div>
       );
-    case 'email':
-      return (
-        <div className="d-flex flex-column validation-step">
-          <span className="validation-step__index">
-            {String(props.index).padStart(2, '0')}
-          </span>
-          <span className="validation-step__name">{step.title}</span>
-          <span className="validation-step__type">
-            <AtSign />
-          </span>
-          <div className="d-flex flex-row validation-step__infos">
-            <span>{step.emails[0]}</span>
-            {step.emails.length > 1 && (
-              <span>{` + ${step.emails.length - 1}`}</span>
-            )}
-          </div>
-        </div>
-      );
-    case 'teamAdmin':
-      return (
-        <div className="d-flex flex-column validation-step">
-          <span className="validation-step__index">
-            {String(props.index).padStart(2, '0')}
-          </span>
-          <span className="validation-step__name">{step.title}</span>
-          <span className="validation-step__type">
-            <User />
-          </span>
-        </div>
-      );
-    case 'httpRequest':
-      return (
-        <div className="d-flex flex-column validation-step">
-          <span className="validation-step__index">
-            {String(props.index).padStart(2, '0')}
-          </span>
-          <span className="validation-step__name">{step.title}</span>
-          <span className="validation-step__type">
-            <Globe />
-          </span>
-        </div>
-      );
-    case 'form':
-      return (
-        <div className="d-flex flex-column validation-step">
-          <span className="validation-step__index">
-            {String(props.index).padStart(2, '0')}
-          </span>
-          <span className="validation-step__name">{step.title}</span>
-          <span className="validation-step__type">
-            <List />
-          </span>
-        </div>
-      )
   }
 };
 
 type EmailOption = { option: 'all' | 'oneOf' };
 
-type SubProcessProps = {
+type ValidationWorkflowEditorProps = {
   save: (process: Array<IValidationStep>) => Promise<void>;
   process: Array<IValidationStep>;
   team: string;
   tenant: ITenant;
+  allowFormStep?: boolean;
   documentation?: React.ComponentType<{ close: () => void, updateProcess: (process: IValidationStep[]) => void }>
+  iconTarget?: LucideIcon;
+  fixedFormStep?: boolean;
+  fixedFormSchema?: Schema;
+  hideFormConfiguration?: boolean;
+  hiddenSteps?: Array<IValidationStep['type']>
 };
 type IValidationStepEmail = IValidationStep & { type: 'email' };
 type IValidationStepForm = IValidationStep & { type: 'form' };
 type IValidationStepTeamAdmin = IValidationStep & { type: 'teamAdmin' };
 type IValidationStepHttpRequest = IValidationStep & { type: 'httpRequest' };
 
-export const SubscriptionProcessEditor = (props: SubProcessProps) => {
+export const ValidationWorkflowEditor = ({ iconTarget: IconTarget = KeyRound, ...props }: ValidationWorkflowEditorProps) => {
   const { translate } = useContext(I18nContext);
   const { openCustomModal, openFormModal, close } = useContext(ModalContext);
 
-  const [draft, setDraft] = useState(props.process)
+  const [fixedFormStep] = useState<IValidationStepForm | undefined>(() => {
+    if (!props.fixedFormStep) return undefined;
+
+    const step: IValidationStepForm = props.process.find(
+      (step): step is IValidationStepForm => step.type === 'form'
+    ) ?? {
+      type: 'form',
+      id: nanoid(32),
+      title: 'Form',
+      schema: {},
+      formatter: '',
+    };
+
+    return props.fixedFormSchema
+      ? { ...step, schema: props.fixedFormSchema }
+      : step;
+  });
+
+  const normalizeProcess = (process: IValidationStep[]): IValidationStep[] =>
+    fixedFormStep
+      ? [fixedFormStep, ...process.filter(step => step.type !== 'form' )]
+      : process;
+
+  const [draft, setDraft] = useState(() => {
+
+    if (fixedFormStep) return normalizeProcess(props.process);
+
+    const formIndex = props.process.findIndex(step => step.type === 'form');
+    if (formIndex <= 0) return props.process;
+
+    return [
+      props.process[formIndex],
+      ...props.process.slice(0, formIndex),
+      ...props.process.slice(formIndex + 1),
+    ];
+  });
   const [showDocumentation, setShowDocumentation] = useState(false);
 
-  const editProcess = (name: string, index: number) => {
+  const editProcess = (name: IValidationStep['type'], index: number) => {
     //todo: use the index !!
     switch (name) {
       case 'email':
         return openFormModal({
-          title: translate('subscription.process.add.email.step.title'),
+          title: translate('validation.workflow.add.email.step.title'),
+          value: {
+            emails: [''],
+            title: translate('validation.workflow.email.step.title.defaultValue'),
+            message: '',
+            option: 'oneOf',
+          },
           schema: {
             title: {
               type: type.string,
-              label: translate('subscription.process.email.step.title.label'),
-              defaultValue: translate('subscription.process.email.step.title.defaultValue'),
+              label: translate('validation.workflow.email.step.title.label'),
+              defaultValue: translate('validation.workflow.email.step.title.defaultValue'),
               constraints: [
                 constraints.required(translate('constraints.required.value')),
               ],
@@ -294,7 +295,7 @@ export const SubscriptionProcessEditor = (props: SubProcessProps) => {
             emails: {
               type: type.string,
               format: format.email,
-              label: translate('subscription.process.email.step.emails.label'),
+              label: translate('validation.workflow.email.step.emails.label'),
               array: true,
               constraints: [
                 constraints.required(translate('constraints.required.value')),
@@ -312,11 +313,11 @@ export const SubscriptionProcessEditor = (props: SubProcessProps) => {
             },
             message: {
               type: type.string,
-              label: translate('subscription.process.email.step.message.label'),
+              label: translate('validation.workflow.email.step.message.label'),
               format: format.text,
             },
           },
-          onSubmit: (data: IValidationStep & { type: 'email' } & EmailOption) => {
+          onSubmit: (data: Omit<IValidationStepEmail, 'id' | 'type'> & EmailOption) => {
             if (data.option === 'oneOf') {
               const step: IValidationStepEmail = {
                 type: 'email',
@@ -325,11 +326,7 @@ export const SubscriptionProcessEditor = (props: SubProcessProps) => {
                 id: nanoid(32),
                 title: data.title,
               };
-              setDraft(insertArrayIndex(
-                { ...step, id: nanoid(32) },
-                draft,
-                index
-              ));
+              setDraft(current => insertArrayIndex(step, current, index));
             } else {
               const steps: Array<IValidationStepEmail> = data.emails.map(
                 (email) => ({
@@ -340,23 +337,23 @@ export const SubscriptionProcessEditor = (props: SubProcessProps) => {
                   title: data.title,
                 })
               );
-              const subscriptionProcess = steps.reduce(
+              setDraft(current => steps.reduce(
                 (process, step) => insertArrayIndex(step, process, index),
-                draft
-              );
-              setDraft(subscriptionProcess);
+                current
+              ));
             }
           },
           options: {
             actions: {
               add: {
-                label: translate('subscription.process.email.step.add.label')
+                label: translate('validation.workflow.email.step.add.label')
               }
             }
           },
           actionLabel: translate('Create'),
         });
       case 'form': {
+        if (props.allowFormStep === false) return;
         const step: IValidationStepForm = {
           type: 'form',
           id: nanoid(32),
@@ -370,7 +367,7 @@ export const SubscriptionProcessEditor = (props: SubProcessProps) => {
           },
           formatter: '[[motivation]]',
         };
-        setDraft([step, ...draft])
+        setDraft(current => insertArrayIndex(step, current, index))
         return close();
       }
       case 'teamAdmin': {
@@ -380,8 +377,8 @@ export const SubscriptionProcessEditor = (props: SubProcessProps) => {
           id: nanoid(32),
           title: 'Admin',
         };
-        if (draft.some(e => e.type === 'form')) {
-          setDraft([step, ...draft])
+        if (props.allowFormStep === false || draft.some(e => e.type === 'form')) {
+          setDraft(current => insertArrayIndex(step, current, index))
         } else {
           const formStep: IValidationStepForm = {
             type: 'form',
@@ -397,7 +394,12 @@ export const SubscriptionProcessEditor = (props: SubProcessProps) => {
             formatter: '[[motivation]]',
           };
           toast.info('on a ajouté un step form, obligatoire pour le bon fonctionnement du step admin')
-          setDraft([formStep, step, ...draft])
+          setDraft(current => [
+            formStep,
+            ...current.slice(0, index),
+            step,
+            ...current.slice(index),
+          ]);
         }
         return close();
       }
@@ -407,12 +409,12 @@ export const SubscriptionProcessEditor = (props: SubProcessProps) => {
           type: 'httpRequest',
           id: nanoid(32),
           title: 'Admin',
-          url: 'https://changeit.io',
+          url: '',
           headers: {},
         };
 
         return openFormModal({
-          title: translate('subscription.process.add.httpRequest.step.title'),
+          title: translate('validation.workflow.add.httpRequest.step.title'),
           schema: {
             title: {
               type: type.string,
@@ -428,19 +430,14 @@ export const SubscriptionProcessEditor = (props: SubProcessProps) => {
                 // constraints.url(translate('constraints.matches.url')),
               ],
             },
-            Headers: {
+            headers: {
               type: type.object,
               defaultValue: {},
             },
           },
           value: step,
           onSubmit: (data: IValidationStepHttpRequest) => {
-            const subscriptionProcess = insertArrayIndex(
-              data,
-              draft,
-              index
-            );
-            setDraft(subscriptionProcess);
+            setDraft(current => insertArrayIndex(data, current, index));
           },
           actionLabel: translate('Create'),
         });
@@ -450,10 +447,12 @@ export const SubscriptionProcessEditor = (props: SubProcessProps) => {
 
   const editMailStep = (value: IValidationStepEmail) => {
     return openFormModal({
-      title: translate('subscription.process.update.email.step.title'),
+      title: translate('validation.workflow.update.email.step.title'),
       schema: {
         emails: {
           type: type.string,
+          constraints: [
+            constraints.required(translate('constraints.required.value'))],
           array: true,
         },
         message: {
@@ -462,7 +461,7 @@ export const SubscriptionProcessEditor = (props: SubProcessProps) => {
         },
       },
       onSubmit: (data: IValidationStepEmail) => {
-        setDraft(draft.map((p) => {
+        setDraft(current => current.map((p) => {
           if (p.id === data.id) {
             return data;
           }
@@ -470,13 +469,16 @@ export const SubscriptionProcessEditor = (props: SubProcessProps) => {
         }));
       },
       actionLabel: translate('Update'),
-      value,
+      value: {
+        ...value,
+        emails: value.emails?.length ? value.emails : [''],
+      },
     });
   };
 
   const editHttpRequestStep = (value: IValidationStepHttpRequest) => {
     return openFormModal({
-      title: translate('subscription.process.update.email.step.title'),
+      title: translate('validation.workflow.update.email.step.title'),
       schema: {
         title: {
           type: type.string,
@@ -491,12 +493,13 @@ export const SubscriptionProcessEditor = (props: SubProcessProps) => {
             // constraints.url(translate('constraints.matches.url')),
           ],
         },
-        Headers: {
+        headers: {
           type: type.object,
+          defaultValue: {},
         },
       },
       onSubmit: (data: IValidationStepHttpRequest) => {
-        setDraft(draft.map((p) => {
+        setDraft(current => current.map((p) => {
           if (p.id === data.id) {
             return data;
           }
@@ -508,63 +511,75 @@ export const SubscriptionProcessEditor = (props: SubProcessProps) => {
     });
   };
 
-  //todo
-  const addProcess = (index: number) => {
-    const alreadyStepAdmin = draft.some(
-      s => s.type === 'teamAdmin'
-    );
-    const alreadyStepForm = draft.some(
-      s => s.type === 'form'
-    );
+  const editFormStep = (item: IValidationStepForm) => openCustomModal({
+    title: translate('motivation.form.modal.title'),
+    content: (
+      <MotivationForm
+        value={item}
+        saveMotivation={changes => setDraft(current =>
+          current.map(step => step.id === item.id ? { ...item, ...changes } : step)
+        )}
+      />
+    ),
+  });
 
-    const options = addArrayIf(!alreadyStepForm, addArrayIf(
-      !alreadyStepAdmin,
-      [
-        { value: 'email', label: translate('subscription.process.email') },
-        {
-          value: 'httpRequest',
-          label: translate('subscription.process.httpRequest'),
-        },
-      ],
-      {
-        value: 'teamAdmin',
-        label: translate('subscription.process.team.admin'),
-      }
-    ), {
-      value: 'form',
-      label: translate('subscription.process.form'),
-    })
-
-    openFormModal({
-      title: translate('subscription.process.creation.title'),
-      schema: {
-        type: {
-          type: type.string,
-          format: format.buttonsSelect,
-          label: translate('subscription.process.type.selection'),
-          options,
-        },
-      },
-      onSubmit: (data: IValidationStep) => editProcess(data.type, index),
-      actionLabel: translate('Create'),
-      noClose: true,
-    });
-  };
-
-  const deleteStep = (deletedStep: IValidationStep) => {
-    if (deletedStep.type === 'form' && draft.some(s => s.type === 'teamAdmin')) {
-      toast.error('pas le droit de supprimer le step form tant qu\'un step admin est preszent')
-      return;
-    }
-
-
-    const subscriptionProcess = draft.filter(
-      (step) => step.id !== deletedStep.id
-    );
-    setDraft(subscriptionProcess);
+  const cardTypes: CardTypeCatalog<IValidationStep> = {
+    email: {
+      label: translate('validation.workflow.email'),
+      icon: <Mail size={20} />,
+      getTitle: step => step.title,
+      Content: MailCard,
+      onEdit: editMailStep,
+    },
+    httpRequest: {
+      label: translate('validation.workflow.httpRequest'),
+      icon: <Globe size={20} />,
+      getTitle: step => step.title,
+      Content: HttpCard,
+      onEdit: editHttpRequestStep,
+    },
+    form: {
+      label: translate('validation.workflow.form'),
+      icon: <FileText size={20} />,
+      getTitle: step => step.title,
+      Content: ({ data }) => (
+        <FormCard data={data} hideConfiguration={props.hideFormConfiguration} />
+      ),
+      onEdit: editFormStep,
+      canAdd: props.allowFormStep !== false && !draft.some(step => step.type === 'form'),
+      unavailableReason: translate('validation.workflow.palette.form.exists'),
+      canMove: false,
+      canDelete: false,
+      canEdit: !props.fixedFormStep,
+    },
+    teamAdmin: {
+      label: translate('validation.workflow.team.admin'),
+      icon: <ShieldCheck size={20} />,
+      getTitle: step => step.title,
+      Content: ValidationCard,
+      canEdit: false,
+      canAdd: props.allowFormStep === false || !draft.some(step => step.type === 'teamAdmin'),
+      unavailableReason: translate('validation.workflow.palette.admin.exists'),
+    },
+    payment: {
+      label: translate('Payment'),
+      icon: <CreditCard size={20} />,
+      getTitle: step => step.title,
+      Content: ({ data }) => <PaymentStep
+        step={data}
+        tenant={props.tenant}
+        index={draft.findIndex(step => step.id === data.id) + 1}
+      />,
+      canAdd: false,
+      unavailableReason: translate('validation.workflow.palette.payment.unavailable'),
+    },
   };
 
   const Documentation = props.documentation ?? React.Fragment
+  const visibleCardTypes = { ...cardTypes };
+  for (const stepType of props.hiddenSteps ?? []) {
+    delete visibleCardTypes[stepType];
+  }
   return (
     <div>
       {props.documentation && <button
@@ -572,132 +587,38 @@ export const SubscriptionProcessEditor = (props: SubProcessProps) => {
         onClick={() => setShowDocumentation(!showDocumentation)}>
         {translate(`tenant.security.account.creation.process.doc.${showDocumentation ? 'close' : 'open'}.aria`)}
       </button>}
-      <div className="d-flex flex-row align-items-center">
-        {!!draft.length && (
-          <button
-            className="btn --secondary --small --icon-only"
-            onClick={() => addProcess(0)}
-          >
-            <Plus />
-          </button>
-        )}
-        {!draft.length && (
-          <div className="d-flex flex-column align-items-center">
-            <div> {translate('api.pricings.no.step.explanation')}</div>
-            <button
-              className="btn --primary my-2"
-              onClick={() => addProcess(0)}
-            >
-              {translate('api.pricings.add.first.step.btn.label')}
-            </button>
-          </div>
-        )}
-        <SortableList
-          items={draft}
-          onChange={(subscriptionProcess) =>
-            setDraft(subscriptionProcess)
-          }
-          className="flex-grow-1"
-          renderItem={(item, idx) => {
-            if (item.type === 'form') {
-              return (
-                <FixedItem
-                  id={item.id}
-                  className="validation-step-container"
-                  action={<div
-                    className='d-flex flex-row justify-content-between'
-                  >
-                    <button
-                      className="btn --secondary --small --icon-only"
-                      onClick={() =>
-                        openCustomModal({
-                          title: translate('motivation.form.modal.title'),
-                          content: (
-                            <MotivationForm
-                              value={item}
-                              saveMotivation={({ schema, formatter, formKeysToMetadata, info }) => {
-                                const step = { ...item, schema, formatter, formKeysToMetadata, info };
-                                const updatedProcess = draft.map(
-                                  (s) => (s.id === step.id ? step : s)
-                                );
-                                setDraft(updatedProcess);
-                              }}
-                            />
-                          ),
-                        })
-                      }
-                    >
-                      <Settings size={15} />
-                    </button>
-                  </div>}>
-                  <ValidationStep
-                    index={idx + 1}
-                    step={item}
-                    tenant={props.tenant}
-                  />
-                </FixedItem>
-              );
-            } else {
-              return (
-                <>
-                  <SortableItem
-                    className="validation-step-container"
-                    action={
-                      <div
-                        className={classNames('d-flex flex-row', {
-                          'justify-content-between': item.type !== 'payment',
-                          'justify-content-end': item.type === 'payment',
-                        })}
-                      >
-                        {item.type === 'email' && (
-                          <button
-                            className="btn --secondary --small --icon-only"
-                            onClick={() => editMailStep(item)}
-                          >
-                            <Settings size={15} />
-                          </button>
-                        )}
-                        {item.type === 'httpRequest' && (
-                          <button
-                            className="btn --secondary --small --icon-only"
-                            onClick={() => editHttpRequestStep(item)}
-                          >
-                            <Settings size={15} />
-                          </button>
-                        )}
-                        <button
-                          className="btn --secondary --small --icon-only"
-                          // disabled={item.type === 'form' && draft.some(s => s.type === 'teamAdmin')}
-                          onClick={() => deleteStep(item)}
-                        >
-                          <Trash size={15} />
-                        </button>
-                      </div>
-                    }
-                    id={item.id}
-                  >
-                    <ValidationStep
-                      index={idx + 1}
-                      step={item}
-                      tenant={props.tenant}
-                    />
-                  </SortableItem>
-                  <button
-                    className="btn --secondary --small --icon-only"
-                    onClick={() => addProcess(idx + 1)}
-                  >
-                    <Plus />
-                  </button>
-                </>
-              );
-            }
-          }}
-        />
-
-      </div>
-      {showDocumentation && <Documentation close={() => setShowDocumentation(false)} updateProcess={(steps) => setDraft(steps)} />}
+      {!draft.length && <p>{translate('api.pricings.no.step.explanation')}</p>}
+      <FlowEditor<IValidationStep>
+        value={draft}
+        onChange={setDraft}
+        onAdd={editProcess}
+        cardTypes={visibleCardTypes}
+        labels={{
+          palette: translate('validation.workflow.palette.title'),
+          hint: translate('validation.workflow.palette.hint'),
+          insert: position => `${translate('validation.workflow.palette.insert')} ${position}`,
+          unavailable: translate('validation.workflow.palette.unavailable'),
+        }}
+        start={<span className="badge rounded-pill bg-light text-dark border p-2">
+          <Flag size={15} aria-hidden="true" /> {translate('validation.workflow.start')}
+        </span>}
+        end={<span className="badge rounded-pill bg-light text-dark border p-2">
+          <IconTarget size={15} aria-hidden="true" />{translate('validation.workflow.end')}
+        </span>}
+        canInsertAt={(type, index) => {
+          const hasForm = draft.some(step => step.type === 'form');
+          return type === 'form'
+            ? !hasForm && index === 0
+            : !hasForm || index > 0;
+        }}
+        canMoveTo={(card, destination) => {
+          if (!draft.some(step => step.type === 'form')) return true;
+          return card.type === 'form' ? destination === 0 : destination > 0;
+        }}
+      />
+      {showDocumentation && <Documentation close={() => setShowDocumentation(false)} updateProcess={(steps) => setDraft(normalizeProcess(steps))} />}
       {(!!draft.length || !!props.process.length) && (
-        <button className='btn --primary' onClick={() => props.save(draft)}>save</button>
+        <button className='btn --primary' onClick={() => props.save(normalizeProcess(draft))}>{translate("Save")}</button>
       )}
     </div>
   );
