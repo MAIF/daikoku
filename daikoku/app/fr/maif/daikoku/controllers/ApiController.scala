@@ -1383,7 +1383,7 @@ class ApiController(
           )
           _ <- EitherT.right[AppError](
             env.dataStore.notificationRepo
-              .deleteByDemand(ctx.tenant.id, demand.id)
+              .deleteByDemand(ctx.tenant.id, demand.id))
           _ <- deletionService.cancelSubscriptionDemand(
             demand.id,
             ctx.tenant

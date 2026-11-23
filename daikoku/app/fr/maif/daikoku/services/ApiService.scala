@@ -3260,7 +3260,6 @@ class ApiService(
               team,
               from
             )
-            //todo:EitherT.liftF( ???
             maybeSubscriptionInformations <- plan.paymentSettings match {
               case Some(settings) =>
                 paymentClient.getSubscription(maybeSessionId, settings, tenant)
