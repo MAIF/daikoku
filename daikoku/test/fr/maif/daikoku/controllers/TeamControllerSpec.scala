@@ -1488,6 +1488,44 @@ class TeamControllerSpec()
   }
 
   "a team" must {
+    "tell whether one of its apis offers a paid plan" in {
+      val paidPlan = defaultApi.plans.head.copy(
+        costPerMonth = BigDecimal(10).some,
+        currency = Currency("EUR").some
+      )
+      val freePlans = defaultApi.plans.tail.filter(_.costPerMonth.isEmpty)
+      val freeApiOfConsumer = defaultApi.api.copy(
+        id = ApiId("free-api-of-consumer"),
+        name = "free api of consumer",
+        team = teamConsumerId,
+        possibleUsagePlans = freePlans.map(_.id)
+      )
+
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(userAdmin),
+        teams = Seq(teamOwner, teamConsumer),
+        apis = Seq(defaultApi.api, freeApiOfConsumer),
+        usagePlans = paidPlan +: freePlans
+      )
+      val session = loginWithBlocking(userAdmin, tenant)
+
+      val owner = httpJsonCallBlocking(s"/api/teams/${teamOwnerId.value}")(using
+        tenant,
+        session
+      )
+      owner.status mustBe 200
+      (owner.json \ "sellsPaidPlans").as[Boolean] mustBe true
+
+      val consumer =
+        httpJsonCallBlocking(s"/api/teams/${teamConsumerId.value}")(using
+          tenant,
+          session
+        )
+      consumer.status mustBe 200
+      (consumer.json \ "sellsPaidPlans").as[Boolean] mustBe false
+    }
+
     "use only authorized otoroshi entities" in {
       val planOk = UsagePlan(
         id = UsagePlanId("parent.dev"),

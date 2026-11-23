@@ -1,0 +1,8 @@
+{
+  "id": "cs_test123",
+  "object": "checkout.session",
+  "customer": "cus_test123",
+  "mode": "subscription",
+  "status": "open",
+  "url": "https://checkout.stripe.com/c/pay/cs_test123"
+}

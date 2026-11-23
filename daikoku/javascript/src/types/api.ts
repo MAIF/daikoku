@@ -248,7 +248,6 @@ export interface IUsagePlan extends IBaseUsagePlan, IWithSwagger, IWithTesting, 
   allowMultipleKeys?: boolean;
   authorizedTeams: string[];
   autoRotation?: boolean;
-  billingDuration?: IBillingDuration;
   costPerMonth?: number;
   costPerRequest?: number;
   currency?: ICurrency;
@@ -257,13 +256,13 @@ export interface IUsagePlan extends IBaseUsagePlan, IWithSwagger, IWithTesting, 
   integrationProcess: 'Automatic' | 'ApiKey';
   maxPerDay?: number;
   maxPerMonth?: number;
+  includedRequestsPerMonth?: number;
   maxPerSecond?: number;
   otoroshiTarget?: IOtoroshiTarget;
   paymentSettings?: IPaymentSettings;
   rotation: boolean;
   subscriptionProcess: Array<IValidationStep>;
   subscriptionProcessChecksum: string;
-  trialPeriod?: IBillingDuration;
   visibility: UsagePlanVisibility;
 }
 
@@ -271,11 +270,6 @@ export interface IAuthorizedEntities {
   groups: Array<string>;
   services: Array<string>;
   routes: Array<string>;
-}
-
-interface IBillingDuration {
-  value: number;
-  unit: 'Hour' | 'Day' | 'Month' | 'Year';
 }
 
 export interface ICurrency {
@@ -378,10 +372,11 @@ export interface IBaseSubscription {
   customName: string | null;
   enabled: boolean;
   // `state` is derived from `blockedBy` on the backend: 'blocked' as soon as
-  // there is at least one reason ('owner' set by the API producer and/or
-  // 'lifecycle' set when the whole API is blocked), 'active' otherwise.
+  // there is at least one reason ('owner' set by the API producer, 'lifecycle'
+  // set when the whole API is blocked, 'ended' set once Stripe cancelled the
+  // subscription), 'active' otherwise.
   state: 'active' | 'blocked';
-  blockedBy: Array<'owner' | 'lifecycle'>;
+  blockedBy: Array<'owner' | 'lifecycle' | 'ended'>;
   metadata?: object;
   tags: Array<string>;
   customMetadata?: object;
@@ -392,14 +387,6 @@ export interface IBaseSubscription {
   adminCustomName?: string;
   keyring: string | null;
 }
-
-export const isPayPerUse = (plan: IUsagePlan | IFastPlan | IUsagePlanGQL) => {
-  return !!plan.costPerRequest && !plan.maxPerMonth;
-};
-
-export const isQuotasWitoutLimit = (plan: IUsagePlan | IFastPlan | IUsagePlanGQL) => {
-  return !!plan.costPerRequest && !!plan.maxPerMonth;
-};
 
 export const isMiniFreeWithQuotas = (plan: IUsagePlan | IFastPlan | IUsagePlanGQL) => {
   return !!plan.maxPerSecond && !plan.costPerMonth;
@@ -490,6 +477,7 @@ export interface ISubscriptionInformation {
 export interface IFastPlan extends IBaseUsagePlan {
   maxPerSecond?: number;
   maxPerMonth?: number;
+  includedRequestsPerMonth?: number;
   costPerMonth?: number;
   costPerAdditionalRequest?: number;
   costPerRequest?: number;
@@ -592,6 +580,24 @@ export interface IConsumption {
   state: 'inProgress' | 'completed';
 }
 
+export interface ISubscriptionBillingState {
+  subscription: string;
+  api: string;
+  apiName: string | null;
+  plan: string;
+  planName: string;
+  blockedBy: Array<'owner' | 'lifecycle' | 'ended'>;
+  error?: string;
+  cancelAt?: number | null;
+  periodEnd?: number | null;
+  nextCharge?: number | null;
+  priceChange?: {
+    costPerMonth: number | null;
+    costPerRequest: number | null;
+    effectiveAt: number | null;
+  } | null;
+}
+
 export type Comment = {
   by: IUserSimple;
   createdAt: number;
@@ -661,7 +667,6 @@ export interface IUsagePlanGQL
   allowMultipleKeys?: boolean;
   authorizedTeams: { _id: string; name: string }[];
   autoRotation?: boolean;
-  billingDuration?: IBillingDuration;
   costPerMonth?: number;
   costPerRequest?: number;
   currency?: ICurrency;
@@ -670,12 +675,12 @@ export interface IUsagePlanGQL
   integrationProcess: 'Automatic' | 'ApiKey';
   maxPerDay?: number;
   maxPerMonth?: number;
+  includedRequestsPerMonth?: number;
   maxPerSecond?: number;
   otoroshiTarget?: IOtoroshiTarget;
   paymentSettings?: IPaymentSettings;
   rotation: boolean;
   subscriptionProcess: Array<IValidationStep>;
   subscriptionProcessChecksum: string;
-  trialPeriod?: IBillingDuration;
   visibility: UsagePlanVisibility;
 }

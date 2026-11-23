@@ -2,13 +2,16 @@ package fr.maif.daikoku.services
 
 import cats.data.EitherT
 import cats.implicits.catsSyntaxOptionId
-import fr.maif.daikoku.controllers.AppError
+import fr.maif.daikoku.controllers.{AppError, PaymentClient}
 import fr.maif.daikoku.domain.*
 import fr.maif.daikoku.env.Env
 import fr.maif.daikoku.jobs.OtoroshiSynchronizerJob
-import fr.maif.daikoku.utils.IdGenerator
+import fr.maif.daikoku.logger.AppLogger
+import fr.maif.daikoku.utils.{IdGenerator, Translator}
 import org.apache.pekko.stream.Materializer
 import org.apache.pekko.stream.scaladsl.{Sink, Source}
+import org.joda.time.DateTime
+import play.api.i18n.MessagesApi
 import play.api.libs.json.*
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -17,11 +20,17 @@ class UsagePlanService(
     env: Env,
     apiService: ApiService,
     otoroshiSynchronisator: OtoroshiSynchronizerJob,
-    deletionService: DeletionService
+    deletionService: DeletionService,
+    paymentClient: PaymentClient,
+    billingNotificationService: BillingNotificationService,
+    translator: Translator,
+    messagesApi: MessagesApi
 ) {
 
   implicit val ec: ExecutionContext = env.defaultExecutionContext
   implicit val ev: Env = env
+  implicit val tr: Translator = translator
+  implicit val m: MessagesApi = messagesApi
 
   def createPlan(
       tenant: Tenant,
@@ -75,13 +84,16 @@ class UsagePlanService(
       checkedPlan <- getPlanAndCheckIt(tenant, oldPlan, newPlan)
       handledUpdatedPlan <-
         handleVisibilityToggling(tenant, oldPlan, checkedPlan, api)
-      updatedPlan <- handleProcess(oldPlan, handledUpdatedPlan, api)
+      processedPlan <- handleProcess(oldPlan, handledUpdatedPlan, api)
+      updatedPlan <- renewPrices(tenant, api, oldPlan, processedPlan)
       _ <- EitherT.liftF(
         env.dataStore.usagePlanRepo.forTenant(tenant).save(updatedPlan)
       )
       _ <- EitherT.liftF(
         otoroshiSynchronisator.runSync(updatedPlan.id, tenant)
       )
+      _ <- moveSubscribersToNewPrices(tenant, oldPlan, updatedPlan, api)
+      _ <- notifyPriceChange(tenant, oldPlan, updatedPlan, api)
       _ <- runDemandUpdate(tenant, user, oldPlan, updatedPlan, api)
       // FIXME: attention, peut etre il y en a qui sont blocked de base
       _ <- EitherT.liftF(
@@ -148,16 +160,143 @@ class UsagePlanService(
     EitherT.pure[Future, AppError](updatedPlan)
   }
 
+  private def amountsChanged(oldPlan: UsagePlan, newPlan: UsagePlan): Boolean =
+    oldPlan.costPerMonth != newPlan.costPerMonth ||
+      oldPlan.costPerRequest != newPlan.costPerRequest ||
+      oldPlan.includedRequestsPerMonth != newPlan.includedRequestsPerMonth
+
+  private def renewPrices(
+      tenant: Tenant,
+      api: Api,
+      oldPlan: UsagePlan,
+      newPlan: UsagePlan
+  ): EitherT[Future, AppError, UsagePlan] =
+    newPlan.paymentSettings match {
+      case Some(settings: PaymentSettings.Stripe)
+          if amountsChanged(oldPlan, newPlan) =>
+        for {
+          renewed <- paymentClient.renewStripePrices(tenant, newPlan, settings)
+          subscriptions <- EitherT.liftF[Future, AppError, Seq[ApiSubscription]](
+            env.dataStore.apiSubscriptionRepo
+              .findByApiAndPlan(tenant.id, api.id, newPlan.id)
+          )
+          openDemands <- EitherT.liftF[Future, AppError, Seq[SubscriptionDemand]](
+            env.dataStore.subscriptionDemandRepo.findByStates(
+              tenant.id,
+              Seq(
+                SubscriptionDemandState.InProgress,
+                SubscriptionDemandState.Waiting,
+                SubscriptionDemandState.Blocked
+              ),
+              plan = newPlan.id.some
+            )
+          )
+          _ <-
+            if (subscriptions.isEmpty && openDemands.isEmpty) {
+              paymentClient.retireStripePrices(tenant, settings)
+            } else {
+              EitherT.pure[Future, AppError](())
+            }
+        } yield newPlan.copy(paymentSettings = renewed.some)
+      case _ => EitherT.pure[Future, AppError](newPlan)
+    }
+
+  /** The new price is live at once for the site and for new subscriptions.
+    * Current subscribers keep paying the old one until the 1st, when the cycle
+    * turns, so they are told the date rather than the change.
+    */
+  /** The flat fee of each subscriber moves to the new price at once, so the
+    * next month is charged at the announced amount. Its usage price follows on
+    * its own, from the first period started under the new price.
+    */
+  private def moveSubscribersToNewPrices(
+      tenant: Tenant,
+      oldPlan: UsagePlan,
+      updatedPlan: UsagePlan,
+      api: Api
+  ): EitherT[Future, AppError, Unit] =
+    if (
+      updatedPlan.paymentSettings.isEmpty ||
+      !amountsChanged(oldPlan, updatedPlan)
+    ) EitherT.pure[Future, AppError](())
+    else
+      EitherT.liftF(
+        env.dataStore.apiSubscriptionRepo
+          .findByApiAndPlan(tenant.id, api.id, updatedPlan.id)
+          .flatMap(subscriptions =>
+            Future.sequence(
+              subscriptions
+                .filterNot(_.blockedBy.contains(SubscriptionBlockReason.Ended))
+                .map(subscription =>
+                  paymentClient
+                    .applyPlanPricesToSubscription(tenant, subscription, updatedPlan)
+                    .value
+                    .map(_.left.map(_.getErrorMessage()))
+                    .recover { case error => Left(error.getMessage) }
+                    // the nightly reconciliation moves it on its next pass
+                    .map(_.left.foreach(message =>
+                      AppLogger.error(
+                        s"[stripe] subscription ${subscription.id.value} not moved onto the new prices: $message"
+                      )
+                    ))
+                )
+            )
+          )
+          .map(_ => ())
+      )
+
+  private def notifyPriceChange(
+      tenant: Tenant,
+      oldPlan: UsagePlan,
+      updatedPlan: UsagePlan,
+      api: Api
+  ): EitherT[Future, AppError, Unit] =
+    if (
+      updatedPlan.paymentSettings.isEmpty ||
+      !amountsChanged(oldPlan, updatedPlan)
+    ) EitherT.pure[Future, AppError](())
+    else
+      EitherT.liftF(
+        env.dataStore.apiSubscriptionRepo
+          .findByApiAndPlan(tenant.id, api.id, updatedPlan.id)
+          .flatMap(subscriptions =>
+            Future
+              .sequence(
+                subscriptions.map(subscription =>
+                  billingNotificationService.priceChangeScheduled(
+                    tenant,
+                    subscription,
+                    updatedPlan.costPerMonth.getOrElse(BigDecimal(0)),
+                    updatedPlan.costPerRequest,
+                    updatedPlan.currency.getOrElse(Currency("EUR")),
+                    DateTime
+                      .now()
+                      .plusMonths(1)
+                      .withDayOfMonth(1)
+                      .withTimeAtStartOfDay()
+                  )
+                )
+              )
+              .map(_ => ())
+          )
+      )
+
   def getPlanAndCheckIt(
       tenant: Tenant,
       oldPlan: UsagePlan,
       newPlan: UsagePlan
   ): EitherT[Future, AppError, UsagePlan] = {
+    //payment settings carry the Stripe ids, they are never edited by hand: the
+    //stored ones win over whatever the client sends back
+    val candidate = oldPlan.paymentSettings.fold(newPlan)(settings =>
+      newPlan.copy(paymentSettings = settings.some)
+    )
+
     oldPlan match {
       // it's forbidden to update otoroshi target, must use migration API instead
       case _
           if oldPlan.otoroshiTarget.isDefined && oldPlan.otoroshiTarget
-            .map(_.otoroshiSettings) != newPlan.otoroshiTarget.map(
+            .map(_.otoroshiSettings) != candidate.otoroshiTarget.map(
             _.otoroshiSettings
           ) =>
         EitherT.leftT(
@@ -165,43 +304,48 @@ class UsagePlanService(
             "The Otoroshi settings of a plan cannot change: use the migration API"
           )
         )
-      // Handle prices changes or payment settings deletion (addition is really forbidden)
+      //amounts may change, the currency may not: Stripe freezes it on a price,
+      //so changing it would mean cancelling every subscriber and having them subscribe anew
       case _
-          if oldPlan.paymentSettings.isDefined && oldPlan.paymentSettings != newPlan.paymentSettings =>
+          if oldPlan.paymentSettings.isDefined && oldPlan.currency != candidate.currency =>
         EitherT.leftT(
-          AppError.Forbidden(
-            "The payment settings of a plan cannot change once set"
+          AppError.PaymentError(
+            "the currency of a priced plan cannot be changed"
           )
         )
       case _
-          if oldPlan.costPerMonth.isDefined && oldPlan.costPerMonth != newPlan.costPerMonth =>
+          if candidate.paymentSettings.isDefined &&
+            !candidate.subscriptionProcess.steps.lastOption
+              .exists(_.name == "payment") =>
         EitherT.leftT(
-          AppError.Forbidden(
-            "The cost per month of a plan cannot change once set"
+          AppError.PaymentError(
+            "the payment step of a priced plan must be the last one"
           )
         )
       case _
-          if oldPlan.costPerRequest.isDefined && oldPlan.costPerRequest != newPlan.costPerRequest =>
+          if candidate.includedRequestsPerMonth.exists(included =>
+            candidate.maxPerMonth.exists(_ < included)
+          ) =>
         EitherT.leftT(
-          AppError.Forbidden(
-            "The cost per request of a plan cannot change once set"
+          AppError.PaymentError(
+            "the included requests of a plan cannot exceed its monthly limit"
           )
         )
       case _
           if !tenant.aggregationApiKeysSecurity.exists(identity) &&
-            newPlan.aggregationApiKeysSecurity.exists(identity) =>
+            candidate.aggregationApiKeysSecurity.exists(identity) =>
         EitherT.leftT(AppError.SubscriptionAggregationDisabled)
       case _ if oldPlan.visibility == UsagePlanVisibility.Admin =>
         EitherT.pure(
           oldPlan.copy(
-            otoroshiTarget = newPlan.otoroshiTarget,
-            allowMultipleKeys = newPlan.allowMultipleKeys,
-            autoRotation = newPlan.autoRotation
+            otoroshiTarget = candidate.otoroshiTarget,
+            allowMultipleKeys = candidate.allowMultipleKeys,
+            autoRotation = candidate.autoRotation
           )
         )
       case _ if newPlan.visibility == UsagePlanVisibility.Admin =>
         EitherT.leftT(AppError.Forbidden("A plan cannot become an admin plan"))
-      case _ => EitherT.pure(newPlan)
+      case _ => EitherT.pure(candidate)
     }
   }
 

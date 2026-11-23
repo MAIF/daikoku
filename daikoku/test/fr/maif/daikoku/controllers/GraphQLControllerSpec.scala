@@ -2025,6 +2025,83 @@ class GraphQLControllerSpec()
     }
 
   }
+  "the pending demands of a team" should {
+    "be listed page by page, each with the name of its current step" in {
+      Await.result(waitForDaikokuSetup(), 5.second)
+      val api = defaultApi.api
+      val plan = defaultApi.plans.head
+
+      def awaitingPayment(id: String): SubscriptionDemand =
+        SubscriptionDemand(
+          id = DemandId(id),
+          tenant = tenant.id,
+          api = api.id,
+          plan = plan.id,
+          steps = Seq(
+            SubscriptionDemandStep(
+              id = SubscriptionDemandStepId(s"$id-payment"),
+              state = SubscriptionDemandState.InProgress,
+              step = ValidationStep.Payment(
+                id = "payment",
+                thirdPartyPaymentSettingsId = ThirdPartyPaymentSettingsId("stripe")
+              )
+            )
+          ),
+          state = SubscriptionDemandState.InProgress,
+          team = teamConsumerId,
+          from = userAdmin.id
+        )
+
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(userAdmin),
+        teams = Seq(teamOwner, teamConsumer),
+        apis = Seq(api),
+        usagePlans = defaultApi.plans,
+        subscriptionDemands =
+          Seq("demand-1", "demand-2", "demand-3").map(awaitingPayment)
+      )
+      val session = loginWithBlocking(userAdmin, tenant)
+
+      def page(field: String, teamId: TeamId, offset: Int): JsValue = {
+        val response = httpJsonCallBlocking(
+          path = "/api/search",
+          method = "POST",
+          body = Some(
+            Json.obj(
+              "query" ->
+                s"""{ $field(teamId: "${teamId.value}", limit: 2, offset: $offset) {
+                   |  total
+                   |  subscriptionDemands { _id steps { state step { name } } }
+                   |} }""".stripMargin
+            )
+          )
+        )(using tenant, session)
+
+        response.status mustBe 200
+        (response.json \ "errors").isDefined mustBe false
+        (response.json \ "data" \ field).as[JsValue]
+      }
+
+      // the offset is a page number, which the tables rely on
+      val secondConsumerPage =
+        page("teamSubscriptionDemands", teamConsumerId, offset = 1)
+      val consumerDemands =
+        (secondConsumerPage \ "subscriptionDemands").as[Seq[JsValue]]
+      (secondConsumerPage \ "total").as[Int] mustBe 3
+      consumerDemands.size mustBe 1
+      (consumerDemands.head \ "steps" \ 0 \ "step" \ "name")
+        .as[String] mustBe "payment"
+
+      val firstProducerPage =
+        page("subscriptionDemandsForAdmin", teamOwnerId, offset = 0)
+      (firstProducerPage \ "total").as[Int] mustBe 3
+      (firstProducerPage \ "subscriptionDemands")
+        .as[Seq[JsValue]]
+        .size mustBe 2
+    }
+  }
+
   "myNotifications query" should {
     "return only notifications from the current tenant" in {
       Await.result(waitForDaikokuSetup(), 5.second)

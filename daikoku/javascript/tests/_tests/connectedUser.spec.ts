@@ -68,10 +68,6 @@ const newApiUsagePlan = {
   "currency": {
     "code": "EUR"
   },
-  "billingDuration": {
-    "value": 1,
-    "unit": "Month"
-  },
   "customName": "test plan",
   "customDescription": "Free plan with limited number of calls per day and per month",
   "otoroshiTarget": {

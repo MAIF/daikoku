@@ -61,6 +61,8 @@ mongo-data
 /demo/config/redis-data/
 dev/dumps/*
 !dev/dumps/.gitkeep
+.env.stripe*
+!daikoku/.env.stripe.example
 
 # ─── Misc / local CLI ─────────────────────────────────────────
 .vibe

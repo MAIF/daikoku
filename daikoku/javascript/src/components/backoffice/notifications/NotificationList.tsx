@@ -2,7 +2,7 @@ import { constraints, format, type } from '@maif/react-forms';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ColumnFiltersState, createColumnHelper } from '@tanstack/react-table';
 import classNames from 'classnames';
-import { formatDistanceToNow } from 'date-fns';
+import { format as formatDate, formatDistanceToNow } from 'date-fns';
 import debounce from 'lodash/debounce';
 import { ArrowRight, Ban, Check, Smile } from "lucide-react";
 import { useContext, useMemo } from 'react';
@@ -136,6 +136,14 @@ type NotificationActionGQL =
   | { __typename: 'ApiSubscriptionTransferSuccess'; subscription: ISubscription }
   | { __typename: 'AccountCreationAttempt'; demand?: IAccountCreationGQL; motivation: string }
   | {
+    __typename: 'SubscriptionPriceChangeScheduled';
+    api: IApiGQL; plan: IUsagePlan;
+    costPerMonth: number; costPerRequest?: number; currency: { code: string }; effectiveAt: number;
+  }
+  | { __typename: 'SubscriptionCancellationScheduled'; api: IApiGQL; plan: IUsagePlan; effectiveAt: number }
+  | { __typename: 'SubscriptionBlockedByOwner'; api: IApiGQL; plan: IUsagePlan; reason?: string }
+  | { __typename: 'SubscriptionUnblockedByOwner'; api: IApiGQL; plan: IUsagePlan }
+  | {
     __typename: 'ApiDepreciationWarning';
     api: IApiGQL;
   }
@@ -216,6 +224,10 @@ export const NotificationList = () => {
     { type: "NewPostPublishedV2" },
     { type: "OtoroshiSyncApiError" },
     { type: "OtoroshiSyncSubscriptionError" },
+    { type: "SubscriptionCancellationScheduled" },
+    { type: "SubscriptionPriceChangeScheduled" },
+    { type: "SubscriptionBlockedByOwner" },
+    { type: "SubscriptionUnblockedByOwner" },
     { type: "TeamInvitation" },
     { type: "TransferApiOwnership" },
   ];
@@ -234,6 +246,8 @@ export const NotificationList = () => {
   };
 
   // ─── Formatters ──────────────────────────────────────────────────────────
+
+  const day = (date: number) => formatDate(date, 'P', { locale: getLanguageFns(language) });
 
   const statusFormatter = (status: { date?: number; status: 'Pending' | 'Accepted' | 'Rejected' }) => {
     switch (status.status) {
@@ -400,7 +414,7 @@ export const NotificationList = () => {
             <div className="d-flex justify-content-end">
               {sub && (
                 <Link
-                  to={`/${sub.team._humanReadableId}/${sub.api._humanReadableId}/${sub.api.currentVersion}/keyrings`}
+                  to={`/${sub.team._humanReadableId}/${sub.api._humanReadableId}/${sub.api.currentVersion}/apikeys`}
                   className="nav_item cursor-pointer no-bg"
                   title={translate('notif.apikey.refresh.see_keyring')}
                   aria-label={translate('notif.apikey.refresh.see_keyring')}
@@ -447,7 +461,67 @@ export const NotificationList = () => {
           <div className='action-container'>
             <div className="d-flex justify-content-center">
               <Link
-                to={`/${team._humanReadableId}/${api._humanReadableId}/${api.currentVersion}/keyrings`}
+                to={`/${team._humanReadableId}/${api._humanReadableId}/${api.currentVersion}/apikeys`}
+                className="btn --tertiary --small --icon-only"
+                title={translate('notif.api.demand.accept.see_key')}
+                aria-label={translate('notif.api.demand.accept.see_key')}
+                onClick={() => {
+                  if (notification.status.status === 'Pending') accept(notification._id)
+                }}
+              >
+                <ArrowRight />
+              </Link>
+            </div>
+            {notification.status.status === 'Pending' && <button
+              type="button"
+              className="btn --tertiary --small --icon-only"
+              title={translate('notifications.page.table.read.action.label')}
+              aria-label={translate('notifications.page.table.read.action.label')}
+              onClick={() => accept(notification._id)}
+            >
+              <Check />
+            </button>}
+          </div>
+        );
+      }
+      case 'SubscriptionPriceChangeScheduled': {
+        const api = notification.action.api
+        return (
+          <div className='action-container'>
+            <div className="d-flex justify-content-center">
+              <Link
+                to={`/${api.team._humanReadableId}/${api._humanReadableId}/${api.currentVersion}/pricing#${notification.action.plan._id}`}
+                className="btn --tertiary --small --icon-only"
+                title={translate('notif.billing.price.change.see_plan')}
+                aria-label={translate('notif.billing.price.change.see_plan')}
+                onClick={() => {
+                  if (notification.status.status === 'Pending') accept(notification._id)
+                }}
+              >
+                <ArrowRight />
+              </Link>
+            </div>
+            {notification.status.status === 'Pending' && <button
+              type="button"
+              className="btn --tertiary --small --icon-only"
+              title={translate('notifications.page.table.read.action.label')}
+              aria-label={translate('notifications.page.table.read.action.label')}
+              onClick={() => accept(notification._id)}
+            >
+              <Check />
+            </button>}
+          </div>
+        );
+      }
+      case 'SubscriptionBlockedByOwner':
+      case 'SubscriptionUnblockedByOwner': {
+        const api = notification.action.api
+        const teamParam = notification.team ? `?team=${notification.team._id}` : ''
+        return (
+          <div className='action-container'>
+            <div className="d-flex justify-content-center">
+              <Link
+                to={`/${api.team._humanReadableId}/${api._humanReadableId}/${api.currentVersion}/apikeys${teamParam}`}
                 className="btn --tertiary --small --icon-only"
                 title={translate('notif.api.demand.accept.see_key')}
                 aria-label={translate('notif.api.demand.accept.see_key')}
@@ -521,7 +595,7 @@ export const NotificationList = () => {
   ) => {
     switch (notification.action.__typename) {
       case 'CheckoutForSubscription':
-        return translate("notif.CheckoutForSubscription");
+        return translate({ key: "notif.CheckoutForSubscription", replacements: [notification.action.plan.customName] });
       case 'ApiDepreciationWarning':
         return translate({ key: "notif.ApiDepreciationWarning", replacements: [notification.action.api.name] });
       case 'ApiBlockingWarning':
@@ -718,6 +792,28 @@ export const NotificationList = () => {
         return translate('notif.issues.comment');
       case 'ApiSubscriptionTransferSuccess':
         return translate('notif.subscription.transfer.success');
+      case 'SubscriptionPriceChangeScheduled':
+        return translate({
+          key: 'notif.billing.price.change',
+          replacements: [notification.action.plan.customName, day(notification.action.effectiveAt)],
+        });
+      case 'SubscriptionCancellationScheduled':
+        return translate({
+          key: 'notif.billing.cancellation',
+          replacements: [notification.action.plan.customName, day(notification.action.effectiveAt)],
+        });
+      case 'SubscriptionBlockedByOwner':
+        return (
+          <>
+            {translate({ key: 'notif.subscription.blocked.by.owner', replacements: [notification.action.plan.customName] })}
+            {notification.action.reason && <i className='ms-1'>{notification.action.reason}</i>}
+          </>
+        );
+      case 'SubscriptionUnblockedByOwner':
+        return translate({
+          key: 'notif.subscription.unblocked.by.owner',
+          replacements: [notification.action.plan.customName],
+        });
       case 'AccountCreationAttempt': {
         const description = translate('notif.account.creation.attempt');
         const value = notification.action.demand?.value;
@@ -774,6 +870,10 @@ export const NotificationList = () => {
       case "ApiDepreciationWarning":
       case "ApiBlockingWarning":
       case 'NewSubscription':
+      case 'SubscriptionPriceChangeScheduled':
+      case 'SubscriptionCancellationScheduled':
+      case 'SubscriptionBlockedByOwner':
+      case 'SubscriptionUnblockedByOwner':
         const _api = notification.action.api
         return ({ _id: _api._id, name: _api.name, currentVersion: _api.currentVersion })
       case "ApiKeyRefreshV2":

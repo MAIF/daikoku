@@ -57,11 +57,11 @@ export const GuestPanel = () => {
   };
 
   return (
-    <div className="ms-3 mt-2 col-8 d-flex flex-column panel">
+    <div className="flex-grow-1 mx-4  d-flex flex-column panel">
       <div className="blocks">
         <div className="mb-3 block">
           {tenant.loginProvider === 'Local' && (
-            <div className="ms-2 block__entries d-flex flex-column">
+            <div className="block__entries d-flex flex-column">
               {loginError && (
                 <span className="badge bg-danger">
                   {translate('incorrect.email.or.password')}
@@ -70,6 +70,7 @@ export const GuestPanel = () => {
               <Form
                 schema={schema}
                 onSubmit={submit}
+                className='mr-0'
                 footer={({ valid }) => {
                   return (
                     <div className="d-flex justify-content-end mt-3">
@@ -89,20 +90,20 @@ export const GuestPanel = () => {
                   );
                 }}
               />
-              <div className="d-flex flex-row justify-content-between mt-3">
+              <div className="d-flex flex-row flex-wrap justify-content-between gap-2 mt-3">
                 {tenant.loginProvider == 'Local' && (
-                  <Link className="text-center" to="/signup">
+                  <Link className="text-nowrap" to="/signup">
                     <Translation i18nkey="create.account.link.label" />
                   </Link>
                 )}
-                <Link className="text-center" to="/reset">
+                <Link className="text-nowrap" to="/reset">
                   <Translation i18nkey="Forgot your password ?">Forgot your password ?</Translation>
                 </Link>
               </div>
             </div>
           )}
           {tenant.loginProvider !== 'Local' && (
-            <div className="ms-2 block__entries d-flex flex-column">
+            <div className="block__entries d-flex flex-column">
               <a href={`/auth/${tenant.loginProvider}/login?redirect=${location.pathname}`} className="block__entry__link">
                 {translate('Login')}
               </a>

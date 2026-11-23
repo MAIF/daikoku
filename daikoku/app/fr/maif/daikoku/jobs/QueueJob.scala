@@ -246,44 +246,6 @@ class QueueJob(
   // *** THIRD PARTY PAYMENT ***
   // ***************************
 
-  // TODO(transactions): syncWithThirdParty (Stripe usage records) is additive.
-  // If deleteById fails the operation is replayed and Stripe receives a second
-  // consumption record. A complete fix needs a "synced" flag on
-  // ApiKeyConsumption, so a schema change.
-  private def syncConsumption(o: Operation): Future[Unit] = {
-    logger.debug("*** SYNC CONSUmPTION AS OPERATION***")
-    logger.debug(Json.prettyPrint(o.asJson))
-    logger.debug("**********************************************")
-
-    val settingsAndInfos = o.payload.map(payload =>
-      (
-        (payload \ "paymentSettings").asOpt(using json.PaymentSettingsFormat),
-        (payload \ "thirdPartySubscriptionInformations").asOpt(using
-          json.ThirdPartySubscriptionInformationsFormat
-        )
-      )
-    )
-
-    (for {
-      consumption <- OptionT(
-        env.dataStore.consumptionRepo
-          .forTenant(o.tenant)
-          .findById(o.itemId)
-      )
-      _ <- OptionT(
-        Future
-          .sequence(settingsAndInfos.map { case (settings, informations) =>
-            paymentClient
-              .syncWithThirdParty(consumption, settings, informations)
-          }.toList)
-          .map(_.headOption)
-      )
-      _ <- OptionT.liftF(
-        env.dataStore.operationRepo.forTenant(o.tenant).deleteById(o.id)
-      )
-    } yield ()).value.map(_ => ())
-  }
-
   // deleteStripeSubscription ignores the HTTP status (EitherT.liftF), so a
   // Stripe 404 on retry counts as a success: a failed deleteById resolves
   // itself on the next attempt.
@@ -424,8 +386,6 @@ class QueueJob(
             deleteThirdPartySubscription(firstOperation)
           case (ItemType.ThirdPartyProduct, OperationAction.Delete) =>
             deleteThirdPartyProduct(firstOperation)
-          case (ItemType.ApiKeyConsumption, OperationAction.Sync) =>
-            syncConsumption(firstOperation)
           case (_, _) => FastFuture.successful(())
         })
       _ <- EitherT.liftF(deleteFirstOperation())
