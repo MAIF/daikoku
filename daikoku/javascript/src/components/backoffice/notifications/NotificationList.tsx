@@ -70,6 +70,7 @@ type NotificationActionGQL =
     api: IApiGQL;
     team: ITeamFullGql;
     phase: number;
+    motivation: string | null;
     items: Array<{
       item: string;
       demand: string;
@@ -174,6 +175,22 @@ type NotificationGQL = {
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 const defaultColumnFilters: ColumnFiltersState = [{ id: 'unreadOnly', value: true }];
+
+const formatBatchMotivation = (motivation: string): Array<[string, string]> => {
+  try {
+    const value: unknown = JSON.parse(motivation);
+    if (value && typeof value === 'object' && !Array.isArray(value)) {
+      return Object.entries(value).map(([key, entry]) => [
+        key,
+        typeof entry === 'string' ? entry : JSON.stringify(entry),
+      ]);
+    }
+    return [['', typeof value === 'string' ? value : JSON.stringify(value)]];
+  } catch (error) {
+    if (!(error instanceof SyntaxError)) throw error;
+    return [['', motivation]];
+  }
+};
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
@@ -652,16 +669,54 @@ export const NotificationList = () => {
           </>
         );
       }
-      case 'ApiSubscriptionBatch':
-        return translate({
+      case 'ApiSubscriptionBatch': {
+        const { api, team, items, motivation } = notification.action;
+        const plans = items.map(item => item.plan?.customName ?? item.item).join(', ');
+        const motivationFields = motivation ? formatBatchMotivation(motivation) : [];
+        const desc = translate({
           key: 'notif.api.subscription.batch',
-          replacements: [
-            notification.action.api.name,
-            notification.action.items
-              .map(item => item.plan?.customName ?? item.item)
-              .join(', ')
-          ]
+          replacements: [team.name, api.name, plans]
         });
+        return (
+          <>
+            {desc}
+            <a href="#" className="underline ms-2"
+              aria-label={translate('notifications.page.subscription.demand.detail.button.label')}
+              onClick={(event) => {
+                event.preventDefault();
+                openCustomModal({
+                title: translate('notifications.page.subscription.demand.detail.modal.title'),
+                content: (
+                  <div>
+                    {[
+                      [translate('API'), api.name],
+                      [translate('subscription.workspace.review.plans'), plans],
+                      [translate('Team'), team.name],
+                      [translate('notifications.page.table.header.label.sender'), notification.sender.name],
+                    ].map(([label, value]) => (
+                      <div key={label} className="notification-subscription-demand-summary">
+                        <span className="label">{label}</span>
+                        <span>{value}</span>
+                      </div>
+                    ))}
+                    <div className="notification-subscription-demand-summary">
+                      <span className="label">{translate('notif.api.subscription.batch.motivation')}</span>
+                      {motivationFields.length ? motivationFields.map(([key, value]) => (
+                        <div key={key} style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>
+                          {key && <strong>{key}: </strong>}{value}
+                        </div>
+                      )) : translate('notif.api.subscription.batch.no-motivation')}
+                    </div>
+                  </div>
+                ),
+                actions: close => <button type="button" className="btn --primary" onClick={close}>{translate('Close')}</button>,
+                });
+              }}>
+              [{translate('notifications.page.subscription.demand.detail.modal.raw.button.label')}]
+            </a>
+          </>
+        );
+      }
       case 'ApiSubscriptionReject': {
         const desc = translate({ key: 'notif.api.demand.reject', replacements: [notification.action.plan.customName] });
         const _message = notification.action.message;

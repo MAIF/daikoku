@@ -36,6 +36,7 @@ test('[ASOAPI-10160] - souscrire à une api', async ({ page, context }) => {
   await page.getByRole('link', { name: 'API papier' }).click();
   await page.getByText('Environnements').click();
 
+  await expect(page.getByRole('listitem', { name: 'prod' }).locator('.tag.--warning')).toHaveCount(0);
   page.getByRole('listitem', { name: 'prod' }).getByRole('button', { name: 'Demander une clé d\'API' }).click()
   await page.getByText('Vendeurs').click();
   await page.getByRole('button', { name: 'Souscrire en créant une clé d\'API' }).click();
@@ -44,6 +45,8 @@ test('[ASOAPI-10160] - souscrire à une api', async ({ page, context }) => {
   await page.getByLabel('motivation').fill('please');
   await page.getByRole('button', { name: 'Envoyer' }).click();
   await expect(page.getByRole('region', { name: 'Notifications' })).toContainText('La demande de clé d\'API au plan prod pour l\'équipe Vendeurs est en attente de validation');
+  await expect(page.getByRole('listitem', { name: 'prod' }).locator('.tag.--warning')).toHaveText('1 demande en cours');
+  await expect(page.getByRole('listitem', { name: 'dev' }).locator('.tag.--warning')).toHaveCount(0);
   await page.getByRole('button', { name: 'Close toast' }).click();
   await page.route('**/api/me/subscriptions/*/1.0.0', async route => {
     const response = await route.fetch();

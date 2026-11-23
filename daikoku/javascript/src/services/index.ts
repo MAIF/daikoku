@@ -2126,6 +2126,7 @@ export const graphql = {
                 name
               }
               phase
+              motivation
               items {
                 item
                 demand

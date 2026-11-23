@@ -1729,9 +1729,17 @@ export const ApiPricing = (props: ApiPricingProps) => {
         },
         cell: (info) => {
           const plan: IUsagePlanGQL = info.cell.row.original
+          const pendingCount = props.inProgressDemands.filter(
+            demand => demand.plan === plan._id && (demand.state === 'waiting' || demand.state === 'inProgress')
+          ).length;
           return (
-            <div>
+            <div className="d-flex align-items-center gap-1">
               {plan.customName}
+              {pendingCount > 0 && (
+                <span className="tag --warning">
+                  {translate({ key: 'keyring.requests.count', plural: pendingCount > 1, replacements: [String(pendingCount)] })}
+                </span>
+              )}
             </div>
           )
         }
@@ -1991,7 +1999,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
         }
       })
     ] as ColumnDef<DynamicTableFeatures, IUsagePlanGQL, any>[]
-  }, [availableEnvQuery])
+  }, [availableEnvQuery, props.inProgressDemands, translate])
 
   return (
     <>
