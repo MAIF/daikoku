@@ -59,23 +59,16 @@ type Props = {
 
 export const SwitchButton = (props: Props) => {
   const [loading, setLoading] = useState(false)
-  const [active, setActive] = useState(props.checked)
+  const active = !!props.checked
 
   const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setLoading(true)
-
-    const checked = event.target.checked;
-    const action = props.onSwitch(checked);
+    const action = props.onSwitch(event.target.checked);
 
     if (action instanceof Promise) {
-      Promise.resolve(action)
-        .then(() => {
-          setLoading(false)
-          setActive(checked)
-        });
-    } else {
-      setLoading(false)
-      setActive(checked)
+      const stopLoading = () => setLoading(false)
+
+      setLoading(true)
+      action.then(stopLoading, stopLoading)
     }
   }
 

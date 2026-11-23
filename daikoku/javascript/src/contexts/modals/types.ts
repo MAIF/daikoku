@@ -94,6 +94,7 @@ export interface IFormModalProps<T> {
   schema: Schema;
   flow?: Flow;
   onSubmit: (x: T) => void | Promise<string | void>;
+  onCancel?: () => void;
   options?: Option;
   actionLabel: string;
   noClose?: boolean;

@@ -1045,38 +1045,44 @@ object CommonServices {
         case None => defaultOrderClause
       }
 
-      val queryCount = s"""
-                     |SELECT count(1) as count
-                     |from api_subscriptions s
-                     |         LEFT JOIN teams t ON t._id = s.content ->> 'team'
-                     |         LEFT JOIN usage_plans p ON p._id = s.content ->> 'plan'
-                     |         LEFT JOIN keyrings k ON k._id = s.content ->> 'keyring'
-                     |WHERE s.content ->> 'api' = $$1
-                     |  AND COALESCE(s.content ->> 'adminCustomName', k.content -> 'apiKey' ->> 'clientName') ~* COALESCE($$2::text, '')
-                     |  AND (s.content -> 'tags') @> COALESCE($$3::text::jsonb, '[]'::jsonb)
-                     |  AND CASE
-                     |          WHEN array_length($$4::text[], 1) IS NULL THEN true
-                     |          ELSE k.content -> 'apiKey' ->> 'clientId' = ANY ($$4::text[])
-                     |    END
-                     |  AND COALESCE(NULLIF(s.content -> 'metadata', 'null'::jsonb), '{}'::jsonb) @> COALESCE($$5::text::jsonb, '{}'::jsonb);
-                     |""".stripMargin
-      val query = s"""
-           |SELECT s.content
-           |from api_subscriptions s
-           |         LEFT JOIN teams t ON t._id = s.content ->> 'team'
-           |         LEFT JOIN usage_plans p ON p._id = s.content ->> 'plan'
-           |         LEFT JOIN keyrings k ON k._id = s.content ->> 'keyring'
-           |WHERE s.content ->> 'api' = $$1
-           |  AND COALESCE(s.content ->> 'adminCustomName', k.content -> 'apiKey' ->> 'clientName') ~* COALESCE($$2::text, '')
-           |  AND (s.content -> 'tags') @> COALESCE($$3::text::jsonb, '[]'::jsonb)
-           |  AND CASE
-           |          WHEN array_length($$4::text[], 1) IS NULL THEN true
-           |          ELSE k.content -> 'apiKey' ->> 'clientId' = ANY ($$4::text[])
-           |    END
-           |  AND COALESCE(NULLIF(s.content -> 'metadata', 'null'::jsonb), '{}'::jsonb) @> COALESCE($$5::text::jsonb, '{}'::jsonb)
-           |$sortClause
-           |LIMIT $$6 OFFSET $$7;
-           |""".stripMargin
+      val fromClause =
+        """from api_subscriptions s
+          |         LEFT JOIN teams t ON t._id = s.content ->> 'team'
+          |         LEFT JOIN usage_plans p ON p._id = s.content ->> 'plan'
+          |         LEFT JOIN keyrings k ON k._id = s.content ->> 'keyring'
+          |WHERE s.content ->> 'api' = $1
+          |  AND COALESCE(s.content ->> 'adminCustomName', k.content -> 'apiKey' ->> 'clientName') ~* COALESCE($2::text, '')
+          |  AND (s.content -> 'tags') @> COALESCE($3::text::jsonb, '[]'::jsonb)
+          |  AND CASE
+          |          WHEN array_length($4::text[], 1) IS NULL THEN true
+          |          ELSE k.content -> 'apiKey' ->> 'clientId' = ANY ($4::text[])
+          |    END
+          |  AND COALESCE(NULLIF(s.content -> 'metadata', 'null'::jsonb), '{}'::jsonb) @> COALESCE($5::text::jsonb, '{}'::jsonb)
+          |  AND (array_length($6::text[], 1) IS NULL OR s.content ->> 'plan' = ANY ($6::text[]))
+          |  AND (array_length($7::text[], 1) IS NULL OR s.content ->> 'team' = ANY ($7::text[]))""".stripMargin
+
+      val queryCount = s"SELECT count(1) as count $fromClause;"
+      val query =
+        s"SELECT s.content $fromClause $sortClause LIMIT $$8 OFFSET $$9;"
+
+      def ids(name: String): Array[String] =
+        getFiltervalue[JsArray](filters, name)
+          .map(_.value.map(_.as[String]).toArray)
+          .orNull
+
+      val filterParams = Seq(
+        apiId,
+        getFiltervalue[String](filters, "subscription").orNull[String],
+        getFiltervalue[JsArray](filters, "tags")
+          .map(Json.stringify(_))
+          .orNull[String],
+        ids("clientIds"),
+        getFiltervalue[JsObject](filters, "metadata")
+          .map(Json.stringify(_))
+          .orNull[String],
+        ids("plans"),
+        ids("teams")
+      )
 
       (for {
         count <- EitherT.fromOptionF[Future, AppError, Long](
@@ -1085,19 +1091,7 @@ object CommonServices {
             .queryOneLong(
               query = queryCount,
               name = "count",
-              params = Seq(
-                apiId,
-                getFiltervalue[String](filters, "subscription").orNull[String],
-                getFiltervalue[JsArray](filters, "tags")
-                  .map(Json.stringify(_))
-                  .orNull[String],
-                getFiltervalue[JsArray](filters, "clientIds")
-                  .map(_.value.map(_.as[String]).toArray)
-                  .orNull,
-                getFiltervalue[JsObject](filters, "metadata")
-                  .map(Json.stringify(_))
-                  .orNull[String]
-              )
+              params = filterParams
             ),
           AppError.UnexpectedError
         )
@@ -1106,18 +1100,7 @@ object CommonServices {
             .forTenant(ctx.tenant)
             .query(
               query,
-              Seq(
-                apiId,
-                getFiltervalue[String](filters, "subscription").orNull[String],
-                getFiltervalue[JsArray](filters, "tags")
-                  .map(Json.stringify(_))
-                  .orNull[String],
-                getFiltervalue[JsArray](filters, "clientIds")
-                  .map(_.value.map(_.as[String]).toArray)
-                  .orNull,
-                getFiltervalue[JsObject](filters, "metadata")
-                  .map(Json.stringify(_))
-                  .orNull[String],
+              filterParams ++ Seq(
                 java.lang.Integer.valueOf(limit),
                 java.lang.Integer.valueOf(offset)
               )

@@ -142,7 +142,7 @@ const MotivationForm = (props: MotivationFormProps) => {
                     }
                   }}
                   onSubmit={d => {
-                      setFormKeysToMetadata(d.formKeysToMetadata);
+                    setFormKeysToMetadata(d.formKeysToMetadata);
                   }}
                   value={{ formKeysToMetadata: formKeysToMetadata }}
                   options={{ autosubmit: true, actions: { submit: { display: false } } }}
@@ -256,7 +256,8 @@ const ValidationStep = (props: ValidationStepProps) => {
 type EmailOption = { option: 'all' | 'oneOf' };
 
 type SubProcessProps = {
-  save: (process: Array<IValidationStep>) => Promise<void>;
+  save?: (process: Array<IValidationStep>) => Promise<void>;
+  onChange?: (process: Array<IValidationStep>) => void;
   process: Array<IValidationStep>;
   team: string;
   tenant: ITenant;
@@ -273,6 +274,11 @@ export const SubscriptionProcessEditor = (props: SubProcessProps) => {
 
   const [draft, setDraft] = useState(props.process)
   const [showDocumentation, setShowDocumentation] = useState(false);
+
+  const updateDraft = (process: Array<IValidationStep>) => {
+    setDraft(process);
+    props.onChange?.(process);
+  };
 
   const editProcess = (name: string, index: number) => {
     //todo: use the index !!
@@ -323,7 +329,7 @@ export const SubscriptionProcessEditor = (props: SubProcessProps) => {
                 id: nanoid(32),
                 title: data.title,
               };
-              setDraft(insertArrayIndex(
+              updateDraft(insertArrayIndex(
                 { ...step, id: nanoid(32) },
                 draft,
                 index
@@ -342,7 +348,7 @@ export const SubscriptionProcessEditor = (props: SubProcessProps) => {
                 (process, step) => insertArrayIndex(step, process, index),
                 draft
               );
-              setDraft(subscriptionProcess);
+              updateDraft(subscriptionProcess);
             }
           },
           options: {
@@ -368,7 +374,7 @@ export const SubscriptionProcessEditor = (props: SubProcessProps) => {
           },
           formatter: '[[motivation]]',
         };
-        setDraft([step, ...draft])
+        updateDraft([step, ...draft])
         return close();
       }
       case 'teamAdmin': {
@@ -379,7 +385,7 @@ export const SubscriptionProcessEditor = (props: SubProcessProps) => {
           title: 'Admin',
         };
         if (draft.some(e => e.type === 'form')) {
-          setDraft([step, ...draft])
+          updateDraft([step, ...draft])
         } else {
           const formStep: IValidationStepForm = {
             type: 'form',
@@ -395,7 +401,7 @@ export const SubscriptionProcessEditor = (props: SubProcessProps) => {
             formatter: '[[motivation]]',
           };
           toast.info('on a ajouté un step form, obligatoire pour le bon fonctionnement du step admin')
-          setDraft([formStep, step, ...draft])
+          updateDraft([formStep, step, ...draft])
         }
         return close();
       }
@@ -438,7 +444,7 @@ export const SubscriptionProcessEditor = (props: SubProcessProps) => {
               draft,
               index
             );
-            setDraft(subscriptionProcess);
+            updateDraft(subscriptionProcess);
           },
           actionLabel: translate('Create'),
         });
@@ -460,7 +466,7 @@ export const SubscriptionProcessEditor = (props: SubProcessProps) => {
         },
       },
       onSubmit: (data: IValidationStepEmail) => {
-        setDraft(draft.map((p) => {
+        updateDraft(draft.map((p) => {
           if (p.id === data.id) {
             return data;
           }
@@ -494,7 +500,7 @@ export const SubscriptionProcessEditor = (props: SubProcessProps) => {
         },
       },
       onSubmit: (data: IValidationStepHttpRequest) => {
-        setDraft(draft.map((p) => {
+        updateDraft(draft.map((p) => {
           if (p.id === data.id) {
             return data;
           }
@@ -559,7 +565,7 @@ export const SubscriptionProcessEditor = (props: SubProcessProps) => {
     const subscriptionProcess = draft.filter(
       (step) => step.id !== deletedStep.id
     );
-    setDraft(subscriptionProcess);
+    updateDraft(subscriptionProcess);
   };
 
   const Documentation = props.documentation ?? React.Fragment
@@ -580,7 +586,7 @@ export const SubscriptionProcessEditor = (props: SubProcessProps) => {
           </button>
         )}
         {!draft.length && (
-          <div className="d-flex flex-column align-items-center">
+          <div className="d-flex flex-column align-items-center mt-3">
             <div> {translate('api.pricings.no.step.explanation')}</div>
             <button
               className="btn --primary my-2"
@@ -590,118 +596,119 @@ export const SubscriptionProcessEditor = (props: SubProcessProps) => {
             </button>
           </div>
         )}
-        <SortableList
-          items={draft}
-          onChange={(subscriptionProcess) =>
-            setDraft(subscriptionProcess)
-          }
-          className="flex-grow-1"
-          renderItem={(item, idx) => {
-            if (item.type === 'payment') {
-              return (
-                <FixedItem id={item.id} className="validation-step-container">
-                  <ValidationStep
-                    index={idx + 1}
-                    step={item}
-                    tenant={props.tenant}
-                  />
-                </FixedItem>
-              );
+        <div className='mt-5'>
+          <SortableList
+            items={draft}
+            onChange={(subscriptionProcess) =>
+              updateDraft(subscriptionProcess)
             }
-            if (item.type === 'form') {
-              return (
-                <FixedItem
-                  id={item.id}
-                  className="validation-step-container"
-                  action={<div
-                    className='d-flex flex-row justify-content-between'
-                  >
-                    <button
-                      className="btn --secondary --small --icon-only"
-                      onClick={() =>
-                        openCustomModal({
-                          title: translate('motivation.form.modal.title'),
-                          content: (
-                            <MotivationForm
-                              value={item}
-                              saveMotivation={({ schema, formatter, formKeysToMetadata, info }) => {
-                                const step = { ...item, schema, formatter, formKeysToMetadata, info };
-                                const updatedProcess = draft.map(
-                                  (s) => (s.id === step.id ? step : s)
-                                );
-                                setDraft(updatedProcess);
-                              }}
-                            />
-                          ),
-                        })
-                      }
-                    >
-                      <Settings size={15} />
-                    </button>
-                  </div>}>
-                  <ValidationStep
-                    index={idx + 1}
-                    step={item}
-                    tenant={props.tenant}
-                  />
-                </FixedItem>
-              );
-            } else {
-              return (
-                <>
-                  <SortableItem
-                    className="validation-step-container"
-                    action={
-                      <div className="d-flex flex-row justify-content-between">
-                        {item.type === 'email' && (
-                          <button
-                            className="btn --secondary --small --icon-only"
-                            onClick={() => editMailStep(item)}
-                          >
-                            <Settings size={15} />
-                          </button>
-                        )}
-                        {item.type === 'httpRequest' && (
-                          <button
-                            className="btn --secondary --small --icon-only"
-                            onClick={() => editHttpRequestStep(item)}
-                          >
-                            <Settings size={15} />
-                          </button>
-                        )}
-                        <button
-                          className="btn --secondary --small --icon-only"
-                          // disabled={item.type === 'form' && draft.some(s => s.type === 'teamAdmin')}
-                          onClick={() => deleteStep(item)}
-                        >
-                          <Trash size={15} />
-                        </button>
-                      </div>
-                    }
-                    id={item.id}
-                  >
+            className="flex-grow-1"
+            renderItem={(item, idx) => {
+              if (item.type === 'payment') {
+                return (
+                  <FixedItem id={item.id} className="validation-step-container">
                     <ValidationStep
                       index={idx + 1}
                       step={item}
                       tenant={props.tenant}
                     />
-                  </SortableItem>
-                  <button
-                    className="btn --secondary --small --icon-only"
-                    onClick={() => addProcess(idx + 1)}
-                  >
-                    <Plus />
-                  </button>
-                </>
-              );
-            }
-          }}
-        />
-
+                  </FixedItem>
+                );
+              }
+              if (item.type === 'form') {
+                return (
+                  <FixedItem
+                    id={item.id}
+                    className="validation-step-container"
+                    action={<div
+                      className='d-flex flex-row justify-content-between'
+                    >
+                      <button
+                        className="btn --secondary --small --icon-only"
+                        onClick={() =>
+                          openCustomModal({
+                            title: translate('motivation.form.modal.title'),
+                            content: (
+                              <MotivationForm
+                                value={item}
+                                saveMotivation={({ schema, formatter, formKeysToMetadata, info }) => {
+                                  const step = { ...item, schema, formatter, formKeysToMetadata, info };
+                                  const updatedProcess = draft.map(
+                                    (s) => (s.id === step.id ? step : s)
+                                  );
+                                  updateDraft(updatedProcess);
+                                }}
+                              />
+                            ),
+                          })
+                        }
+                      >
+                        <Settings size={15} />
+                      </button>
+                    </div>}>
+                    <ValidationStep
+                      index={idx + 1}
+                      step={item}
+                      tenant={props.tenant}
+                    />
+                  </FixedItem>
+                );
+              } else {
+                return (
+                  <>
+                    <SortableItem
+                      className="validation-step-container"
+                      action={
+                        <div className="d-flex flex-row justify-content-between">
+                          {item.type === 'email' && (
+                            <button
+                              className="btn --secondary --small --icon-only"
+                              onClick={() => editMailStep(item)}
+                            >
+                              <Settings size={15} />
+                            </button>
+                          )}
+                          {item.type === 'httpRequest' && (
+                            <button
+                              className="btn --secondary --small --icon-only"
+                              onClick={() => editHttpRequestStep(item)}
+                            >
+                              <Settings size={15} />
+                            </button>
+                          )}
+                          <button
+                            className="btn --secondary --small --icon-only"
+                            // disabled={item.type === 'form' && draft.some(s => s.type === 'teamAdmin')}
+                            onClick={() => deleteStep(item)}
+                          >
+                            <Trash size={15} />
+                          </button>
+                        </div>
+                      }
+                      id={item.id}
+                    >
+                      <ValidationStep
+                        index={idx + 1}
+                        step={item}
+                        tenant={props.tenant}
+                      />
+                    </SortableItem>
+                    <button
+                      className="btn --secondary --small --icon-only"
+                      onClick={() => addProcess(idx + 1)}
+                    >
+                      <Plus />
+                    </button>
+                  </>
+                );
+              }
+            }}
+          />
+        </div>
       </div>
-      {showDocumentation && <Documentation close={() => setShowDocumentation(false)} updateProcess={(steps) => setDraft(steps)} />}
-      {(!!draft.length || !!props.process.length) && (
-        <button className='btn --primary' onClick={() => props.save(draft)}>save</button>
+      {showDocumentation && <Documentation close={() => setShowDocumentation(false)} updateProcess={(steps) => updateDraft(steps)} />}
+      {props.save && (!!draft.length || !!props.process.length) && (
+        <button className='btn --primary' onClick={() => props.save!(draft)}>save</button>
       )}
     </div>
   );

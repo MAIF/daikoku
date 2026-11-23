@@ -1,0 +1,87 @@
+@use "../variables";
+
+.api-editor {
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+  background-color: variables.$neutral-color-050;
+}
+
+.api-editor__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.api-editor__identity {
+  flex: 1 1 400px;
+  min-width: 0;
+}
+
+.api-editor__title {
+  margin: 0;
+  font-size: 36px;
+  font-weight: 700;
+  line-height: 44px;
+  color: variables.$neutral-color-900;
+}
+
+.api-editor__description {
+  max-width: 700px;
+  margin: 4px 0 0;
+  font-size: 16px;
+  line-height: 24px;
+  color: variables.$neutral-color-600;
+}
+
+.api-editor__versions {
+  min-width: 125px;
+}
+
+.api-editor__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.scope-select {
+  width: 320px;
+  max-width: 100%;
+  margin-bottom: 16px;
+}
+
+.api-editor__tabs {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 8px 16px;
+}
+
+.environment-switcher {
+  margin-bottom: 6px;
+
+  .scope-select {
+    width: 240px;
+    margin-bottom: 0;
+  }
+
+  .choice-chips {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    .form-label {
+      margin: 0;
+    }
+  }
+}
+
+.api-editor__panel {
+  flex-grow: 1;
+  padding: 16px;
+  background-color: variables.$neutral-color-000;
+}

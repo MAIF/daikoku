@@ -15,4 +15,7 @@ export * from './function';
 export * from './sidebar';
 export * from './Error';
 export * from './Informations';
+export * from './InfoCallout';
 export * from './Placeholder';
+export * from './SideSheet';
+export * from './Tabs';

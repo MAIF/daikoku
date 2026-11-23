@@ -189,7 +189,7 @@ export const teamApiInfoForm = (translate: (params: (string | TranslateParams)) 
     visibility: {
       type: type.string,
       format: format.buttonsSelect,
-      label: translate('Visibility'),
+      label: null,
       options: [
         { label: translate('Public'), value: 'Public' },
         { label: translate('Private'), value: 'Private' },
@@ -252,7 +252,7 @@ export const teamApiInfoForm = (translate: (params: (string | TranslateParams)) 
       flow: ['header', 'customHeaderCmsPage'].filter((entry) =>
         simpleOrExpertMode(entry, expert)
       ),
-      collapsed: true,
+      collapsed: false,
     },
     {
       label: translate('Versions and tags'),
@@ -266,7 +266,7 @@ export const teamApiInfoForm = (translate: (params: (string | TranslateParams)) 
       flow: ['visibility', 'authorizedTeams'].filter((entry) => simpleOrExpertMode(entry, expert)),
       collapsed: true,
     }
-  ];
+  ].filter((section) => section.flow.length > 0);
 
   const adminFlow = ['name', 'smallDescription'];
 

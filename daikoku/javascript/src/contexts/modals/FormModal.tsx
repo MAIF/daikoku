@@ -11,6 +11,7 @@ export const FormModal = <T extends TBaseObject>({
   schema,
   flow,
   onSubmit,
+  onCancel,
   options,
   actionLabel,
   close,
@@ -36,11 +37,16 @@ export const FormModal = <T extends TBaseObject>({
     });
   };
 
+  const cancel = () => {
+    onCancel?.();
+    close();
+  };
+
   return (
     <div className="modal-content">
       <div className="modal-header">
         <h5 className="modal-title" id="modal-title">{title}</h5>
-        <button type="button" className="btn-close" aria-label="Close" onClick={() => close()} />
+        <button type="button" className="btn-close" aria-label="Close" onClick={cancel} />
       </div>
       <div className="modal-body">
         {!!description && description}
@@ -61,7 +67,7 @@ export const FormModal = <T extends TBaseObject>({
         {!!error && <DismissibleError message={error} onClose={() => setError(undefined)} />}
       </div>
       <div className="modal-footer">
-        <button type="button" className="btn --secondary" onClick={() => close()}>
+        <button type="button" className="btn --secondary" onClick={cancel}>
           {translate('Cancel')}
         </button>
         {!!moreAction && moreAction}

@@ -341,7 +341,7 @@ export const OtoroshiEntitiesSelector = ({
   );
 };
 
-const CustomMetadataInput = (props: {
+export const CustomMetadataInput = (props: {
   value?: Array<{ key: string; possibleValues: Array<string> }>;
   onChange?: (param: any) => void;
   setValue?: (key: string, data: any) => void;

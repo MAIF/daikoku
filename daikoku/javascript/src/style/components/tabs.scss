@@ -24,3 +24,74 @@
       border-color: variables.$btn-border-color;
     }
   }
+.daikoku-tabs {
+  display: flex;
+  flex-wrap: wrap;
+
+  &.--tabs {
+    gap: 4px;
+
+    .daikoku-tabs__tab {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+
+      border: 1px solid variables.$neutral-color-100;
+      border-bottom: none;
+      border-radius: 4px 4px 0 0;
+      background-color: variables.$neutral-color-050;
+      color: variables.$neutral-color-800;
+      font-size: 14px;
+      line-height: 20px;
+      cursor: pointer;
+
+      &:hover {
+        background-color: variables.$neutral-color-000;
+      }
+
+      &.active {
+        border-color: variables.$primary-color;
+        background-color: variables.$neutral-color-000;
+        color: variables.$primary-color;
+
+        .daikoku-tabs__label {
+          box-shadow: inset 0 -2px 0 variables.$primary-color;
+        }
+      }
+
+      &:focus-visible {
+        outline: 2px solid variables.$primary-color;
+        outline-offset: 1px;
+      }
+    }
+  }
+
+  &.--segmented {
+    padding: 2px;
+    border: 1px solid variables.$neutral-color-100;
+    border-radius: 8px;
+
+    .daikoku-tabs__tab {
+      flex: 1;
+      padding: 6px 12px;
+
+      border: none;
+      border-radius: 6px;
+      background-color: transparent;
+      color: variables.$primary-color;
+      font-size: 14px;
+      cursor: pointer;
+
+      &.active {
+        background-color: variables.$primary-color;
+        color: variables.$neutral-color-000;
+      }
+
+      &:focus-visible {
+        outline: 2px solid variables.$primary-color;
+        outline-offset: 1px;
+      }
+    }
+  }
+}
