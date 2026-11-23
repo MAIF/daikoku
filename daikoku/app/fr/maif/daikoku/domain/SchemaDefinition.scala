@@ -4236,6 +4236,11 @@ object SchemaDefinition {
       OptionInputType(StringType),
       description = "The optional id of a plan"
     )
+    val KEYRING_ID_OPT = Argument(
+      "keyringId",
+      OptionInputType(StringType),
+      description = "The optional id of a keyring"
+    )
     val FROM =
       Argument("from", OptionInputType(LongType), description = "Date from")
 
@@ -4573,13 +4578,14 @@ object SchemaDefinition {
           "apiKeyringEntries",
           KeyringEntriesType,
           arguments =
-            ID :: TEAM_ID_NOT_OPT :: FILTER :: LIMIT :: OFFSET :: CREATION_LABEL :: UNAVAILABLE_PLAN_LABEL :: Nil,
+            ID :: TEAM_ID_NOT_OPT :: FILTER :: KEYRING_ID_OPT :: LIMIT :: OFFSET :: CREATION_LABEL :: UNAVAILABLE_PLAN_LABEL :: Nil,
           resolve = ctx =>
             CommonServices
               .getApiKeyringEntries(
                 ctx.arg(TEAM_ID_NOT_OPT),
                 ctx.arg(ID),
                 ctx.arg(FILTER),
+                ctx.arg(KEYRING_ID_OPT),
                 ctx.arg(LIMIT),
                 ctx.arg(OFFSET),
                 ctx.arg(CREATION_LABEL),

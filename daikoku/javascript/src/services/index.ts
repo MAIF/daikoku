@@ -1337,8 +1337,8 @@ const keyringDemandFields = `
 
 export const graphql = {
   getApiKeyringEntries: `
-    query getApiKeyringEntries($apiId: String!, $teamId: String!, $filter: String, $limit: Int!, $offset: Int!, $creationLabel: String!, $unavailablePlanLabel: String!) {
-      apiKeyringEntries(id: $apiId, teamId: $teamId, filter: $filter, limit: $limit, offset: $offset, creationLabel: $creationLabel, unavailablePlanLabel: $unavailablePlanLabel) {
+    query getApiKeyringEntries($apiId: String!, $teamId: String!, $filter: String, $keyringId: String, $limit: Int!, $offset: Int!, $creationLabel: String!, $unavailablePlanLabel: String!) {
+      apiKeyringEntries(id: $apiId, teamId: $teamId, filter: $filter, keyringId: $keyringId, limit: $limit, offset: $offset, creationLabel: $creationLabel, unavailablePlanLabel: $unavailablePlanLabel) {
         entries {
           _id pendingCount
           demand { ${keyringDemandFields} }
