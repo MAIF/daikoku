@@ -5,6 +5,8 @@ import {
   IAnonymousState,
   IAsset,
   IAuditTrail,
+  IBucketSettings,
+  IBucketTestResult,
   IFastApiSubscription,
   ILogger,
   IMailingTranslation,
@@ -2728,6 +2730,15 @@ export const testMailConnection = (
     body: JSON.stringify({ ...mailerConfiguration, type: mailerType }),
   });
 };
+
+export const testBucketConfiguration = (
+  tenantId: string,
+  bucketSettings: IBucketSettings
+): PromiseWithError<IBucketTestResult> =>
+  customFetch(`/api/tenants/${tenantId}/bucket/_test`, {
+    method: 'POST',
+    body: JSON.stringify(bucketSettings),
+  });
 
 export const testAuthProviderConfiguration = (
   authProvider: 'ldap' | 'oauth',

@@ -142,6 +142,11 @@ S3 settings are attached only when `DAIKOKU_INIT_S3_BUCKET` is set. The bucket m
 Asset listing supports S3-compatible providers returning XML as either `application/xml` or `text/xml`.
 Use a bucket-scoped endpoint URL (a `{bucket}` placeholder is also supported); Daikoku does not append the bucket name to this URL.
 
+The bucket settings page has a **Test configuration** button. It checks the values in the form, before saving them: Daikoku writes a small file, reads it back, lists it and deletes it, then shows the result of each step with the provider's error message.
+
+To stay compatible with every S3 provider, Daikoku uploads each asset with a single `PutObject` request (no multipart upload) and lists assets whether the provider keeps or drops the leading `/` of object keys.
+With a provider serving a wildcard certificate on bucket subdomains (Clever Cloud Cellar, for instance), use a bucket name without dots: a dotted name does not match the certificate.
+
 | Environment variable | Configuration key | Default | Description |
 | --- | --- | --- | --- |
 | `DAIKOKU_INIT_S3_BUCKET` | `bucket` | Unset | Bucket name. Enables S3 configuration seeding. |

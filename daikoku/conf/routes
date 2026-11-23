@@ -266,6 +266,7 @@ GET     /api/tenants/simplified                         fr.maif.daikoku.controll
 GET     /api/tenants/:id/_redirect                      fr.maif.daikoku.controllers.TenantController.redirectToTenant(id)
 POST    /api/tenants/:tenantId/_contact                 fr.maif.daikoku.controllers.TenantController.contact(tenantId)
 POST    /api/tenants/:tenantId/mailers/_test-connection fr.maif.daikoku.controllers.TenantController.testConnection(tenantId)
+POST    /api/tenants/:tenantId/bucket/_test             fr.maif.daikoku.controllers.TenantController.testBucketConfiguration(tenantId)
 POST    /api/tenants/_names                             fr.maif.daikoku.controllers.TenantController.namesOfTenants()
 PUT     /api/tenants/:tenantId                          fr.maif.daikoku.controllers.TenantController.saveTenant(tenantId)
 GET     /api/tenants/:tenantId                          fr.maif.daikoku.controllers.TenantController.oneTenant(tenantId)
