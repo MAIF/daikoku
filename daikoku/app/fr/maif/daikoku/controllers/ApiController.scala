@@ -52,6 +52,8 @@ import play.api.libs.json.*
 import play.api.libs.streams.Accumulator
 import play.api.mvc.*
 
+import java.nio.charset.StandardCharsets
+import java.util.Base64
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
@@ -81,6 +83,10 @@ class ApiController(
   implicit val tr: Translator = translator
 
   val logger: Logger = Logger("ApiController")
+
+  private val credentialsPattern = """^([\x21-\x7E]+?):([\x21-\x7E]+)$""".r
+  private val opaqueTokenPattern = """^\S{20,}$""".r
+  private val maxSearchLength = 512
 
   def me(): Action[AnyContent] =
     DaikokuAction.async { ctx =>
@@ -2564,14 +2570,134 @@ class ApiController(
       }
     }
 
+  private def secretCandidates(search: String): (String, String) = {
+    val token = search.trim.replaceFirst("(?i)^(basic|bearer)\\s+", "")
+
+    val decoded = Try(Base64.getDecoder.decode(token))
+      .map(bytes => new String(bytes, StandardCharsets.UTF_8))
+      .toOption
+
+    val credentials = decoded
+      .filter(credentialsPattern.matches)
+      .getOrElse(token)
+
+    token -> credentials
+  }
+
+  private def searchApiKeys(
+      search: String,
+      token: String,
+      credentials: String,
+      myTeams: Seq[Team],
+      ctx: DaikokuActionContext[JsValue]
+  ): Future[Seq[JsValue]] = {
+    val keyringName =
+      "COALESCE(NULLIF(k.content->>'customName', ''), k.content->'apiKey'->>'clientName')"
+
+    val scopeParams: Seq[AnyRef] = Seq(
+      ctx.tenant.id.value,
+      java.lang.Boolean.valueOf(ctx.user.isDaikokuAdmin),
+      myTeams.map(_.id.value).toArray
+    )
+
+    val bySecret =
+      "(COALESCE(k.content->>'bearerToken' = $4, false) " +
+        "OR concat(k.content->'apiKey'->>'clientId', ':', k.content->'apiKey'->>'clientSecret') = $5)"
+
+    def byMetadata(field: String) =
+      "EXISTS (SELECT 1 FROM jsonb_each_text(" +
+        s"CASE WHEN jsonb_typeof(s.content->'$field') = 'object' THEN s.content->'$field' ELSE '{}'::jsonb END" +
+        ") metadata WHERE metadata.key ~* $6 OR metadata.value ~* $6)"
+
+    val byTag =
+      "EXISTS (SELECT 1 FROM jsonb_array_elements_text(" +
+        "CASE WHEN jsonb_typeof(s.content->'tags') = 'array' THEN s.content->'tags' ELSE '[]'::jsonb END" +
+        ") tag WHERE tag ~* $6)"
+
+    val byText =
+      "s.content->>'customName' ~* $6 " +
+        s"OR $keyringName ~* $$6 " +
+        "OR p.content->>'customName' ~* $6 " +
+        s"OR $byTag " +
+        s"OR ${byMetadata("metadata")} " +
+        s"OR ${byMetadata("customMetadata")}"
+
+    val searchPattern = s".*${RegexUtil.cleanRegex(search)}.*"
+
+    val (matching, matchingParams): (String, Seq[AnyRef]) =
+      if (search.length < 4) {
+        s"$bySecret OR $byText" -> Seq(token, credentials, searchPattern)
+      } else {
+        val visibleTeams = myTeams
+          .filter(authorizations.isTeamApiKeyVisible(_, ctx.user))
+
+        val adminTeams = visibleTeams
+          .filter(_.admins().contains(ctx.user.id))
+
+        val byClientId =
+          "starts_with(k.content->'apiKey'->>'clientId', $7) " +
+            "AND ($2 OR s.content->>'team' = ANY($8::text[]) " +
+            "OR (s.content->>'team' = ANY($9::text[]) " +
+            s"AND p.content->>'integrationProcess' = '${IntegrationProcess.ApiKey.name}'))"
+
+        s"$bySecret OR $byText OR ($byClientId)" ->
+          Seq(
+            token,
+            credentials,
+            searchPattern,
+            search,
+            adminTeams.map(_.id.value).toArray,
+            visibleTeams.map(_.id.value).toArray
+          )
+      }
+
+    env.dataStore.queryRaw(
+      s"""
+        |SELECT jsonb_build_object(
+        |  'value', s._id,
+        |  'label', concat_ws(' - ', a.content->>'name', p.content->>'customName',
+        |    COALESCE(NULLIF(s.content->>'customName', ''), $keyringName)),
+        |  'team', t.content->>'_humanReadableId',
+        |  'api', a.content->>'_humanReadableId',
+        |  'version', a.content->>'currentVersion',
+        |  'keyring', k._id,
+        |  'type', 'apikey',
+        |  'bySecret', $bySecret
+        |) AS option
+        |FROM api_subscriptions s
+        |JOIN keyrings k ON k._id = s.content->>'keyring'
+        |JOIN usage_plans p ON p._id = s.content->>'plan'
+        |JOIN apis a ON a._id = s.content->>'api'
+        |JOIN teams t ON t._id = s.content->>'team'
+        |WHERE s.content->>'_tenant' = $$1
+        |  AND ($$2 OR s.content->>'team' = ANY($$3::text[]))
+        |  AND ($matching)
+        |ORDER BY ($bySecret) DESC, lower(a.content->>'name'), s._id
+        |LIMIT 5
+        |""".stripMargin,
+      "option",
+      scopeParams ++ matchingParams
+    )
+  }
+
   def search(): Action[JsValue] =
     DaikokuAction.async(parse.json) { ctx =>
       PublicUserAccess(AuditTrailEvent(s"@{user.name} has searched @{search}"))(
         ctx
       ) {
         val body = ctx.request.body.as[JsObject]
-        val search = (body \ "search").asOpt[String].getOrElse("")
-        ctx.setCtxValue("search", search)
+        val search = (body \ "search")
+          .asOpt[String]
+          .getOrElse("")
+          .trim
+          .take(maxSearchLength)
+
+        val (token, credentials) = secretCandidates(search)
+
+        val looksLikeSecret =
+          token != search ||
+            credentialsPattern.matches(credentials) ||
+            opaqueTokenPattern.matches(search)
 
         val searchPattern = s".*${RegexUtil.cleanRegex(search)}.*"
         for {
@@ -2614,7 +2740,20 @@ class ApiController(
                 )
               )
             }
+          apiKeys <- searchApiKeys(search, token, credentials, myTeams, ctx)
         } yield {
+          val foundBySecret =
+            apiKeys.exists(option => (option \ "bySecret").as[Boolean])
+
+          val auditedSearch =
+            if (looksLikeSecret || foundBySecret) {
+              "<api-key-secret>"
+            } else {
+              search
+            }
+
+          ctx.setCtxValue("search", auditedSearch)
+
           Ok(
             Json.arr(
               Json.obj(
@@ -2642,6 +2781,10 @@ class ApiController(
                     )
                   )
                 )
+              ),
+              Json.obj(
+                "label" -> "ApiKeys",
+                "options" -> JsArray(apiKeys.map(_.as[JsObject] - "bySecret"))
               )
             )
           )

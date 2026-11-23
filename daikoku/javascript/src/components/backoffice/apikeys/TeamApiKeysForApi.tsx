@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Ellipsis } from 'lucide-react';
 import { useContext, useEffect, useState, useRef } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useParams, useSearchParams } from 'react-router-dom';
 
 import { I18nContext, useTeamBackOffice } from '../../../contexts';
 import { GlobalContext } from '../../../contexts/globalContext';
@@ -113,6 +113,23 @@ export const ApiKeysListForApi = (props: ApiKeysListForApiProps) => {
   const pageNumber = 6;
   const [page, setPage] = useState(0);
 
+  const [searchParams, setSearchParams] = useSearchParams();
+  const keyringId = searchParams.get('keyring') ?? undefined;
+
+  const clearFilters = () => {
+    setSearched('');
+    setPage(0);
+    setSearchParams((params) => {
+      params.delete('keyring');
+
+      return params;
+    });
+
+    if (searchInputRef.current) {
+      searchInputRef.current.value = '';
+    }
+  };
+
   const { translate } = useContext(I18nContext);
   const { customGraphQLClient } = useContext(GlobalContext);
   const creationLabel = translate('keyring.requests.creation');
@@ -124,6 +141,7 @@ export const ApiKeysListForApi = (props: ApiKeysListForApiProps) => {
       pageNumber,
       page,
       searched,
+      keyringId,
       creationLabel,
       unavailablePlanLabel,
     ],
@@ -134,6 +152,7 @@ export const ApiKeysListForApi = (props: ApiKeysListForApiProps) => {
         apiId: props.api._id,
         teamId: props.team._id,
         filter: searched,
+        keyringId,
         limit: pageNumber,
         offset: pageNumber * page,
         creationLabel,
@@ -182,6 +201,11 @@ export const ApiKeysListForApi = (props: ApiKeysListForApiProps) => {
                 })}`}
               {totalFiltered < total && ` (${totalFiltered}/${total})`}
             </span>
+            {keyringId && (
+              <button className="btn --tertiary btn-sm ms-2" onClick={clearFilters}>
+                {translate('table.filters.clear.label')}
+              </button>
+            )}
           </div>
           <div className="d-flex flex-row flex-wrap keyring-card-container">
             {entries.map((entry) => {
@@ -235,15 +259,7 @@ export const ApiKeysListForApi = (props: ApiKeysListForApiProps) => {
       List = (
         <div className={`alert alert-info col-6 text-center mx-auto`} role="alert">
           <div>{translate('keyring.filter.empty')}</div>
-          <button
-            className="btn --primary"
-            onClick={() => {
-              setSearched('');
-              if (searchInputRef.current) {
-                searchInputRef.current.value = '';
-              }
-            }}
-          >
+          <button className="btn --primary" onClick={clearFilters}>
             {translate('table.filters.clear.label')}
           </button>
         </div>

@@ -9,24 +9,72 @@ import { I18nContext } from '../../../../contexts/i18n-context';
 import * as Services from '../../../../services';
 import { isError, ITeamSimple } from '../../../../types';
 import { Spinner } from '../../Spinner';
-import { SearchIcon, SquareSlash } from "lucide-react";
-import { renderToStaticMarkup } from 'react-dom/server';
+import { Box, CornerDownLeft, KeyRound, SearchIcon, Users } from "lucide-react";
+
+type ApiKeySearchOption = {
+  value: string,
+  team: string,
+  api: string,
+  version: string,
+  keyring: string,
+  label: string,
+  type: 'apikey'
+}
 
 export type SearchOption =
-  | { value: string, label: string, type: 'team' }
-  | { value: string, team: string, label: string, version: string, type: 'api' }
-
-export type SearchResult = [
-  {
+  | {
+    value: string,
     label: string,
-    options: SearchOption[]
-  },
-]
+    type: 'team'
+  }
+  | {
+    value: string,
+    team: string,
+    label: string,
+    version: string,
+    type: 'api'
+  }
+  | ApiKeySearchOption
+
+export type SearchResult = Array<{
+  label: string,
+  options: SearchOption[]
+}>
+
+const apiKeyPath = (option: ApiKeySearchOption) => {
+  const apiKeysPage = `/${option.team}/settings/apikeys/${option.api}/${option.version}`;
+
+  return `${apiKeysPage}?keyring=${encodeURIComponent(option.keyring)}`;
+}
+
+const optionPath = (option: SearchOption, teams: ITeamSimple[]) => {
+  switch (option.type) {
+    case 'team':
+      return `/${option.value}/settings/dashboard`;
+    case 'api': {
+      const team = teams.find((t) => t._id === option.team);
+      const teamPath = team ? team._humanReadableId : option.team;
+
+      return `/${teamPath}/${option.value}/${option.version}/description`;
+    }
+    case 'apikey':
+      return apiKeyPath(option);
+  }
+}
+
+const optionLabel = (option: SearchOption) =>
+  option.type === 'api' ? `${option.label} - ${option.version}` : option.label;
+
+const optionIcons = {
+  team: Users,
+  api: Box,
+  apikey: KeyRound,
+}
 
 export const Search = () => {
   const [results, setResults] = useState<SearchResult>();
   const [focusedResult, setFocusedResult] = useState<number>(0)
-  const [focusedOption, setFocusedOption] = useState<number>(0)
+  const [focusedOption, setFocusedOption] = useState<number>(-1)
 
   const { translate } = useContext(I18nContext);
   const { close } = useContext(ModalContext);
@@ -42,33 +90,25 @@ export const Search = () => {
   const search = (inputValue: string) => {
     return Services.search(inputValue)
       .then(r => {
-        setResults(r)
-        setFocusedOption(0)
+        setResults(r.filter(group => group.options.length > 0))
+        setFocusedOption(inputValue.trim() ? 0 : -1)
         setFocusedResult(0)
       });
   };
 
   const handleSelect = (teams: ITeamSimple[]) => {
     if (results) {
-      const selectedOption = results[focusedResult].options[focusedOption]
+      const selectedOption = results[focusedResult]?.options[focusedOption]
 
-      close()
       if (selectedOption) {
-        switch (selectedOption.type) {
-          case "api":
-            const team = teams.find((t) => t._id === selectedOption.team);
-            navigate(`/${team ? team._humanReadableId : selectedOption.team}/${selectedOption.value}/${selectedOption.version}/description`)
-            break;
-          case "team":
-            navigate(`/${selectedOption.value}/settings/dashboard`)
-            break;
-        }
+        close()
+        navigate(optionPath(selectedOption, teams))
       }
     }
   }
 
   const handleChangeSelected = (direction?: "up" | "down") => {
-    if (!results)
+    if (!results?.length)
       return;
 
     let rIndex = focusedResult;
@@ -125,41 +165,36 @@ export const Search = () => {
 
 
     return (
-      <div className="d-flex flex-column panel">
-        <input
-          placeholder={translate('search.placeholder')}
-          className="form-control"
-          onChange={(e) => debouncedSearch(e.target.value)}
-          onKeyDown={handleKeyDown}
-          autoFocus={true}
-        />
-        <div className="blocks col-12 mt-3">
+      <div className="d-flex flex-column panel search-panel">
+        <div className="search-panel__input">
+          <SearchIcon size={16} />
+          <input
+            placeholder={translate('search.placeholder')}
+            className="form-control"
+            onChange={(e) => debouncedSearch(e.target.value)}
+            onKeyDown={handleKeyDown}
+            autoFocus={true}
+          />
+        </div>
+        <div className="blocks col-12">
           {results?.map((r, resultIdx) => {
-            return (<div key={resultIdx} className="mb-3 block">
-              <div className="mb-1 block__category">{r.label}</div>
-              <div className="ms-2 block__entries block__border d-flex flex-column">
+            return (<div key={resultIdx} className="block">
+              <div className="block__category">{r.label}</div>
+              <div className="block__entries d-flex flex-column">
                 {r.options.map((option, optIndex) => {
-                  switch (option.type) {
-                    case 'team':
-                      return (
-                        <Link to={`/${option.value}/settings/dashboard`}
-                          className={classNames("block__entry__link", { focused: resultIdx === focusedResult && optIndex === focusedOption })}
-                          key={option.value}
-                          onClick={close}>
-                          {option.label}
-                        </Link>
-                      );
-                    case 'api':
-                      const team = teams.find((t) => t._id === option.team);
-                      return (
-                        <Link to={`/${team ? team._humanReadableId : option.team}/${option.value}/${option.version}/description`}
-                          className={classNames("block__entry__link", { focused: resultIdx === focusedResult && optIndex === focusedOption })}
-                          key={`${option.value}-${option.version}`}
-                          onClick={close}>
-                          {`${option.label} - ${option.version}`}
-                        </Link>
-                      );
-                  }
+                  const Icon = optionIcons[option.type];
+                  const focused = resultIdx === focusedResult && optIndex === focusedOption;
+
+                  return (
+                    <Link to={optionPath(option, teams)}
+                      className={classNames("block__entry__link", { focused })}
+                      key={`${option.type}-${option.value}-${optionLabel(option)}`}
+                      onClick={close}>
+                      <Icon size={16} className="block__entry__icon" />
+                      <span className="block__entry__label">{optionLabel(option)}</span>
+                      <CornerDownLeft size={14} className="block__entry__hint" />
+                    </Link>
+                  );
                 })}
               </div>
             </div>);
