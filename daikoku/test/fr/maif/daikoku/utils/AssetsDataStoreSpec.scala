@@ -13,7 +13,7 @@ import org.scalatestplus.play.PlaySpec
 import software.amazon.awssdk.services.s3.model.{S3Exception as AwsS3Exception}
 
 import java.util.concurrent.{CompletionException, ConcurrentLinkedQueue}
-import java.util.concurrent.atomic.AtomicReference
+import java.util.concurrent.atomic.{AtomicBoolean, AtomicReference}
 import scala.concurrent.{Await, ExecutionContext}
 import scala.concurrent.duration.*
 import scala.jdk.CollectionConverters.*
@@ -34,6 +34,10 @@ class AssetsDataStoreSpec
     case Empty, Paginated, Denied
   }
   private val listingMode = new AtomicReference(ListingMode.Empty)
+  private val keysStartWithSlash = new AtomicBoolean(true)
+  private def matchesStoredKeys(uri: Uri): Boolean =
+    uri.query().get("prefix").getOrElse("").startsWith("/") ==
+      keysStartWithSlash.get()
   private val listingRequests =
     new ConcurrentLinkedQueue[(Uri, Boolean)]()
   private val metadataRequests = new ConcurrentLinkedQueue[Uri]()
@@ -53,7 +57,9 @@ class AssetsDataStoreSpec
       val body = request.method match {
         case HttpMethods.GET if listingMode.get() == ListingMode.Denied =>
           """<Error><Code>AccessDenied</Code><Message>Listing denied</Message></Error>"""
-        case HttpMethods.GET if listingMode.get() == ListingMode.Paginated =>
+        case HttpMethods.GET
+            if listingMode.get() == ListingMode.Paginated &&
+              matchesStoredKeys(request.uri) =>
           val params = request.uri.query()
           val prefix = params.get("prefix").getOrElse("")
           val isFirstPage = params.get("continuation-token").isEmpty
@@ -67,12 +73,8 @@ class AssetsDataStoreSpec
           """<ListBucketResult><Name>assets</Name><Prefix/><KeyCount>0</KeyCount><MaxKeys>1000</MaxKeys><IsTruncated>false</IsTruncated></ListBucketResult>"""
         case HttpMethods.HEAD =>
           ""
-        case HttpMethods.POST if query.startsWith("uploads") =>
-          """<InitiateMultipartUploadResult><Bucket>assets</Bucket><Key>asset</Key><UploadId>upload</UploadId></InitiateMultipartUploadResult>"""
         case HttpMethods.PUT =>
           ""
-        case HttpMethods.POST =>
-          """<CompleteMultipartUploadResult><Location>http://localhost/asset</Location><Bucket>assets</Bucket><Key>asset</Key><ETag>"complete"</ETag></CompleteMultipartUploadResult>"""
         case method =>
           throw new IllegalStateException(s"Unexpected S3 request: $method")
       }
@@ -121,9 +123,10 @@ class AssetsDataStoreSpec
   private def content = Source.single(ByteString("test content"))
 
   private def assertMetadata(expected: Map[String, String]): Unit = {
-    val initiation = requests.asScala.filter(_._1.startsWith("uploads")).toSeq
-    initiation must have size 1
-    val headers = initiation.head._2
+    val uploads = requests.asScala.toSeq
+    uploads must have size 1
+    val (query, headers) = uploads.head
+    query mustBe ""
     expected.foreach { case (name, value) =>
       headers.get(s"x-amz-meta-$name") mustBe Some(value)
     }
@@ -135,6 +138,7 @@ class AssetsDataStoreSpec
     requests.clear()
     responseMediaType.set(MediaTypes.`application/xml`)
     listingMode.set(ListingMode.Empty)
+    keysStartWithSlash.set(true)
     listingRequests.clear()
     metadataRequests.clear()
   }
@@ -158,7 +162,7 @@ class AssetsDataStoreSpec
         store.listTenantAssets(tenant)(using templateConf),
         10.seconds
       ) mustBe empty
-      listingRequests.asScala.map(_._1.path.toString).toSeq mustBe Seq("/")
+      listingRequests.asScala.map(_._1.path.toString).toSeq mustBe Seq("/", "/")
     }
 
     "preserve pagination, keys, metadata and signed bucket-endpoint requests" in {
@@ -176,11 +180,14 @@ class AssetsDataStoreSpec
         (item.asJson \ "meta" \ "filename").as[String] mustBe "test.txt"
       }
       val pages = listingRequests.asScala.toSeq
-      pages must have size 2
+      pages.map(_._1.query().get("prefix")) mustBe Seq(
+        Some(prefix),
+        Some(prefix),
+        Some(prefix.stripPrefix("/"))
+      )
       pages.foreach { case (uri, signed) =>
         uri.path.toString mustBe "/"
         uri.query().get("list-type") mustBe Some("2")
-        uri.query().get("prefix") mustBe Some(prefix)
         signed mustBe true
       }
       pages(1)._1.query().get("continuation-token") mustBe Some("page/+ 2")
@@ -195,6 +202,16 @@ class AssetsDataStoreSpec
       items.map(_.content.key) mustBe Seq(
         "/tenant/teams/team/assets/first",
         "/tenant/teams/team/assets/second"
+      )
+    }
+
+    "find assets stored without the leading slash, as Garage does" in {
+      keysStartWithSlash.set(false)
+      listingMode.set(ListingMode.Paginated)
+      val items = Await.result(store.listTenantAssets(tenant), 10.seconds)
+      items.map(_.content.key) mustBe Seq(
+        "tenant/tenant-assets/first",
+        "tenant/tenant-assets/second"
       )
     }
 
@@ -214,7 +231,7 @@ class AssetsDataStoreSpec
   }
 
   "Asset uploads" should {
-    "send team metadata when initiating the multipart upload" in {
+    "send team metadata in a single PutObject request" in {
       Await.result(
         store.storeAsset(
           tenant,
@@ -241,7 +258,7 @@ class AssetsDataStoreSpec
       )
     }
 
-    "send tenant metadata when initiating the multipart upload" in {
+    "send tenant metadata in a single PutObject request" in {
       Await.result(
         store.storeTenantAsset(
           tenant,
@@ -266,7 +283,7 @@ class AssetsDataStoreSpec
       )
     }
 
-    "send user metadata when initiating the multipart upload" in {
+    "send user metadata in a single PutObject request" in {
       Await.result(
         store.storeUserAsset(
           tenant,
@@ -289,7 +306,7 @@ class AssetsDataStoreSpec
       )
     }
 
-    "send thumbnail metadata when initiating the multipart upload" in {
+    "send thumbnail metadata in a single PutObject request" in {
       Await.result(store.storeThumbnail(tenant, asset, content), 10.seconds)
       assertMetadata(Map("tenant" -> "tenant", "asset" -> "asset"))
     }

@@ -514,6 +514,33 @@ class TenantController(
       }
     }
 
+  def testBucketConfiguration(tenantId: String) =
+    DaikokuAction.async(parse.json) { ctx =>
+      TenantAdminOnly(
+        AuditTrailEvent(
+          s"@{user.name} - @{user.email} test a bucket configuration"
+        )
+      )(tenantId, ctx) { (tenant, _) =>
+        ctx.request.body.validate(using S3Configuration.format) match {
+          case JsSuccess(conf, _) =>
+            env.assetsStore
+              .testConfiguration(tenant.id)(using conf)
+              .map(steps =>
+                Ok(
+                  Json.obj(
+                    "success" -> steps.forall(_.status == "success"),
+                    "steps" -> JsArray(steps.map(_.asJson))
+                  )
+                )
+              )
+          case JsError(_) =>
+            BadRequest(
+              Json.obj("error" -> "wrong bucket configuration format")
+            ).future
+        }
+      }
+    }
+
   def admins(tenantId: String) =
     DaikokuAction.async { ctx =>
       TenantAdminOnly(

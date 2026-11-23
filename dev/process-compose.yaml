@@ -24,10 +24,10 @@ processes:
     working_dir: "dev"
     command: |
       if [[ $MODE = "ldap" ]] ;
-      then docker-compose -f docker-compose-ldap.yml rm -f && docker-compose --ansi=always -f docker-compose-ldap.yml up ;
+      then docker-compose -f docker-compose-ldap.yml -f docker-compose-s3.yml rm -f && docker-compose --ansi=always -f docker-compose-ldap.yml -f docker-compose-s3.yml up ;
       elif [[ $MODE = "local" ]] || [[ $MODE = "empty" ]] || [[ $MODE = "dump" ]] ;
-      then docker-compose -f docker-compose-local.yml rm -f && docker-compose --ansi=always -f docker-compose-local.yml up ;
-      else docker-compose -f docker-compose-oidc.yml rm -f && docker-compose --ansi=always -f docker-compose-oidc.yml up ;
+      then docker-compose -f docker-compose-local.yml -f docker-compose-s3.yml rm -f && docker-compose --ansi=always -f docker-compose-local.yml -f docker-compose-s3.yml up ;
+      else docker-compose -f docker-compose-oidc.yml -f docker-compose-s3.yml rm -f && docker-compose --ansi=always -f docker-compose-oidc.yml -f docker-compose-s3.yml up ;
       fi
     readiness_probe:
       http_get:
@@ -43,10 +43,10 @@ processes:
     shutdown:
       command: |
         if [[ $MODE = "ldap" ]] ;
-        then docker-compose -f docker-compose-ldap.yml down && docker-compose -f docker-compose-ldap.yml rm -f ;
+        then docker-compose -f docker-compose-ldap.yml -f docker-compose-s3.yml down && docker-compose -f docker-compose-ldap.yml -f docker-compose-s3.yml rm -f ;
         elif [[ $MODE = "local" ]] || [[ $MODE = "empty" ]] || [[ $MODE = "dump" ]] ;
-        then docker-compose -f docker-compose-local.yml down && docker-compose -f docker-compose-local.yml rm -f ;
-        else docker-compose -f docker-compose-oidc.yml down && docker-compose -f docker-compose-oidc.yml rm -f ;
+        then docker-compose -f docker-compose-local.yml -f docker-compose-s3.yml down && docker-compose -f docker-compose-local.yml -f docker-compose-s3.yml rm -f ;
+        else docker-compose -f docker-compose-oidc.yml -f docker-compose-s3.yml down && docker-compose -f docker-compose-oidc.yml -f docker-compose-s3.yml rm -f ;
         fi
   Backend:
     env_cms:

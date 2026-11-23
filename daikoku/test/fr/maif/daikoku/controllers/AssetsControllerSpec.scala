@@ -19,12 +19,16 @@ import software.amazon.awssdk.auth.credentials.{
 }
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.s3.S3Client
-import software.amazon.awssdk.services.s3.model.CreateBucketRequest
+import software.amazon.awssdk.services.s3.model.{
+  CreateBucketRequest,
+  ListObjectsV2Request
+}
 
 import java.net.URI
 import java.util.Base64
 import scala.concurrent.Await
 import scala.concurrent.duration.*
+import scala.jdk.CollectionConverters.*
 
 class AssetsControllerSpec
     extends PlaySpec
@@ -65,6 +69,17 @@ class AssetsControllerSpec
       access = "assets-test",
       secret = "assets-test-password"
     )
+    withS3Client(settings)(
+      _.createBucket(
+        CreateBucketRequest.builder().bucket(settings.bucket).build()
+      )
+    )
+    settings
+  }
+
+  private def withS3Client[A](
+      settings: S3Configuration
+  )(f: S3Client => A): A = {
     val client = S3Client
       .builder()
       .endpointOverride(
@@ -78,13 +93,20 @@ class AssetsControllerSpec
       )
       .forcePathStyle(true)
       .build()
-    try {
-      client.createBucket(
-        CreateBucketRequest.builder().bucket(settings.bucket).build()
-      )
-    } finally client.close()
-    settings
+    try f(client)
+    finally client.close()
   }
+
+  private def remainingTestFiles: Seq[String] =
+    withS3Client(bucketSettings)(
+      _.listObjectsV2(
+        ListObjectsV2Request.builder().bucket(bucketSettings.bucket).build()
+      ).contents()
+        .asScala
+        .map(_.key())
+        .filter(_.contains("/_test/"))
+        .toSeq
+    )
 
   private def assetTenant: Tenant =
     tenant.copy(bucketSettings = Some(bucketSettings))
@@ -93,7 +115,7 @@ class AssetsControllerSpec
       "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII="
     )
   )
-  private val multipartPng = png ++ ByteString(new Array[Byte](5 * 1024 * 1024))
+  private val largePng = png ++ ByteString(new Array[Byte](5 * 1024 * 1024))
 
   override def beforeEach(): Unit = {
     super.beforeEach()
@@ -108,14 +130,15 @@ class AssetsControllerSpec
       path: String,
       session: UserSession,
       method: String = "GET",
-      content: Option[ByteString] = None
+      content: Option[ByteString] = None,
+      contentType: String = "image/png"
   ): WSResponse = {
     val request = daikokuComponents.env.wsClient
       .url(s"http://127.0.0.1:$port$path")
       .withQueryStringParameters("sessionId" -> session.sessionId.value)
       .withHttpHeaders(
         "Host" -> assetTenant.domain,
-        "Content-Type" -> "image/png"
+        "Content-Type" -> contentType
       )
       .withFollowRedirects(false)
       .withMethod(method)
@@ -125,8 +148,22 @@ class AssetsControllerSpec
     )
   }
 
+  private def testBucket(settings: S3Configuration): WSResponse =
+    call(
+      s"/api/tenants/${assetTenant.id.value}/bucket/_test",
+      loginWithBlocking(tenantAdmin, assetTenant),
+      "POST",
+      Some(ByteString(Json.stringify(settings.asJson))),
+      "application/json"
+    )
+
+  private def statuses(response: WSResponse): Seq[String] =
+    (response.json \ "steps")
+      .as[Seq[JsObject]]
+      .map(step => (step \ "status").as[String])
+
   "Team assets backed by S3" should {
-    "preserve multipart content and metadata through upload, listing, replacement and deletion" in {
+    "preserve large content and metadata through upload, listing, replacement and deletion" in {
       val session = loginWithBlocking(userAdmin, assetTenant)
       val root = s"/api/teams/${teamOwner.id.value}/assets"
       call(root, session).status mustBe 200
@@ -134,7 +171,7 @@ class AssetsControllerSpec
         s"$root?filename=image.png&title=image&desc=description",
         session,
         "POST",
-        Some(multipartPng)
+        Some(largePng)
       )
       withClue(upload.body) { upload.status mustBe 200 }
       val id = (upload.json \ "id").as[String]
@@ -159,7 +196,7 @@ class AssetsControllerSpec
         val download = call(s"$root/$id?download=true", session)
         download.status mustBe 200
         download.contentType mustBe "image/png"
-        download.bodyAsBytes mustBe multipartPng
+        download.bodyAsBytes mustBe largePng
 
         val replaced = call(s"$root/$id/_replace", session, "POST", Some(png))
         withClue(replaced.body) { replaced.status mustBe 200 }
@@ -228,11 +265,11 @@ class AssetsControllerSpec
         download.bodyAsBytes mustBe png
 
         val replaced =
-          call(s"$root/$id/_replace", session, "POST", Some(multipartPng))
+          call(s"$root/$id/_replace", session, "POST", Some(largePng))
         withClue(replaced.body) { replaced.status mustBe 200 }
         val updated = call(s"$root/$id", session)
         updated.status mustBe 200
-        updated.bodyAsBytes mustBe multipartPng
+        updated.bodyAsBytes mustBe largePng
         val updatedItem = call(root, session).json
           .as[Seq[JsObject]]
           .find(a => (a \ "meta" \ "asset").asOpt[String].contains(id))
@@ -250,6 +287,24 @@ class AssetsControllerSpec
       call(s"$root/slugified", session).json
         .as[Seq[JsObject]]
         .exists(a => (a \ "_id").as[String] == id) mustBe false
+    }
+  }
+
+  "Bucket configuration test" should {
+    "pass every step and leave no test file in the bucket" in {
+      val response = testBucket(bucketSettings)
+      withClue(response.body) { response.status mustBe 200 }
+      (response.json \ "success").as[Boolean] mustBe true
+      statuses(response) mustBe Seq("success", "success", "success", "success")
+      remainingTestFiles mustBe empty
+    }
+
+    "report the failing step with the S3 message when the secret is wrong" in {
+      val response = testBucket(bucketSettings.copy(secret = "wrong-secret"))
+      withClue(response.body) { response.status mustBe 200 }
+      (response.json \ "success").as[Boolean] mustBe false
+      statuses(response) mustBe Seq("failed", "skipped", "skipped", "skipped")
+      ((response.json \ "steps")(0) \ "error").asOpt[String] mustBe defined
     }
   }
 }
