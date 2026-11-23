@@ -1352,8 +1352,8 @@ class ApiService(
   }
 
   /** A priced plan owes its monthly cost from the first day: recording it at
-    * subscription time lets both teams see the estimate without waiting for
-    * the stats job.
+    * subscription time lets both teams see the estimate without waiting for the
+    * stats job.
     */
   private def recordFirstConsumptionOfPricedPlan(
       tenant: Tenant,
@@ -1375,7 +1375,7 @@ class ApiService(
     }
   }
 
- private def subscribeToApi(
+  private def subscribeToApi(
       tenant: Tenant,
       user: User,
       api: Api,

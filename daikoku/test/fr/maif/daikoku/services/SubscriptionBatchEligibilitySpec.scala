@@ -137,7 +137,7 @@ class SubscriptionBatchEligibilitySpec extends PlaySpec {
     "reject paid plans and personal teams forbidden by tenant policy" in {
       SubscriptionBatchEligibility.validate(
         api, plan.copy(paymentSettings = Some(PaymentSettings.Stripe(
-          ThirdPartyPaymentSettingsId("stripe"), "product", StripePriceIds("")
+          ThirdPartyPaymentSettingsId("stripe"), "product", StripePriceIds("foo", "foo", "foo", "foo")
         ))), consumer, requester, Some(false)
       ).isLeft mustBe true
       SubscriptionBatchEligibility.validate(
