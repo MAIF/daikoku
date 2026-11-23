@@ -22,6 +22,7 @@ export interface ITeamSimple {
     otoroshiSettingsId: string;
     authorizedEntities: IAuthorizedEntities;
   }>;
+  sellsPaidPlans?: boolean;
 }
 
 export interface ITeamFull extends ITeamSimple {

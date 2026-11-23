@@ -184,6 +184,36 @@ class TenantController(
       }
     }
 
+  def paymentEnabled() =
+    DaikokuAction.async { ctx =>
+      PublicUserAccess(
+        AuditTrailEvent(
+          s"@{user.name} has checked whether payment is enabled on tenant @{tenant.name}"
+        )
+      )(ctx) {
+        val missing =
+          Seq(
+            "DAIKOKU_APIKEYS_STATS_JOB_ENABLED" -> env.config.apikeysStatsJobEnabled,
+            "DAIKOKU_STRIPE_RECONCILIATION_CRON" -> env.config.stripeReconciliationByCron
+          ).collect { case (variable, false) => variable }
+
+        FastFuture.successful(
+          if (missing.isEmpty) Ok(Json.obj())
+          else if (ctx.isTenantAdmin || ctx.user.isDaikokuAdmin)
+            BadRequest(
+              Json.obj(
+                "error" -> "payment is not enabled on this tenant",
+                "missing" -> missing
+              )
+            )
+          else
+            BadRequest(
+              Json.obj("error" -> "payment is not enabled on this tenant")
+            )
+        )
+      }
+    }
+
   def createTenant() =
     DaikokuAction.async(parse.json) { ctx =>
       DaikokuAdminOnly(
@@ -509,6 +539,33 @@ class TenantController(
           case None =>
             BadRequest(
               Json.obj("error" -> "wrong mailer configuration format")
+            ).future
+        }
+      }
+    }
+
+  def testBucketConfiguration(tenantId: String) =
+    DaikokuAction.async(parse.json) { ctx =>
+      TenantAdminOnly(
+        AuditTrailEvent(
+          s"@{user.name} - @{user.email} test a bucket configuration"
+        )
+      )(tenantId, ctx) { (tenant, _) =>
+        ctx.request.body.validate(using S3Configuration.format) match {
+          case JsSuccess(conf, _) =>
+            env.assetsStore
+              .testConfiguration(tenant.id)(using conf)
+              .map(steps =>
+                Ok(
+                  Json.obj(
+                    "success" -> steps.forall(_.status == "success"),
+                    "steps" -> JsArray(steps.map(_.asJson))
+                  )
+                )
+              )
+          case JsError(_) =>
+            BadRequest(
+              Json.obj("error" -> "wrong bucket configuration format")
             ).future
         }
       }

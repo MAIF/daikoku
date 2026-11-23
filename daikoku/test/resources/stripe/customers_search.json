@@ -1,0 +1,16 @@
+{
+  "object": "search_result",
+  "url": "/v1/customers/search",
+  "has_more": false,
+  "data": [
+    {
+      "id": "cus_test123",
+      "object": "customer",
+      "email": "consumer@foo.bar",
+      "name": "Consumer Team",
+      "metadata": {
+        "daikoku_id": "team-consumer"
+      }
+    }
+  ]
+}

@@ -46,6 +46,7 @@ class DaikokuComponentsInstances(context: Context)
   lazy val rotationVerifier = wire[ApiKeySecretRotationJob]
   lazy val deletor = wire[QueueJob]
   lazy val statsJob = wire[ApiKeyStatsJob]
+  lazy val stripeReconciliationJob = wire[StripeReconciliationJob]
   lazy val auditTrailPurgeJob = wire[AuditTrailPurgeJob]
   lazy val anonReportingJob = wire[AnonymousReportingJob]
   lazy val notificationPurgeJob = wire[NotificationsPurgeJob]
@@ -63,6 +64,8 @@ class DaikokuComponentsInstances(context: Context)
   lazy val UserService = wire[UserService]
   lazy val localLoginSupport = wire[LocalLoginSupport]
   lazy val deletionService = wire[DeletionService]
+  lazy val billingNotificationService = wire[BillingNotificationService]
+  lazy val stripeWebhookService = wire[StripeWebhookService]
   lazy val mailService = wire[MailService]
   lazy val apiLifeCycleService = wire[ApiLifeCycleService]
   lazy val apiCrudService = wire[ApiCrudService]
@@ -92,6 +95,7 @@ class DaikokuComponentsInstances(context: Context)
   lazy val homeController = wire[HomeController]
   lazy val mockController = wire[MockController]
   lazy val apiController = wire[ApiController]
+  lazy val paymentWebhookController = wire[PaymentWebhookController]
   lazy val keyringController = wire[KeyringController]
   lazy val subscriptionBatchController = wire[SubscriptionBatchController]
   lazy val loginController = wire[LoginController]
@@ -261,6 +265,7 @@ class DaikokuComponentsInstances(context: Context)
   auditTrailPurgeJob.start()
   notificationPurgeJob.start()
   anonReportingJob.start()
+  stripeReconciliationJob.start()
   keyringExpirationJob.start()
   remoteCatalogJob.start()
   env.onStartup()

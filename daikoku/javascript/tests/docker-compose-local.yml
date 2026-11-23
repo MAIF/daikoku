@@ -86,6 +86,27 @@ services:
       - redis
       - faker
 
+  garage:
+    image: dxflrs/garage:v1.0.1
+    networks:
+      basicsetup:
+        aliases:
+          - daikoku.s3.oto.tools
+    volumes:
+      - "../../../dev/config/garage.toml:/etc/garage.toml:ro"
+    ports:
+      - 3910:3910
+
+  garage-init:
+    image: alpine:3.20
+    networks:
+      - basicsetup
+    volumes:
+      - "../../../dev/config/garage-init.sh:/garage-init.sh:ro"
+    command: sh /garage-init.sh
+    depends_on:
+      - garage
+
 networks:
   basicsetup:
     driver: bridge

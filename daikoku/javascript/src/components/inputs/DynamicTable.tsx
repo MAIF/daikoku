@@ -226,11 +226,17 @@ export type DynamicTableProps<T extends RowData> = {
   persistFiltersInUrl?: boolean;
   toolbar?: ReactNode;
   getRowAriaLabel?: (row: T) => string;
+  highlightedRowId?: string;
   /** Extra CSS class added to the `<div>` wrapping the rows (`.dynamic-table__data` is always applied). */
   dataClassName?: string;
   /** Translation key for the item noun (used with plural support). Shown as "{n} {label}" or "{filtered} {label} (sur {total})". */
   countLabelKey?: string;
   tableClassName?: string;
+  /** Cells of a closing total row, by column id. The caller computes it over all
+   * its data, so it stays the same on every page. */
+  totalRow?: Partial<Record<string, ReactNode>>;
+  /** Shown instead of the rows and the pagination when the query returns no row at all. */
+  emptyState?: ReactNode;
   rowSelection?: RowSelectionState;
   setRowSelection?: OnChangeFn<RowSelectionState>;
   /** Restore off-page row data alongside a controlled selection on remount. */
@@ -264,10 +270,13 @@ export function DynamicTable<T extends RowData>({
   toolbar = null,
   getRowId,
   getRowAriaLabel,
+  highlightedRowId,
   ariaLabel,
   dataClassName,
   countLabelKey,
   tableClassName,
+  totalRow,
+  emptyState,
   onSelectionChange,
   rowSelection: controlledRowSelection,
   setRowSelection: controlledSetRowSelection,
@@ -801,11 +810,27 @@ export function DynamicTable<T extends RowData>({
   // `minmax(0, …)` keeps every row's tracks identical: without it a flexible
   // `fr` track grows to its content's min-content width (worsened by the
   // `white-space: nowrap` on rows), so a row with long content gets misaligned.
-  const gridTemplateColumns = table
+  const visibleColumns = table
     .getAllLeafColumns()
-    .filter(c => c.columnDef.meta?.hidden !== true)
+    .filter(c => c.columnDef.meta?.hidden !== true);
+
+  const gridTemplateColumns = visibleColumns
     .map(c => `minmax(0, ${c.columnDef.meta?.size ?? 1}fr)`)
     .join(' ');
+
+  const totalCells = visibleColumns.map(column => {
+    const content = totalRow?.[column.id];
+
+    return {
+      id: column.id,
+      className: column.columnDef.meta?.className,
+      content,
+      label: content === undefined ? undefined : column.columnDef.meta?.title,
+    };
+  });
+
+  const showsEmptyState = !!dataQuery.data && total === 0 && emptyState !== undefined;
+  const showsRows = !!dataQuery.data && !showsEmptyState;
 
   return (
     <div className={classNames('flex-grow-1 dynamic-table', tableClassName)}>
@@ -830,7 +855,9 @@ export function DynamicTable<T extends RowData>({
 
       {dataQuery.isLoading && <Spinner />}
 
-      {dataQuery.data && (
+      {showsEmptyState && emptyState}
+
+      {showsRows && (
         <>
           <div
             className={classNames('dynamic-table__data', dataClassName)}
@@ -846,15 +873,33 @@ export function DynamicTable<T extends RowData>({
             }
             <ul className="table-rows" aria-label={ariaLabel}>
               {table.getRowModel().rows.map(row => (
-                <li key={row.id} tabIndex={-1} aria-label={getRowAriaLabel?.(row.original)} className="table-row">
+                <li
+                  key={row.id}
+                  tabIndex={-1}
+                  aria-label={getRowAriaLabel?.(row.original)}
+                  className={classNames('table-row', { '--highlighted': row.id === highlightedRowId })}
+                >
                   {row.getAllCells().map(cell => (
-                    (cell.column.columnDef.meta?.hidden !== true) && <div key={cell.id} className={cell.column.columnDef.meta?.className}>
+                    (cell.column.columnDef.meta?.hidden !== true) && <div
+                      key={cell.id}
+                      className={cell.column.columnDef.meta?.className}
+                      data-label={cell.column.columnDef.meta?.title || undefined}
+                    >
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </div>
                   ))}
                 </li>
               ))}
             </ul>
+            {totalRow && (
+              <div className="table-row table-total">
+                {totalCells.map(cell => (
+                  <div key={cell.id} className={cell.className} data-label={cell.label}>
+                    {cell.content}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="dynamic-table__pagination position-relative d-flex align-items-center mt-3">

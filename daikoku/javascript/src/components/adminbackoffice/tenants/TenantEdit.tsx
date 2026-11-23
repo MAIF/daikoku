@@ -2,6 +2,7 @@ import { useContext } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import {
+  Navigate,
   Route,
   Routes,
   useLocation,
@@ -239,7 +240,7 @@ export const TenantEditComponent = ({
       </Routes>
     );
   } else {
-    return <div>Error while fetching tenant</div>;
+    return <Navigate to="/apis" />
   }
 };
 

@@ -39,40 +39,6 @@ object json {
       .getOrElse(Seq.empty)
       .toMap
 
-  val BillingTimeUnitFormat = new Format[BillingTimeUnit] {
-    override def reads(json: JsValue): JsResult[BillingTimeUnit] =
-      Try {
-        json.asOpt[String].flatMap(BillingTimeUnit.apply) match {
-          case Some(tu) => JsSuccess(tu)
-          case None     => JsError("Bad time unit")
-        }
-      } recover { case e =>
-        JsError(e.getMessage)
-      } get
-
-    override def writes(o: BillingTimeUnit): JsValue = JsString(o.name)
-  }
-
-  val BillingDurationFormat = new Format[BillingDuration] {
-    override def reads(json: JsValue): JsResult[BillingDuration] =
-      Try {
-        JsSuccess(
-          BillingDuration(
-            value = (json \ "value").as(using LongFormat),
-            unit = (json \ "unit").as(using BillingTimeUnitFormat)
-          )
-        )
-      } recover { case e =>
-        JsError(e.getMessage)
-      } get
-
-    override def writes(o: BillingDuration): JsValue =
-      Json.obj(
-        "value" -> o.value,
-        "unit" -> o.unit.asJson
-      )
-  }
-
   val SubscriptionProcessFormat = new Format[SubscriptionProcess] {
     override def reads(json: JsValue): JsResult[SubscriptionProcess] =
       json match {
@@ -804,10 +770,6 @@ object json {
         JsSuccess(
           BasePaymentInformation(
             costPerMonth = (json \ "costPerMonth").as[BigDecimal],
-            trialPeriod =
-              (json \ "trialPeriod").asOpt(using BillingDurationFormat),
-            billingDuration =
-              (json \ "billingDuration").as(using BillingDurationFormat),
             currency = (json \ "currency").as(using CurrencyFormat)
           )
         )
@@ -819,11 +781,6 @@ object json {
     override def writes(o: BasePaymentInformation): JsValue =
       Json.obj(
         "costPerMonth" -> o.costPerMonth,
-        "trialPeriod" -> o.trialPeriod
-          .map(_.asJson)
-          .getOrElse(JsNull)
-          .as[JsValue],
-        "billingDuration" -> o.billingDuration.asJson,
         "currency" -> o.currency.asJson
       )
   }
@@ -838,12 +795,10 @@ object json {
             maxPerSecond = (json \ "maxPerSecond").asOpt(using LongFormat),
             maxPerDay = (json \ "maxPerDay").asOpt(using LongFormat),
             maxPerMonth = (json \ "maxPerMonth").asOpt(using LongFormat),
+            includedRequestsPerMonth =
+              (json \ "includedRequestsPerMonth").asOpt(using LongFormat),
             costPerMonth = (json \ "costPerMonth").asOpt[BigDecimal],
             costPerRequest = (json \ "costPerRequest").asOpt[BigDecimal],
-            trialPeriod =
-              (json \ "trialPeriod").asOpt(using BillingDurationFormat),
-            billingDuration =
-              (json \ "billingDuration").asOpt(using BillingDurationFormat),
             currency = (json \ "currency").asOpt(using CurrencyFormat),
             customName = (json \ "customName").as[String],
             customDescription = (json \ "customDescription").asOpt[String],
@@ -891,20 +846,16 @@ object json {
           .map(JsNumber(_))
           .getOrElse(JsNull)
           .as[JsValue],
+        "includedRequestsPerMonth" -> o.includedRequestsPerMonth
+          .map(JsNumber(_))
+          .getOrElse(JsNull)
+          .as[JsValue],
         "costPerMonth" -> o.costPerMonth
           .map(JsNumber(_))
           .getOrElse(JsNull)
           .as[JsValue],
         "costPerRequest" -> o.costPerRequest
           .map(JsNumber(_))
-          .getOrElse(JsNull)
-          .as[JsValue],
-        "billingDuration" -> o.billingDuration
-          .map(_.asJson)
-          .getOrElse(JsNull)
-          .as[JsValue],
-        "trialPeriod" -> o.trialPeriod
-          .map(_.asJson)
           .getOrElse(JsNull)
           .as[JsValue],
         "currency" -> o.currency.map(_.asJson).getOrElse(JsNull).as[JsValue],
@@ -1198,7 +1149,9 @@ object json {
         JsSuccess(
           StripePriceIds(
             basePriceId = (json \ "basePriceId").as[String],
-            additionalPriceId = (json \ "additionalPriceId").asOpt[String]
+            additionalPriceId = (json \ "additionalPriceId").as[String],
+            meterId = (json \ "meterId").as[String],
+            meterEventName = (json \ "meterEventName").as[String]
           )
         )
       } recover { case e =>
@@ -1209,10 +1162,9 @@ object json {
     override def writes(o: StripePriceIds): JsValue =
       Json.obj(
         "basePriceId" -> o.basePriceId,
-        "additionalPriceId" -> o.additionalPriceId
-          .map(JsString.apply)
-          .getOrElse(JsNull)
-          .as[JsValue]
+        "additionalPriceId" -> o.additionalPriceId,
+        "meterId" -> o.meterId,
+        "meterEventName" -> o.meterEventName
       )
   }
 
@@ -2511,6 +2463,7 @@ object json {
       json.asOpt[String] match {
         case Some("lifecycle") => JsSuccess(SubscriptionBlockReason.Lifecycle)
         case Some("owner")     => JsSuccess(SubscriptionBlockReason.Owner)
+        case Some("ended")     => JsSuccess(SubscriptionBlockReason.Ended)
         case Some(str) => JsError(s"Bad SubscriptionBlockReason value: $str")
         case None      => JsError("Bad SubscriptionBlockReason value")
       }
@@ -2807,8 +2760,7 @@ object json {
           JsSuccess(
             StripeSubscriptionInformations(
               subscriptionId = (json \ "subscriptionId").as[String],
-              primaryElementId = (json \ "primaryElementId").asOpt[String],
-              meteredElementId = (json \ "meteredElementId").asOpt[String]
+              customerId = (json \ "customerId").as[String]
             )
           )
         } recover { case e =>
@@ -2819,8 +2771,7 @@ object json {
       override def writes(o: StripeSubscriptionInformations): JsValue =
         Json.obj(
           "subscriptionId" -> o.subscriptionId,
-          "primaryElementId" -> o.primaryElementId,
-          "meteredElementId" -> o.meteredElementId
+          "customerId" -> o.customerId
         )
     }
 
@@ -3589,6 +3540,14 @@ object json {
             ApiSubscriptionTransferSuccessFormat.reads(json)
           case "CheckoutForSubscription" =>
             CheckoutForSubscriptionFormat.reads(json)
+          case "SubscriptionPriceChangeScheduled" =>
+            SubscriptionPriceChangeScheduledFormat.reads(json)
+          case "SubscriptionCancellationScheduled" =>
+            SubscriptionCancellationScheduledFormat.reads(json)
+          case "SubscriptionBlockedByOwner" =>
+            SubscriptionBlockedByOwnerFormat.reads(json)
+          case "SubscriptionUnblockedByOwner" =>
+            SubscriptionUnblockedByOwnerFormat.reads(json)
           case "ApiDepreciationWarning" =>
             ApiDepreciationWarningFormat.reads(json)
           case "ApiBlockingWarning" => ApiBlockingWarningFormat.reads(json)
@@ -3708,6 +3667,30 @@ object json {
             CheckoutForSubscriptionFormat.writes(p).as[JsObject] ++ Json.obj(
               "type" -> "CheckoutForSubscription"
             )
+          case p: SubscriptionPriceChangeScheduled =>
+            SubscriptionPriceChangeScheduledFormat
+              .writes(p)
+              .as[JsObject] ++ Json.obj(
+              "type" -> "SubscriptionPriceChangeScheduled"
+            )
+          case p: SubscriptionCancellationScheduled =>
+            SubscriptionCancellationScheduledFormat
+              .writes(p)
+              .as[JsObject] ++ Json.obj(
+              "type" -> "SubscriptionCancellationScheduled"
+            )
+          case p: SubscriptionBlockedByOwner =>
+            SubscriptionBlockedByOwnerFormat
+              .writes(p)
+              .as[JsObject] ++ Json.obj(
+              "type" -> "SubscriptionBlockedByOwner"
+            )
+          case p: SubscriptionUnblockedByOwner =>
+            SubscriptionUnblockedByOwnerFormat
+              .writes(p)
+              .as[JsObject] ++ Json.obj(
+              "type" -> "SubscriptionUnblockedByOwner"
+            )
           case p: ApiDepreciationWarning =>
             ApiDepreciationWarningFormat.writes(p).as[JsObject] ++ Json.obj(
               "type" -> "ApiDepreciationWarning"
@@ -3811,6 +3794,123 @@ object json {
         "step" -> o.step.asJson
       )
   }
+
+  val SubscriptionPriceChangeScheduledFormat =
+    new Format[SubscriptionPriceChangeScheduled] {
+      override def reads(
+          json: JsValue
+      ): JsResult[SubscriptionPriceChangeScheduled] =
+        Try {
+          JsSuccess(
+            SubscriptionPriceChangeScheduled(
+              subscription =
+                (json \ "subscription").as(using ApiSubscriptionIdFormat),
+              api = (json \ "api").as(using ApiIdFormat),
+              plan = (json \ "plan").as(using UsagePlanIdFormat),
+              costPerMonth = (json \ "costPerMonth").as[BigDecimal],
+              costPerRequest = (json \ "costPerRequest").asOpt[BigDecimal],
+              currency = (json \ "currency").as(using CurrencyFormat),
+              effectiveAt = (json \ "effectiveAt").as(using DateTimeFormat)
+            )
+          )
+        } recover { case e =>
+          JsError(e.getMessage)
+        } get
+
+      override def writes(o: SubscriptionPriceChangeScheduled): JsValue =
+        Json.obj(
+          "subscription" -> o.subscription.asJson,
+          "api" -> o.api.asJson,
+          "plan" -> o.plan.asJson,
+          "costPerMonth" -> o.costPerMonth,
+          "costPerRequest" -> o.costPerRequest
+            .map(JsNumber(_))
+            .getOrElse(JsNull)
+            .as[JsValue],
+          "currency" -> o.currency.asJson,
+          "effectiveAt" -> DateTimeFormat.writes(o.effectiveAt)
+        )
+    }
+
+  val SubscriptionCancellationScheduledFormat =
+    new Format[SubscriptionCancellationScheduled] {
+      override def reads(
+          json: JsValue
+      ): JsResult[SubscriptionCancellationScheduled] =
+        Try {
+          JsSuccess(
+            SubscriptionCancellationScheduled(
+              subscription =
+                (json \ "subscription").as(using ApiSubscriptionIdFormat),
+              api = (json \ "api").as(using ApiIdFormat),
+              plan = (json \ "plan").as(using UsagePlanIdFormat),
+              effectiveAt = (json \ "effectiveAt").as(using DateTimeFormat)
+            )
+          )
+        } recover { case e =>
+          JsError(e.getMessage)
+        } get
+
+      override def writes(o: SubscriptionCancellationScheduled): JsValue =
+        Json.obj(
+          "subscription" -> o.subscription.asJson,
+          "api" -> o.api.asJson,
+          "plan" -> o.plan.asJson,
+          "effectiveAt" -> DateTimeFormat.writes(o.effectiveAt)
+        )
+    }
+
+  val SubscriptionBlockedByOwnerFormat =
+    new Format[SubscriptionBlockedByOwner] {
+      override def reads(json: JsValue): JsResult[SubscriptionBlockedByOwner] =
+        Try {
+          JsSuccess(
+            SubscriptionBlockedByOwner(
+              subscription =
+                (json \ "subscription").as(using ApiSubscriptionIdFormat),
+              api = (json \ "api").as(using ApiIdFormat),
+              plan = (json \ "plan").as(using UsagePlanIdFormat),
+              reason = (json \ "reason").asOpt[String]
+            )
+          )
+        } recover { case e =>
+          JsError(e.getMessage)
+        } get
+
+      override def writes(o: SubscriptionBlockedByOwner): JsValue =
+        Json.obj(
+          "subscription" -> o.subscription.asJson,
+          "api" -> o.api.asJson,
+          "plan" -> o.plan.asJson,
+          "reason" -> o.reason.map(JsString(_)).getOrElse(JsNull).as[JsValue]
+        )
+    }
+
+  val SubscriptionUnblockedByOwnerFormat =
+    new Format[SubscriptionUnblockedByOwner] {
+      override def reads(
+          json: JsValue
+      ): JsResult[SubscriptionUnblockedByOwner] =
+        Try {
+          JsSuccess(
+            SubscriptionUnblockedByOwner(
+              subscription =
+                (json \ "subscription").as(using ApiSubscriptionIdFormat),
+              api = (json \ "api").as(using ApiIdFormat),
+              plan = (json \ "plan").as(using UsagePlanIdFormat)
+            )
+          )
+        } recover { case e =>
+          JsError(e.getMessage)
+        } get
+
+      override def writes(o: SubscriptionUnblockedByOwner): JsValue =
+        Json.obj(
+          "subscription" -> o.subscription.asJson,
+          "api" -> o.api.asJson,
+          "plan" -> o.plan.asJson
+        )
+    }
 
   val ApiDepreciationWarningFormat = new Format[ApiDepreciationWarning] {
     override def reads(json: JsValue): JsResult[ApiDepreciationWarning] =
@@ -4695,7 +4795,9 @@ object json {
               billing = (json \ "billing").as(using ApiKeyBillingFormat),
               from = (json \ "from").as(using DateTimeFormat),
               to = (json \ "to").as(using DateTimeFormat),
-              state = (json \ "state").as(using ApiKeyConsumptionStateFormat)
+              state = (json \ "state").as(using ApiKeyConsumptionStateFormat),
+              lastReportedHits =
+                (json \ "lastReportedHits").asOpt[Long].getOrElse(0)
             )
           )
         } recover { case e =>
@@ -4720,7 +4822,8 @@ object json {
           "billing" -> ApiKeyBillingFormat.writes(o.billing),
           "from" -> DateTimeFormat.writes(o.from),
           "to" -> DateTimeFormat.writes(o.to),
-          "state" -> ApiKeyConsumptionStateFormat.writes(o.state)
+          "state" -> ApiKeyConsumptionStateFormat.writes(o.state),
+          "lastReportedHits" -> o.lastReportedHits
         )
     }
   val GlobalConsumptionInformationsFormat
@@ -5649,7 +5752,8 @@ object json {
           id = (json \ "_id").as(using ThirdPartyPaymentSettingsIdFormat),
           name = (json \ "name").as[String],
           publicKey = (json \ "publicKey").as[String],
-          secretKey = (json \ "secretKey").as[String]
+          secretKey = (json \ "secretKey").as[String],
+          webhookSecret = (json \ "webhookSecret").asOpt[String]
         )
       } match {
         case Failure(e) =>
@@ -5664,7 +5768,8 @@ object json {
         "_id" -> ThirdPartyPaymentSettingsIdFormat.writes(o.id),
         "name" -> o.name,
         "publicKey" -> o.publicKey,
-        "secretKey" -> o.secretKey
+        "secretKey" -> o.secretKey,
+        "webhookSecret" -> o.webhookSecret
       )
   }
 
