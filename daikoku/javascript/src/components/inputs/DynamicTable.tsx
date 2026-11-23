@@ -28,6 +28,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { I18nContext } from '../../contexts';
 import { Spinner } from '../utils';
 import { ChevronDown, ChevronLeft, ChevronRight, ChevronsUpDown, ChevronUp, Ellipsis, RefreshCcw, Search } from 'lucide-react';
+import { Checkbox } from './Checkbox';
 
 declare module '@tanstack/react-table' {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -575,9 +576,8 @@ export function DynamicTable<T extends RowData>({
             if (f.style === 'checkbox') {
               return (
                 <div key={f.id} className="form-check">
-                  <input
+                  <Checkbox
                     id={`filter-${f.id}`}
-                    type="checkbox"
                     className="form-check-input"
                     checked={boolVal}
                     onChange={e =>
@@ -694,10 +694,8 @@ export function DynamicTable<T extends RowData>({
     return (
       <div className={classNames('select-all-row table-row table-header', { '--selecting': someSelected })}>
         <label className="notification-table-header">
-          <input
+          <Checkbox
             aria-label={translate('SelectAll')}
-            type="checkbox"
-            className="form-check-input"
             checked={table.getIsAllPageRowsSelected()}
             onChange={() => {
               if (selectAll) setSelectAll(false);
@@ -764,7 +762,7 @@ export function DynamicTable<T extends RowData>({
   // préexistante), pour éviter de cocher des lignes mutuellement incompatibles.
   const handleToggleAllPageRowsSelected = () => {
     const pageRows = table.getRowModel().rows;
-    const allPageRowsSelected = pageRows.every(row => rowSelection[row.id]);
+    const allPageRowsSelected = table.getIsAllPageRowsSelected();
 
     if (allPageRowsSelected) {
       // Décoche les lignes de la page courante

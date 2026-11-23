@@ -112,10 +112,10 @@ or prepares new keys. Ambiguous destinations and incompatible process sets requi
 choices; excluded plans remain unassigned. The arrangement can be undone until a subsequent
 change to the keys or assignments.
 
-The review screen separates new keys, additions to existing keys and unassigned plans, and warns
-about deprecated APIs. Consumers can return to editing before submission. Only assigned plans
-are submitted; keys without additions are ignored. No server-side creation occurs before the final
-submission and any required motivation form.
+The review screen lists keys and their requested plans together, marks new keys, shows unassigned
+plans separately, and warns about deprecated APIs. Consumers can return to editing before submission.
+Only assigned plans are submitted; keys without additions are ignored. No server-side creation
+occurs before the final submission and any required motivation form.
 
 The preparation remains a local, unsaved draft. Navigation is guarded once a key is in the draft,
 and reload/close uses a browser warning. Confirming departure discards the draft. Reloading retains

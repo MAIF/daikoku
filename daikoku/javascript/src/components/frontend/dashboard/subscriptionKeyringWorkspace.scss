@@ -3,6 +3,10 @@
 .keyring-workspace {
   padding: 1.5rem;
 
+  &.--review {
+    padding-bottom: 6rem;
+  }
+
   h1 {
     font-size: 1.65rem;
   }
@@ -224,14 +228,50 @@
     margin-top: 1rem;
   }
 
-  &__review-key {
-    padding: 0.75rem 0;
-    border-bottom: 1px solid $form-border-color;
-    overflow-wrap: anywhere;
+  &__review-actions {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 10;
+    padding: 0.75rem 1.5rem;
+    padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+    background: $level2_bg-color;
+    border-top: 1px solid $form-border-color;
   }
 
-  &__review-key summary {
-    cursor: pointer;
+  &__review-table {
+    width: 100%;
+    table-layout: fixed;
+    overflow-wrap: anywhere;
+
+    th,
+    td {
+      padding: 0.75rem;
+      border-bottom: 1px solid $form-border-color;
+      vertical-align: top;
+      text-align: left;
+    }
+
+    th:first-child {
+      width: 40%;
+    }
+
+    .keyring-workspace__review-plans {
+      max-height: none;
+      overflow: visible;
+      margin: 0;
+    }
+
+    .keyring-workspace__plan {
+      padding: 0;
+      border: 0;
+      background: transparent;
+
+      &:last-child {
+        margin-bottom: 0;
+      }
+    }
   }
 
   &__review-plans {

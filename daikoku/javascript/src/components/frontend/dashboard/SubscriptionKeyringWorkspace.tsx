@@ -44,6 +44,8 @@ import { SubscriptionKeyringReview } from './SubscriptionKeyringReview';
 import { useSubscriptionBatch } from './useSubscriptionBatch';
 import './subscriptionKeyringWorkspace.scss';
 import { Callout } from '../../inputs/Callout';
+import { Checkbox } from '../../inputs';
+import { BeautifulTitle } from '../..';
 
 export type KeyringWorkspaceLocationState = {
   apis: IApiWithAuthorization[];
@@ -132,8 +134,7 @@ function WorkspacePlanCard({
         <GripVertical size={18} />
       </button>
       <label className="d-flex align-items-center gap-2 flex-grow-1">
-        <input
-          type="checkbox"
+        <Checkbox
           checked={selected}
           disabled={disabled}
           onChange={onSelect}
@@ -550,7 +551,7 @@ function KeyringWorkspace({ apis, team }: KeyringWorkspaceLocationState) {
 
   if (reviewOpen) {
     return (
-      <div className="keyring-workspace">
+      <div className="keyring-workspace --review">
         {blocker.state === 'blocked' && (
           <WorkspaceLeaveConfirmation onStay={blocker.reset} onLeave={blocker.proceed} />
         )}
@@ -576,9 +577,11 @@ function KeyringWorkspace({ apis, team }: KeyringWorkspaceLocationState) {
       <header className="d-flex flex-wrap align-items-start justify-content-between gap-3 mb-3">
         <div>
           <h1>{translate('subscription.workspace.title')}</h1>
-          <div className="d-flex flex-row gap-2">
+          <div className="d-flex flex-row gap-2 align-item-center">
             <div className="badge --info --ghost"><strong><Users /> {team.name}</strong></div>
-            <div className="badge --info"><strong>Brouillon</strong></div>
+              <div className="badge --info">
+                <strong>Brouillon</strong>
+              </div>
           </div>
         </div>
         <div className="d-flex gap-2 flex-wrap">
@@ -587,7 +590,6 @@ function KeyringWorkspace({ apis, team }: KeyringWorkspaceLocationState) {
           </Link>
         </div>
       </header>
-      <p className="small text-muted mb-3">{translate('subscription.workspace.not.created')}</p>
       {proposalOpen && subscriptionsQuery.data && tenant.display === Display.environment && (
         <SubscriptionKeyringProposal
           plans={plans}

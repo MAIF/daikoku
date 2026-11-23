@@ -34,6 +34,7 @@ import { getLanguageFns } from '../../utils';
 import { FeedbackButton } from '../../utils/FeedbackButton';
 import { SimpleApiKeyCard} from "../apikeys";
 import { IApiSubscriptionGql } from '../apis';
+import { Checkbox } from '../../inputs';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -857,9 +858,7 @@ export const NotificationList = () => {
         if (row.getCanSelect())
           return (
             <>
-              <input
-                type="checkbox"
-                className={classNames('form-check-input select-input')}
+              <Checkbox
                 checked={row.getIsSelected() || (row.getCanSelect() && selectAll)}
                 disabled={!row.getCanSelect()}
                 onChange={row.getToggleSelectedHandler()}

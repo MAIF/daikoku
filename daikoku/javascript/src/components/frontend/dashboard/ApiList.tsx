@@ -17,6 +17,7 @@ import { Spinner } from "../../utils/Spinner"
 import StarsButton from "../api/StarsButton"
 import { SimpleTeamSelector } from "../api/SimpleTeamSelector"
 import { eligibleBatchTeams } from "../../utils/teams"
+import { Checkbox } from "../../inputs"
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -74,31 +75,28 @@ export const ApiList = (props: ApiListProps) => {
       ...(connectedUser.isGuest
         ? []
         : [
-            columnHelper.display({
-              id: 'select',
-              enableColumnFilter: false,
-              header: ({ table }) => (
-                <input
-                  type="checkbox"
-                  aria-label={translate('table.select.page.label')}
-                  checked={table.getIsAllPageRowsSelected()}
-                  onChange={table.getToggleAllPageRowsSelectedHandler()}
-                />
-              ),
-              cell: ({ row }) => (
-                <input
-                  type="checkbox"
-                  aria-label={translate({
-                    key: 'table.select.row.label',
-                    replacements: [row.original.api.name],
-                  })}
-                  checked={row.getIsSelected()}
-                  disabled={!row.getCanSelect()}
-                  onChange={row.getToggleSelectedHandler()}
-                />
-              ),
-            }),
-          ]),
+          columnHelper.display({
+            id: 'select',
+            enableColumnFilter: false,
+            header: ({ table }) => (
+              <Checkbox
+                aria-label={translate('table.select.page.label')}
+                checked={table.getIsAllPageRowsSelected()}
+                onChange={table.getToggleAllPageRowsSelectedHandler()} />
+            ),
+            cell: ({ row }) => (
+              <Checkbox
+                aria-label={translate({
+                  key: 'table.select.row.label',
+                  replacements: [row.original.api.name],
+                })}
+                checked={row.getIsSelected()}
+                disabled={!row.getCanSelect()}
+                onChange={row.getToggleSelectedHandler()}
+              />
+            ),
+          }),
+        ]),
       columnHelper.display({
         id: 'favorite',
         enableColumnFilter: false,
@@ -322,8 +320,8 @@ export const ApiList = (props: ApiListProps) => {
     }
   ]
 
-  if(!connectedUser.isGuest) {
-    filters.push(    {
+  if (!connectedUser.isGuest) {
+    filters.push({
       id: 'subscribedOnly',
       type: 'boolean',
       style: 'checkbox',

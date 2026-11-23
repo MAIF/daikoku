@@ -1,9 +1,10 @@
 import { Eye, EyeOff } from "lucide-react"
+import { ReactNode } from "react"
 
 type CalloutProps = {
     level: 'primary' | 'info' | 'warning' | 'danger' | 'success' | 'neutral'
     title: string
-    body: string
+    body: ReactNode
 }
 
 export const Callout = (props: CalloutProps) => {
