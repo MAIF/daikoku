@@ -1,8 +1,8 @@
-import { format, type } from '@maif/react-forms';
+import { Form, format, FormRef, type } from '@maif/react-forms';
 import { useQueryClient } from '@tanstack/react-query';
 import { ColumnDef, createColumnHelper } from '@tanstack/react-table';
 import { Pencil, RefreshCcw, SlidersHorizontal, Trash2 } from 'lucide-react';
-import { useContext, useState } from 'react';
+import { useContext, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 import { QUERY_KEYS } from '../../../../constants/queryKeys';
@@ -13,7 +13,7 @@ import * as Services from '../../../../services';
 import { IApi, isError, ITeamSimple, IUsagePlan, ResponseError } from '../../../../types';
 import { IApiSubscriptionGql } from '../../../backoffice/apis/TeamApiSubscriptions';
 import { DynamicTable, DynamicTableFeatures, FetchData, SwitchButton } from '../../../inputs';
-import { api as API, Can, formatDate, manage } from '../../../utils';
+import { api as API, Can, formatDate, manage, SideSheet, SideSheetActions } from '../../../utils';
 
 type SubscriptionsTabProps = {
   api: IApi;
@@ -42,6 +42,7 @@ export const SubscriptionsTab = ({ api, ownerTeam, plans }: SubscriptionsTabProp
   const byEnvironment = tenant.display === 'environment';
 
   const [advancedFilters, setAdvancedFilters] = useState<AdvancedFilters>(NO_ADVANCED_FILTERS);
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
   const baseQueryKey = QUERY_KEYS.apiSubscriptions(api._id, ownerTeam._id);
   const refresh = () => queryClient.invalidateQueries({ queryKey: baseQueryKey });
@@ -74,19 +75,6 @@ export const SubscriptionsTab = ({ api, ownerTeam, plans }: SubscriptionsTabProp
         items: apiApiSubscriptions.subscriptions,
         total: apiApiSubscriptions.total,
       }));
-
-  const openAdvancedFilters = () =>
-    openFormModal<AdvancedFilters>({
-      title: translate('Filter data'),
-      actionLabel: translate('Filter'),
-      value: advancedFilters,
-      schema: {
-        metadata: { type: type.object, label: translate('Filter metadata') },
-        tags: { type: type.string, array: true, label: translate('Filter tags') },
-        clientIds: { type: type.string, array: true, label: translate('Filter Client Ids') },
-      },
-      onSubmit: (filters) => setAdvancedFilters({ ...NO_ADVANCED_FILTERS, ...filters }),
-    });
 
   const toggle = (sub: ApiSubscriptionRow, reason?: string) =>
     Services.archiveSubscriptionByOwner(ownerTeam._id, sub._id, sub.state !== 'active', reason).then((result) => {
@@ -291,7 +279,7 @@ export const SubscriptionsTab = ({ api, ownerTeam, plans }: SubscriptionsTabProp
               Services.teams(ownerTeam).then((teams) =>
                 callback(
                   (isError(teams) ? [] : teams)
-                    .filter((team) => team.name.toLowerCase().includes(input.toLowerCase()))
+                    .filter((team) => input.length ? team.name.toLowerCase().includes(input.toLowerCase()) : true)
                     .map((team) => ({ label: team.name, value: team._id }))
                 )
               ),
@@ -299,7 +287,7 @@ export const SubscriptionsTab = ({ api, ownerTeam, plans }: SubscriptionsTabProp
         ]}
         toolbar={
           <div className="d-flex gap-2">
-            <button type="button" className="btn --tertiary" onClick={openAdvancedFilters}>
+            <button type="button" className="btn --tertiary" onClick={() => setFiltersOpen(true)}>
               <SlidersHorizontal size={16} />
               {translate('api.editor.subscriptions.more.filters')}
             </button>
@@ -312,6 +300,56 @@ export const SubscriptionsTab = ({ api, ownerTeam, plans }: SubscriptionsTabProp
           </div>
         }
       />
+
+      {filtersOpen && (
+        <AdvancedFiltersSideSheet
+          value={advancedFilters}
+          onApply={(filters) => {
+            setAdvancedFilters({ ...NO_ADVANCED_FILTERS, ...filters });
+            setFiltersOpen(false);
+          }}
+          onClose={() => setFiltersOpen(false)}
+        />
+      )}
     </Can>
+  );
+};
+
+type AdvancedFiltersSideSheetProps = {
+  value: AdvancedFilters;
+  onApply: (filters: AdvancedFilters) => void;
+  onClose: () => void;
+};
+
+const AdvancedFiltersSideSheet = (props: AdvancedFiltersSideSheetProps) => {
+  const { translate } = useContext(I18nContext);
+
+  const formRef = useRef<FormRef | undefined>(undefined);
+
+  return (
+    <SideSheet
+      title={translate('Filter data')}
+      onClose={props.onClose}
+      isDirty={() => !!formRef.current?.methods.formState.isDirty}
+      footer={(requestClose) => (
+        <SideSheetActions
+          onCancel={requestClose}
+          onSave={() => formRef.current?.handleSubmit()}
+          saveLabel={translate('Filter')}
+        />
+      )}
+    >
+      <Form
+        ref={formRef}
+        schema={{
+          metadata: { type: type.object, label: translate('Filter metadata') },
+          tags: { type: type.string, array: true, label: translate('Filter tags') },
+          clientIds: { type: type.string, array: true, label: translate('Filter Client Ids') },
+        }}
+        value={props.value}
+        onSubmit={props.onApply}
+        footer={() => <></>}
+      />
+    </SideSheet>
   );
 };

@@ -475,9 +475,12 @@ export function DynamicTable<T extends RowData>({
                   defaultOptions
                   // @ts-ignore
                   components={{ ValueContainer: SummaryValueContainer, Option: CustomOption, MultiValue: () => null }}
-                  loadOptions={(input: string, callback: (options: FilterOption[]) => void) =>
-                    loadOptions(input, opts => { seedFilterLabels(f.id, opts); callback(opts); })
-                  }
+                  loadOptions={(input: string, callback: (options: FilterOption[]) => void) => {
+                    loadOptions(input, opts => {
+                      seedFilterLabels(f.id, opts);
+                      callback(opts);
+                    });
+                  }}
                   isLoading={f.isLoading}
                   closeMenuOnSelect={false}
                   hideSelectedOptions={false}

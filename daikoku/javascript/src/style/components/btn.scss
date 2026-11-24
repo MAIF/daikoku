@@ -318,6 +318,18 @@ $btn-disabled: variables.$neutral-color-600; // disabled (texte/bordure/fond gri
   animation: rotating 2s linear infinite;
 }
 
+.favorite-btn {
+  color: variables.$text-color-black;
+
+  svg {
+    fill: none;
+
+    &.active {
+      fill: variables.$neutral-color-900;
+    }
+  }
+}
+
 .feedback-button-wrapper {
   position: relative;
 

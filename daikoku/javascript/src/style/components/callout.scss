@@ -31,4 +31,13 @@
     font-size: 16px;
     font-weight: 700;
   }
+
+  &.--warning {
+    border-color: variables.$warning-color;
+
+    .info-callout__icon {
+      background-color: variables.$warning-color-bg;
+      color: variables.$warning-color;
+    }
+  }
 }

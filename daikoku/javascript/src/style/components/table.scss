@@ -256,22 +256,8 @@ $cell-border-color: color-mix(in srgb, variables.$level2_bg-color 95%, #000);
     div.favorite-cell {
       color: variables.$primary-color;
 
-      .favorite-btn {
-        color: variables.$text-color-black;
-
-        &:hover {
-          svg {
-            fill: variables.$neutral-color-500 !important;
-          }
-        }
-
-        svg {
-          fill: none;
-
-          &.active {
-            fill: variables.$neutral-color-900;
-          }
-        }
+      .favorite-btn:hover svg {
+        fill: variables.$neutral-color-500 !important;
       }
     }
 

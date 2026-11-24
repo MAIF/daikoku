@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useContext, useEffect, useState } from 'react';
+import { useContext, useEffect, useRef, useState } from 'react';
 import Select from 'react-select';
 import { toast } from 'sonner';
 import { SwaggerUIBundle } from 'swagger-ui-dist';
@@ -7,13 +7,62 @@ import { SwaggerUIBundle } from 'swagger-ui-dist';
 import { I18nContext, ModalContext } from '../../../contexts';
 import { GlobalContext } from '../../../contexts/globalContext';
 import * as Services from '../../../services';
-import { IApi, isError, ISwagger, ITeamSimple, ITesting, IUsagePlan, IWithTesting } from '../../../types';
-import { TeamApiSwagger, TeamApiTesting } from '../../backoffice';
-import { api as API, Can, manage, Spinner } from '../../utils';
+import { IApi, isError, ISubscription, ISwagger, ITeamSimple, ITesting, IUsagePlan, IWithTesting } from '../../../types';
+import { api as API, Can, InfoCallout, manage, Spinner } from '../../utils';
+import { SpecificationSideSheet } from '../apiEditor/sheets/SpecificationSideSheet';
+import { TestingSideSheet } from '../apiEditor/sheets/TestingSideSheet';
 
 //@ts-ignore
 import 'swagger-ui-dist/swagger-ui.css';
 
+
+export type TestingKeyOption = {
+  subscription: string
+  plan: string
+  label: string
+}
+
+export const toTestingKeys = (
+  subscriptions: Array<ISubscription>,
+  plans: Array<IUsagePlan>,
+  teams: Array<ITeamSimple>
+): Array<TestingKeyOption> =>
+  subscriptions
+    .filter((sub) => sub.state === 'active')
+    .map((sub) => ({
+      subscription: sub._id,
+      plan: sub.plan,
+      label: [
+        sub.customName || plans.find((p) => p._id === sub.plan)?.customName,
+        teams.find((t) => t._id === sub.team)?.name,
+      ].filter(Boolean).join(' · '),
+    }))
+
+const TESTING_KEY = 'testing-key'
+
+const serverBasePath = (system: any): string => {
+  const server = system.specSelectors.isOAS3()
+    ? system.oas3Selectors.selectedServer() || system.specSelectors.servers()?.getIn([0, 'url'])
+    : system.specSelectors.basePath();
+
+  try {
+    return new URL(server || '', window.location.origin).pathname.replace(/\/$/, '')
+  } catch {
+    return ''
+  }
+}
+
+const copyTestingUrlPlugin = (testingUrl?: string) => () => ({
+  wrapComponents: {
+    CopyToClipboardBtn: (Original: any, system: any) => (props: any) =>
+      system.React.createElement(Original, {
+        ...props,
+        textToCopy: testingUrl
+          ? `${testingUrl.replace(/\/$/, '')}${serverBasePath(system)}${props.textToCopy}`
+          : props.textToCopy,
+      }),
+  },
+})
 
 type ApiTestProps<T extends IWithTesting> = {
   testing?: ITesting,
@@ -24,16 +73,34 @@ type ApiTestProps<T extends IWithTesting> = {
   ownerTeam: ITeamSimple
   entity: T
   save: (d: T) => Promise<any>
+  subscriptionKeys?: Array<TestingKeyOption>
 }
 export function ApiTest<T extends IWithTesting>(props: ApiTestProps<T>) {
 
   const { tenant, connectedUser } = useContext(GlobalContext)
 
   const { translate } = useContext(I18nContext);
-  const { alert, openLoginOrRegisterModal, openRightPanel, closeRightPanel } = useContext(ModalContext);
+  const { alert, openLoginOrRegisterModal } = useContext(ModalContext);
 
 
   const [state, setState] = useState<{ error?: string, info?: string }>({});
+  const [sheet, setSheet] = useState<'specification' | 'testing'>();
+
+  const hasTestingKey = props.testing?.hasTestingKey ?? !!props.testing?.username;
+  const keyOptions = [
+    ...(hasTestingKey ? [{ value: TESTING_KEY, label: translate('testing.key.option') }] : []),
+    ...(props.testing?.allowSubscriberKeys
+      ? (props.subscriptionKeys ?? []).map((key) => ({ value: key.subscription, label: key.label }))
+      : []),
+  ];
+
+  const [selectedKey, setSelectedKey] = useState(keyOptions[0]?.value);
+  const selectedKeyRef = useRef(selectedKey);
+
+  const selectKey = (key: string) => {
+    selectedKeyRef.current = key;
+    setSelectedKey(key);
+  };
 
 
   useEffect(() => {
@@ -68,7 +135,7 @@ export function ApiTest<T extends IWithTesting>(props: ApiTestProps<T>) {
         deepLinking: true,
         docExpansion: 'list',
         presets: [SwaggerUIBundle.presets.apis, SwaggerUIBundle.SwaggerUIStandalonePreset],
-        plugins: [SwaggerUIBundle.plugins.DownloadUrl],
+        plugins: [SwaggerUIBundle.plugins.DownloadUrl, copyTestingUrlPlugin(props.testing?.url)],
         requestInterceptor: (req: any) => {
           if (req.loadSpec)
             return req;
@@ -78,6 +145,7 @@ export function ApiTest<T extends IWithTesting>(props: ApiTestProps<T>) {
             method: req.method,
             body: req.body,
             headers: req.headers,
+            subscription: selectedKeyRef.current !== TESTING_KEY ? selectedKeyRef.current : undefined,
           });
           const newReq = {
             url: props.callUrl,
@@ -127,23 +195,9 @@ export function ApiTest<T extends IWithTesting>(props: ApiTestProps<T>) {
       message: translate('api_swagger.guest_user')
     })
 
-  const openApiDocForm = () => openRightPanel({
-    title: translate('api.home.spec.right.panel.title'),
-    content: <div>
-      <TeamApiSwagger value={props.entity} save={d => props.save(d).then(closeRightPanel)} />
-    </div>
-  })
+  const openApiDocForm = () => setSheet('specification')
 
-  const openTestingForm = () => openRightPanel({
-    title: "Update api",
-    content:
-      <TeamApiTesting
-        _id={props._id}
-        currentTeam={props.ownerTeam}
-        value={props.entity}
-        save={d => props.save(d)
-          .then(() => closeRightPanel())} />
-  })
+  const openTestingForm = () => setSheet('testing')
 
   return (
     <div className="d-flex justify-content-center w-10 p-3" style={{ position: 'relative' }}>
@@ -198,8 +252,41 @@ export function ApiTest<T extends IWithTesting>(props: ApiTestProps<T>) {
           </div>
         </Can>
       )}
-      {props.swagger && props.testing?.enabled && <div id="swagger-ui" style={{ width: '100%' }} />}
+      {props.swagger && props.testing?.enabled && (
+        <div className="d-flex flex-column gap-3 w-100">
+          {keyOptions.length > 0 && (
+            <div className="api-test__key d-flex align-items-center gap-3">
+              <label className="form-label" htmlFor="testing-key-select">{translate('testing.key.select.label')}</label>
+              <Select
+                inputId="testing-key-select"
+                classNamePrefix="reactSelect"
+                options={keyOptions}
+                value={keyOptions.find((option) => option.value === selectedKey)}
+                onChange={(option) => option && selectKey(option.value)}
+                components={{ IndicatorSeparator: () => null }}
+              />
+            </div>
+          )}
+          {keyOptions.length === 0 && props.testing.allowSubscriberKeys && (
+            <InfoCallout>{translate('testing.subscribe.to.test')}</InfoCallout>
+          )}
+          <div id="swagger-ui" style={{ width: '100%' }} />
+        </div>
+      )}
       {(!props.swagger || !props.testing?.enabled) && null}
+
+      {sheet === 'specification' && (
+        <SpecificationSideSheet entity={props.entity} save={props.save} onClose={() => setSheet(undefined)} />
+      )}
+      {sheet === 'testing' && (
+        <TestingSideSheet
+          entity={props.entity}
+          entityId={props._id}
+          ownerTeam={props.ownerTeam}
+          save={props.save}
+          onClose={() => setSheet(undefined)}
+        />
+      )}
     </div>
   );
 }

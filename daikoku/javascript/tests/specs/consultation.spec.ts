@@ -145,36 +145,38 @@ test('Utiliser le page d\'affichage d\'une API ', async ({ page }) => {
   //user guest
   await page.goto(HOME);
   await page.getByRole('link', { name: 'API papier' }).click();
-  await page.getByRole('navigation').getByText('Description').click();
+  await page.getByRole('tab', { name: 'Description' }).click();
   await expect(page.getByText('Une API pour avoir du papier')).toBeVisible();
-  await page.getByRole('navigation').getByText('Environnements').click();
+  await page.getByRole('tab', { name: 'Environnements' }).click();
 
   await page.getByRole('listitem', { name: 'dev' }).getByRole('button').click();
   await expect(page.getByRole('dialog', { name: 'Accédez à l\'API' })).toBeVisible();
   await page.getByRole('dialog', { name: 'Accédez à l\'API' }).getByRole('button', { name: 'Fermer' }).click();
-  await page.getByRole('navigation').getByText('Questions').click();
-  await expect(page.getByText('Aucun problème correspondant')).toBeVisible();
+  await page.getByRole('tab', { name: 'Aide' }).click();
+  await expect(page.getByText('Aucun problème signalé')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Signaler le premier problème' })).toBeHidden();
 
-  await expect(page.getByRole('navigation').getByText('Documentation')).toBeHidden();
-  await expect(page.getByRole('navigation').getByText('Spécification')).toBeHidden();
-  await expect(page.getByRole('navigation').getByText('Test')).toBeHidden();
-  await expect(page.getByRole('navigation').getByText('Actualités')).toBeHidden();
-  await expect(page.getByRole('navigation').getByText('Souscriptions')).toBeHidden();
-  await expect(page.getByRole('navigation').getByText('Clés d\'API')).toBeHidden();
+  await expect(page.getByRole('tab', { name: 'Documentation' })).toBeHidden();
+  await expect(page.getByRole('tab', { name: 'Spécification' })).toBeHidden();
+  await expect(page.getByRole('tab', { name: 'Test' })).toBeHidden();
+  await expect(page.getByRole('tab', { name: 'Actualités' })).toBeHidden();
+  await expect(page.getByRole('tab', { name: 'Souscriptions' })).toBeHidden();
+  await expect(page.getByRole('tab', { name: 'Clés d\'API' })).toBeHidden();
 
   await page.goto(HOME)
 
   //user simple user
   await loginAs(JIM, page)
   await page.getByRole('link', { name: 'API papier' }).click();
-  await page.getByRole('navigation').getByText('Description').click();
+  await page.getByRole('tab', { name: 'Description' }).click();
   await expect(page.getByText('Une API pour avoir du papier')).toBeVisible();
-  await page.getByRole('navigation').getByText('Environnements').click();
+  await page.getByRole('tab', { name: 'Environnements' }).click();
   await expect(page.getByText('dev', { exact: true })).toBeVisible();
   await expect(page.getByText('prod', { exact: true })).toBeVisible();
-  await page.getByRole('navigation').getByText('Questions').click();
-  await expect(page.getByText('Aucun problème correspondant')).toBeVisible();
-  await page.getByRole('navigation').getByText('Clés d\'API').click();
+  await page.getByRole('tab', { name: 'Aide' }).click();
+  await expect(page.getByText('Aucun problème signalé')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Signaler le premier problème' })).toBeVisible();
+  await page.getByRole('tab', { name: 'Clés d\'API' }).click();
   await page
       .getByRole('listitem', { name: 'api papier - dev' })
       .getByRole('button', { name: 'Contenu de la clé d\'API' })
@@ -183,30 +185,30 @@ test('Utiliser le page d\'affichage d\'une API ', async ({ page }) => {
       .getByRole('listitem', { name: 'api papier - dev' })
       .getByRole('listitem').filter({ hasText: 'API Commande' }).click();
 
-  await expect(page.getByRole('navigation').getByText('Documentation')).toBeHidden();
-  await expect(page.getByRole('navigation').getByText('Spécification')).toBeHidden();
-  await expect(page.getByRole('navigation').getByText('Test')).toBeHidden();
-  await expect(page.getByRole('navigation').getByText('Actualités')).toBeHidden();
-  await expect(page.getByRole('navigation').getByText('Souscriptions')).toBeHidden();
+  await expect(page.getByRole('tab', { name: 'Documentation' })).toBeHidden();
+  await expect(page.getByRole('tab', { name: 'Spécification' })).toBeHidden();
+  await expect(page.getByRole('tab', { name: 'Test' })).toBeHidden();
+  await expect(page.getByRole('tab', { name: 'Actualités' })).toBeHidden();
+  await expect(page.getByRole('tab', { name: 'Souscriptions' })).toBeHidden();
   await logout(page)
 
   //user admin
   await loginAs(MICHAEL, page)
   await page.getByRole('link', { name: 'API papier' }).click();
-  await page.getByRole('navigation').getByText('Description').click();
+  await page.getByRole('tab', { name: 'Description' }).click();
   await expect(page.getByText('Une API pour avoir du papier')).toBeVisible();
-  await page.getByRole('navigation').getByText('Environnements').click();
+  await page.getByRole('tab', { name: 'Environnements' }).click();
   await expect(page.getByText('dev', { exact: true })).toBeVisible();
   await expect(page.getByText('prod', { exact: true })).toBeVisible();
-  await page.getByRole('navigation').getByText('Questions').click();
-  await expect(page.getByText('Aucun problème correspondant')).toBeVisible();
-  await page.getByRole('navigation').getByText('Clés d\'API').click();
+  await page.getByRole('tab', { name: 'Aide' }).click();
+  await expect(page.getByText('Aucun problème signalé')).toBeVisible();
+  await page.getByRole('tab', { name: 'Clés d\'API' }).click();
 
-  await expect(page.getByRole('navigation').getByText('Documentation')).toBeVisible();
-  await expect(page.getByRole('navigation').getByText('Spécification')).toBeVisible();
-  await expect(page.getByRole('navigation').getByText('Test')).toBeVisible();
-  await expect(page.getByRole('navigation').getByText('Actualités')).toBeVisible();
-  await expect(page.getByRole('navigation').getByText('Souscriptions')).toBeVisible();
+  await expect(page.getByRole('tab', { name: 'Documentation' })).toBeVisible();
+  await expect(page.getByRole('tab', { name: 'Spécification' })).toBeVisible();
+  await expect(page.getByRole('tab', { name: 'Test' })).toBeVisible();
+  await expect(page.getByRole('tab', { name: 'Actualités' })).toBeVisible();
+  await expect(page.getByRole('tab', { name: 'Souscriptions' })).toBeVisible();
   await logout(page);
 
 
@@ -315,45 +317,45 @@ test('Utiliser le page d\'affichage d\'une API ', async ({ page }) => {
 
   //user guest
   await page.getByRole('link', { name: 'API papier' }).click();
-  await expect(page.getByRole('navigation').getByText('Description')).toBeVisible();
-  await expect(page.getByRole('navigation').getByText('Environnements')).toBeVisible();
-  await expect(page.getByRole('navigation').getByText('Documentation')).toBeHidden();
-  await expect(page.getByRole('navigation').getByText('Spécification')).toBeHidden();
-  await expect(page.getByRole('navigation').getByText('Test')).toBeHidden();
-  await expect(page.getByRole('navigation').getByText('Actualités')).toBeHidden();
-  await expect(page.getByRole('navigation').getByText('Questions')).toBeVisible();
-  await expect(page.getByRole('navigation').getByText('Souscriptions')).toBeHidden();
-  await expect(page.getByRole('navigation').getByText('Consommation')).toBeHidden();
-  await expect(page.getByRole('navigation').getByText('Clés d\'API')).toBeHidden();
+  await expect(page.getByRole('tab', { name: 'Description' })).toBeVisible();
+  await expect(page.getByRole('tab', { name: 'Environnements' })).toBeVisible();
+  await expect(page.getByRole('tab', { name: 'Documentation' })).toBeHidden();
+  await expect(page.getByRole('tab', { name: 'Spécification' })).toBeHidden();
+  await expect(page.getByRole('tab', { name: 'Test' })).toBeHidden();
+  await expect(page.getByRole('tab', { name: 'Actualités' })).toBeHidden();
+  await expect(page.getByRole('tab', { name: 'Aide' })).toBeVisible();
+  await expect(page.getByRole('tab', { name: 'Souscriptions' })).toBeHidden();
+  await expect(page.getByRole('tab', { name: 'Consommation' })).toBeHidden();
+  await expect(page.getByRole('tab', { name: 'Clés d\'API' })).toBeHidden();
   await page.goto(HOME)
 
 
   //user simple user
   await loginAs(JIM, page)
   await page.getByRole('link', { name: 'API papier' }).click();
-  await expect(page.getByRole('navigation').getByText('Description')).toBeVisible();
-  await expect(page.getByRole('navigation').getByText('Environnements')).toBeVisible();
-  await expect(page.getByRole('navigation').getByText('Documentation')).toBeVisible();
-  await expect(page.getByRole('navigation').getByText('Spécification')).toBeVisible();
-  await expect(page.getByRole('navigation').getByText('Test')).toBeVisible();
-  await expect(page.getByRole('navigation').getByText('Actualités')).toBeVisible();
-  await expect(page.getByRole('navigation').getByText('Questions')).toBeVisible();
-  await expect(page.getByRole('navigation').getByText('Souscriptions')).toBeHidden();
-  await expect(page.getByRole('navigation').getByText('Clés d\'API')).toBeVisible();
+  await expect(page.getByRole('tab', { name: 'Description' })).toBeVisible();
+  await expect(page.getByRole('tab', { name: 'Environnements' })).toBeVisible();
+  await expect(page.getByRole('tab', { name: 'Documentation' })).toBeVisible();
+  await expect(page.getByRole('tab', { name: 'Spécification' })).toBeVisible();
+  await expect(page.getByRole('tab', { name: 'Test' })).toBeVisible();
+  await expect(page.getByRole('tab', { name: 'Actualités' })).toBeVisible();
+  await expect(page.getByRole('tab', { name: 'Aide' })).toBeVisible();
+  await expect(page.getByRole('tab', { name: 'Souscriptions' })).toBeHidden();
+  await expect(page.getByRole('tab', { name: 'Clés d\'API' })).toBeVisible();
   await logout(page)
 
   //user admin
   await loginAs(MICHAEL, page);
   await page.getByRole('link', { name: 'API papier' }).click();
-  await expect(page.getByRole('navigation').getByText('Description')).toBeVisible();
-  await expect(page.getByRole('navigation').getByText('Environnements')).toBeVisible();
-  await expect(page.getByRole('navigation').getByText('Documentation')).toBeVisible();
-  await expect(page.getByRole('navigation').getByText('Spécification')).toBeVisible();
-  await expect(page.getByRole('navigation').getByText('Test')).toBeVisible();
-  await expect(page.getByRole('navigation').getByText('Actualités')).toBeVisible();
-  await expect(page.getByRole('navigation').getByText('Questions')).toBeVisible();
-  await expect(page.getByRole('navigation').getByText('Souscriptions')).toBeVisible();
-  await expect(page.getByRole('navigation').getByText('Clés d\'API')).toBeVisible();
+  await expect(page.getByRole('tab', { name: 'Description' })).toBeVisible();
+  await expect(page.getByRole('tab', { name: 'Environnements' })).toBeVisible();
+  await expect(page.getByRole('tab', { name: 'Documentation' })).toBeVisible();
+  await expect(page.getByRole('tab', { name: 'Spécification' })).toBeVisible();
+  await expect(page.getByRole('tab', { name: 'Test' })).toBeVisible();
+  await expect(page.getByRole('tab', { name: 'Actualités' })).toBeVisible();
+  await expect(page.getByRole('tab', { name: 'Aide' })).toBeVisible();
+  await expect(page.getByRole('tab', { name: 'Souscriptions' })).toBeVisible();
+  await expect(page.getByRole('tab', { name: 'Clés d\'API' })).toBeVisible();
 })
 
 test('Voir ses notifications', async ({ page }) => {
@@ -544,22 +546,23 @@ test("subscription page filtering by clientId should work",  async ({ page }) =>
   await loginAs(MICHAEL, page);
   await page.getByRole('link', { name: 'API Commande' }).click();
   await expect(page).toHaveURL("/api-division/api-commande/1.0.0/description");
-  await page.getByText('Souscriptions').click();
+  await page.getByRole('tab', { name: 'Souscriptions' }).click();
   await expect(page).toHaveURL("/api-division/api-commande/1.0.0/subscriptions")
   await expect(page.getByRole('listitem', { name: 'daikoku-api-key-api-commande-dev-logistique'})).toBeVisible();
   await expect(page.getByRole('listitem', { name: 'daikoku-api-key-api-commande-prod-logistique' })).toBeVisible();
   await expect(page.getByRole('listitem', { name: 'daikoku-api-key-api-papier-dev-vendeurs' })).toBeVisible();
 
-  await page.getByRole('button', { name: 'Filtrer' }).click();
-  await page.getByRole('button', { name: 'Add' }).nth(1).click();
-  await page.locator('input[name="clientIds.0.value"]').fill('5xkCohZoc3XgDYnc8hvnmsx1NW5jwfBl');
-  await page.getByLabel('Filtrer les données').getByRole('button', { name: 'Filtrer' }).click();
+  await page.getByRole('button', { name: 'Plus de filtres' }).click();
+  const filters = page.getByRole('dialog', { name: 'Filtrer les données' });
+  await filters.getByRole('button', { name: 'Add' }).nth(1).click();
+  await filters.locator('input[name="clientIds.0.value"]').fill('5xkCohZoc3XgDYnc8hvnmsx1NW5jwfBl');
+  await filters.getByRole('button', { name: 'Filtrer' }).click();
 
   await expect(page.getByText('daikoku-api-key-api-commande-dev-logistique')).toBeVisible();
   await expect(page.getByRole('listitem', { name: 'daikoku-api-key-api-commande-prod-logistique' })).not.toBeVisible();
   await expect(page.getByRole('listitem', { name: 'daikoku-api-key-api-papier-dev-vendeurs' })).not.toBeVisible();
 
-  await page.getByRole('button', { name: 'supprimer les filtres' }).click();
+  await page.getByRole('button', { name: 'Réinitialiser les filtres' }).click();
   await expect(page.getByRole('listitem', { name: 'daikoku-api-key-api-commande-dev-logistique'})).toBeVisible();
   await expect(page.getByRole('listitem', { name: 'daikoku-api-key-api-commande-prod-logistique' })).toBeVisible();
   await expect(page.getByRole('listitem', { name: 'daikoku-api-key-api-papier-dev-vendeurs' })).toBeVisible();

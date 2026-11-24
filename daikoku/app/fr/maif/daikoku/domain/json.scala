@@ -206,7 +206,9 @@ object json {
                   (json \ "username").asOpt[String].filter(_.trim.nonEmpty),
                 password =
                   (json \ "password").asOpt[String].filter(_.trim.nonEmpty),
-                config = (json \ "config").asOpt(using TestingConfigFormat)
+                config = (json \ "config").asOpt(using TestingConfigFormat),
+                allowSubscriberKeys =
+                  (json \ "allowSubscriberKeys").asOpt[Boolean].getOrElse(false)
               )
             )
           } recover { case e =>
@@ -237,7 +239,8 @@ object json {
         "config" -> o.config
           .map(TestingConfigFormat.writes)
           .getOrElse(JsNull)
-          .as[JsValue]
+          .as[JsValue],
+        "allowSubscriberKeys" -> o.allowSubscriberKeys
       )
   }
 

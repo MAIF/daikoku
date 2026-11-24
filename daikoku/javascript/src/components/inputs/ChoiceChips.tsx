@@ -7,6 +7,7 @@ export type ChoiceOption<T> = {
   label: string;
   muted?: boolean;
   title?: string;
+  disabled?: boolean;
 };
 
 type ChoiceChipsProps<T> = {
@@ -37,7 +38,7 @@ export const ChoiceChips = <T,>(props: ChoiceChipsProps<T>) => {
               role="radio"
               aria-checked={selected}
               className={classNames('chips --rounded', { '--selected': selected, '--muted': option.muted })}
-              disabled={props.disabled}
+              disabled={props.disabled || option.disabled}
               title={option.title}
               onClick={() => props.onChange(option.value)}
             >

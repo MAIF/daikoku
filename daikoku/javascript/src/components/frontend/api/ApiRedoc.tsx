@@ -8,7 +8,7 @@ import { I18nContext, ModalContext } from '../../../contexts';
 import { GlobalContext } from '../../../contexts/globalContext';
 import * as Services from '../../../services';
 import { IApi, isError, ISwagger, ITeamSimple, IUsagePlan, IWithSwagger, SpecificationType } from '../../../types';
-import { TeamApiSwagger } from '../../backoffice/apis/TeamApiSwagger';
+import { SpecificationSideSheet } from '../apiEditor/sheets/SpecificationSideSheet';
 import { api as API, Can, manage } from '../../utils';
 import { Option } from '../../utils/Option';
 import { Spinner } from '../../utils/Spinner';
@@ -26,21 +26,30 @@ type ApiRedocProps<T extends IWithSwagger> = {
 }
 export function ApiRedoc<T extends IWithSwagger>(props: ApiRedocProps<T>) {
   const [spec, setSpec] = useState<string>()
+  const [revision, setRevision] = useState(0)
+  const [editing, setEditing] = useState(false)
 
   const { connectedUser, tenant } = useContext(GlobalContext)
   const { translate } = useContext(I18nContext);
-  const { openLoginOrRegisterModal, openRightPanel, closeRightPanel } = useContext(ModalContext);
+  const { openLoginOrRegisterModal } = useContext(ModalContext);
+
+  const specUrl = `${props.swaggerUrl}${props.swaggerUrl.includes('?') ? '&' : '?'}revision=${revision}`
+
+  const save = (entity: T) => props.save(entity).then((result) => {
+    setRevision((current) => current + 1)
+    return result
+  })
 
   useEffect(() => {
     if (props.swaggerConf?.specificationType === SpecificationType.asyncapi) {
-      fetch(props.swaggerUrl, {
+      fetch(specUrl, {
         credentials: 'include'
       })
         .then(res => res.blob())
         .then(blob => blob.text())
         .then(setSpec)
     }
-  }, [props.swaggerUrl])
+  }, [specUrl])
 
 
   const config = {
@@ -75,15 +84,7 @@ export function ApiRedoc<T extends IWithSwagger>(props: ApiRedocProps<T>) {
     })
     return <></>
   } else {
-    const openApiDocForm = () => openRightPanel({
-      title: translate('api.home.spec.right.panel.title'),
-      content: <div>
-        <TeamApiSwagger
-          value={props.entity}
-          save={d => props.save(d)
-            .then(closeRightPanel)} />
-      </div>
-    })
+    const openApiDocForm = () => setEditing(true)
 
 
     return <div className="d-flex col flex-column section" style={{ position: 'relative' }}>
@@ -106,7 +107,7 @@ export function ApiRedoc<T extends IWithSwagger>(props: ApiRedocProps<T>) {
           </span>
           {props.entity.swagger && <div className="dropdown-divider" />}
           {props.entity.swagger && <span
-            onClick={() => props.save({ ...props.entity, swagger: null })}
+            onClick={() => save({ ...props.entity, swagger: null })}
             className="dropdown-item cursor-pointer danger"
           >
             {translate('api.home.config.api.spec.menu.delete')}
@@ -123,7 +124,7 @@ export function ApiRedoc<T extends IWithSwagger>(props: ApiRedocProps<T>) {
             }
           }}>
             <RedocStandalone
-              specUrl={props.swaggerUrl}
+              specUrl={specUrl}
               options={{ downloadFileName, pathInMiddlePanel: true, sideNavStyle: SideNavStyleEnum.PathOnly, ...props.swaggerConf?.additionalConf }} />
           </div>}
         {props.swaggerConf?.specificationType === SpecificationType.asyncapi && <AsyncApiComponent schema={spec} config={config} />}
@@ -136,6 +137,8 @@ export function ApiRedoc<T extends IWithSwagger>(props: ApiRedocProps<T>) {
           </Can>
         )}
       </div>
+
+      {editing && <SpecificationSideSheet entity={props.entity} save={save} onClose={() => setEditing(false)} />}
     </div>
   }
 }

@@ -40,5 +40,7 @@ export const ScopeSelect = (props: ScopeSelectProps) => (
       )
     }
     components={{ IndicatorSeparator: () => null }}
+    menuPortalTarget={document.body}
+    styles={{ menuPortal: (base) => ({ ...base, zIndex: 2147483647 }) }}
   />
 );

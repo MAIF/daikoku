@@ -2,10 +2,10 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useContext } from 'react';
 import { toast } from 'sonner';
 
-import { I18nContext, ModalContext } from '../../../../contexts';
+import { I18nContext } from '../../../../contexts';
 import * as Services from '../../../../services';
 import { IApi, isError, ITeamSimple, IUsagePlan } from '../../../../types';
-import { ApiRedoc, ApiTest } from '../../api';
+import { ApiRedoc, ApiTest, TestingKeyOption } from '../../api';
 import { useSharedEnvironment } from './sharedEnvironment';
 
 export type EnvironmentScopedTabId = 'swagger' | 'testing';
@@ -15,11 +15,11 @@ type EnvironmentScopedTabProps = {
   api: IApi;
   ownerTeam: ITeamSimple;
   environments: Array<IUsagePlan>;
+  subscriptionKeys: Array<TestingKeyOption>;
 };
 
-export const EnvironmentScopedTab = ({ tab, api, ownerTeam, environments }: EnvironmentScopedTabProps) => {
+export const EnvironmentScopedTab = ({ tab, api, ownerTeam, environments, subscriptionKeys }: EnvironmentScopedTabProps) => {
   const { translate } = useContext(I18nContext);
-  const { closeRightPanel } = useContext(ModalContext);
   const queryClient = useQueryClient();
 
   const { environment } = useSharedEnvironment(environments, tab);
@@ -40,7 +40,6 @@ export const EnvironmentScopedTab = ({ tab, api, ownerTeam, environments }: Envi
       }
 
       toast.success(translate('update.plan.successful.toast.label'));
-      closeRightPanel();
       return queryClient.invalidateQueries({ queryKey: ['plans'] });
     });
 
@@ -61,7 +60,7 @@ export const EnvironmentScopedTab = ({ tab, api, ownerTeam, environments }: Envi
 
       {tab === 'testing' && (
         <ApiTest
-          key={environment._id}
+          key={JSON.stringify([environment._id, environment.swagger, environment.testing])}
           _id={api._id}
           testing={environment.testing}
           swagger={environment.swagger}
@@ -70,6 +69,7 @@ export const EnvironmentScopedTab = ({ tab, api, ownerTeam, environments }: Envi
           ownerTeam={ownerTeam}
           entity={environment}
           save={savePlan}
+          subscriptionKeys={subscriptionKeys.filter((key) => key.plan === environment._id)}
         />
       )}
     </div>

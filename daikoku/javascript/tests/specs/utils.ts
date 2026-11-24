@@ -236,3 +236,52 @@ export const expectOtoroshiApiKeyEntities = async (
       },
     )
     .toEqual({ status: 200, enabled: true, entities: entityCount });
+
+export type NewApi = {
+  team?: string;
+  group?: boolean;
+  expert?: boolean;
+  name: string;
+  smallDescription?: string;
+  apis?: Array<string>;
+  tags?: Array<string>;
+  state?: 'Brouillon' | 'Publiée';
+};
+
+export const chooseCreationTeam = async (page: Page, team: string) => {
+  await page.getByLabel('Sélectionner une équipe pour cette API').click();
+  await page.getByRole('option', { name: team }).click();
+};
+
+export const createApi = async (page: Page, api: NewApi) => {
+  const sheet = page.getByRole('dialog');
+  const next = () => sheet.getByRole('button', { name: 'Suivant' }).click();
+
+  await page.getByRole('button', { name: 'Créer une API' }).click();
+
+  if (api.team) {
+    await chooseCreationTeam(page, api.team);
+  }
+  await sheet.getByRole('radio', { name: api.group ? 'Oui' : 'Non' }).click();
+  await sheet.getByRole('radio', { name: api.expert ? 'Mode expert' : 'Mode standard' }).click();
+  await next();
+
+  await sheet.getByPlaceholder('New Api').fill(api.name);
+  if (api.smallDescription) {
+    await sheet.getByLabel('Desc. courte').fill(api.smallDescription);
+  }
+  for (const child of api.apis ?? []) {
+    await sheet.locator('.react-form-select__dropdown-indicator').first().click();
+    await page.getByText(child, { exact: true }).click();
+  }
+  await next();
+
+  for (const [index, tag] of (api.tags ?? []).entries()) {
+    await sheet.locator('div.mrf-mt_10').filter({ hasText: 'Tags' }).getByRole('button', { name: 'Add' }).click();
+    await sheet.locator(`input[name="tags\\.${index}\\.value"]`).fill(tag);
+  }
+  await next();
+
+  await sheet.getByRole('radio', { name: api.state ?? 'Brouillon' }).click();
+  await sheet.getByRole('button', { name: 'Créer' }).click();
+};

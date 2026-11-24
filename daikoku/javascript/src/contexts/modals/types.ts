@@ -3,7 +3,6 @@ import { JSX, ReactNode } from 'react';
 import {
   IAsset,
   IImportingDocumentation,
-  IOtoroshiApiKey,
   ISubscriptionCustomization,
   ISubscriptionDemand,
   ITeamSimple,
@@ -34,7 +33,6 @@ export type TModalContext = {
   confirm: (p: ConfirmModalProps) => Promise<boolean>;
   prompt: (p: PromptModalProps) => Promise<string | undefined>;
   openFormModal: <T extends TBaseObject>(p: IFormModalProps<T>) => void;
-  openTestingApikeyModal: <T extends IWithTesting>(p: TestingApiKeyModalProps<T>) => void;
   openSubMetadataModal: (p: SubscriptionMetadataModalProps) => void;
   openApiDocumentationSelectModal: (p: IApiDocumentationSelectModalProps) => void;
   openTeamSelectorModal: (p: TeamSelectorModalProps) => void;
@@ -102,15 +100,6 @@ export interface IFormModalProps<T> {
   moreAction?: ReactNode;
 }
 
-export type TestingApiKeyModalProps<T extends IWithTesting> = {
-  title: string;
-  teamId: string;
-  update: boolean;
-  onChange: (apiKey: IOtoroshiApiKey, config: ITestingConfig) => void;
-  config: ITestingConfig;
-  metadata: any;
-  value: T;
-};
 type LimitedTeam = {
   _id: string;
   name?: string;

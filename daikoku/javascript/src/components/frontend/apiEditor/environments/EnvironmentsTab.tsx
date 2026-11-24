@@ -34,6 +34,7 @@ import {
 } from '../../../utils';
 import { useExportEntity } from '../../../utils/useExportEntity';
 import { ApiKeyRequestSideSheet, AskForApikeys } from '../keyRequest/ApiKeyRequestSideSheet';
+import { withoutGeneratedKey } from '../sheets/TestingSideSheet';
 import { EnvironmentSheetTab, EnvironmentSideSheet } from './EnvironmentSideSheet';
 import { fromRestPlan, isPlanSelectable, keyAccess, teamsAllowedFor, toUsagePlan } from './planUtils';
 
@@ -132,7 +133,12 @@ export const EnvironmentsTab = (props: EnvironmentsTabProps) => {
                   teamId: ownerTeam._id,
                   onClose: (plan) =>
                     editEnvironment(
-                      { ...cloneDeep(fromRestPlan(plan)), _id: nanoid(32), customName: `${plan.customName} (import)` },
+                      {
+                        ...cloneDeep(fromRestPlan(plan)),
+                        _id: nanoid(32),
+                        customName: `${plan.customName} (import)`,
+                        testing: withoutGeneratedKey(plan.testing),
+                      },
                       true
                     ),
                 });
@@ -304,7 +310,13 @@ export const EnvironmentsTab = (props: EnvironmentsTabProps) => {
                     className="dropdown-item d-flex gap-2 align-items-center"
                     onClick={() =>
                       editEnvironment(
-                        { ...cloneDeep(usagePlan), _id: nanoid(32), customName: '', paymentSettings: undefined },
+                        {
+                          ...cloneDeep(usagePlan),
+                          _id: nanoid(32),
+                          customName: '',
+                          paymentSettings: undefined,
+                          testing: withoutGeneratedKey(usagePlan.testing),
+                        },
                         true
                       )
                     }

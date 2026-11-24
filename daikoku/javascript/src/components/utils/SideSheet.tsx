@@ -1,5 +1,5 @@
 import classNames from 'classnames';
-import { X } from 'lucide-react';
+import { ArrowLeft, X } from 'lucide-react';
 import { ReactNode, useContext, useId } from 'react';
 import { createPortal } from 'react-dom';
 
@@ -10,6 +10,7 @@ type SideSheetProps = {
   size?: 'narrow' | 'wide';
   isDirty?: () => boolean;
   onClose: () => void;
+  onBack?: () => void;
   footer?: (requestClose: () => void) => ReactNode;
   children: ReactNode;
 };
@@ -51,9 +52,21 @@ export const SideSheet = (props: SideSheetProps) => {
         }}
       >
         <header className="side-sheet__header">
-          <h2 id={titleId} className="side-sheet__title">
-            {props.title}
-          </h2>
+          <div className="d-flex align-items-center gap-2">
+            {props.onBack && (
+              <button
+                type="button"
+                className="btn --ghost --icon-only"
+                aria-label={translate('Back')}
+                onClick={props.onBack}
+              >
+                <ArrowLeft size={20} />
+              </button>
+            )}
+            <h2 id={titleId} className="side-sheet__title">
+              {props.title}
+            </h2>
+          </div>
           <button
             type="button"
             autoFocus

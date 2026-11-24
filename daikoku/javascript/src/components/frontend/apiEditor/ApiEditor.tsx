@@ -20,9 +20,9 @@ import { Spinner, tabPanelId, Tabs, teamGQLToSimple } from '../../utils';
 import {
   ApiDescription,
   ApiGroupApis,
-  ApiIssue,
   ApiRedoc,
   ApiTest,
+  toTestingKeys,
 } from '../api';
 import { ApiSubscriptions } from '../api/ApiSubscriptions';
 import { ApiEditorHeader } from './ApiEditorHeader';
@@ -32,6 +32,7 @@ import { EnvironmentsTab } from './environments/EnvironmentsTab';
 import { EnvironmentSwitcher } from './environments/EnvironmentSwitcher';
 import { isEnvironmentScope, SHARED_ENVIRONMENT_PARAM } from './environments/sharedEnvironment';
 import { AskForApikeys } from './keyRequest/ApiKeyRequestSideSheet';
+import { IssuesTab } from './issues/IssuesTab';
 import { NewsTab } from './news/NewsTab';
 import { SubscriptionsTab } from './subscriptions/SubscriptionsTab';
 import { ApiTab, useApiTabs } from './useApiTabs';
@@ -266,7 +267,13 @@ const ApiEditorContent = (props: ApiEditorContentProps) => {
           />
         )}
         {byEnvironment && isEnvironmentScoped(activeTab) && (
-          <EnvironmentScopedTab tab={activeTab} api={api} ownerTeam={ownerTeam} environments={props.plans} />
+          <EnvironmentScopedTab
+            tab={activeTab}
+            api={api}
+            ownerTeam={ownerTeam}
+            environments={props.plans}
+            subscriptionKeys={toTestingKeys(subscriptions, props.plans, myTeams)}
+          />
         )}
         {activeTab === 'subscriptions' && <SubscriptionsTab api={api} ownerTeam={ownerTeam} plans={props.plans} />}
         {activeTab === 'documentation' && !byEnvironment && (
@@ -299,6 +306,7 @@ const ApiEditorContent = (props: ApiEditorContentProps) => {
         )}
         {activeTab === 'testing' && !byEnvironment && (
           <ApiTest
+            key={JSON.stringify([api.swagger, api.testing])}
             _id={api._id}
             testing={api.testing}
             swagger={api.swagger}
@@ -307,10 +315,11 @@ const ApiEditorContent = (props: ApiEditorContentProps) => {
             ownerTeam={ownerTeam}
             entity={api}
             save={saveApi}
+            subscriptionKeys={toTestingKeys(subscriptions, props.plans, myTeams)}
           />
         )}
         {activeTab === 'news' && <NewsTab api={api} ownerTeam={ownerTeam} />}
-        {activeTab === 'issues' && <ApiIssue api={api} ownerTeam={ownerTeam} />}
+        {activeTab === 'issues' && <IssuesTab api={api} ownerTeam={ownerTeam} />}
       </div>
     </main>
   );

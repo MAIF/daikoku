@@ -4,13 +4,12 @@ import { I18nContext } from '../../../../contexts';
 import { GlobalContext } from '../../../../contexts/globalContext';
 import * as Services from '../../../../services';
 import { IApi, ITeamSimple, IUsagePlan } from '../../../../types';
-import { ChoiceChips, ScopeSelect } from '../../../inputs';
+import { ScopeSelect } from '../../../inputs';
 import { api as API, CanIDoAction, manage } from '../../../utils';
 import { EnvironmentSideSheet } from './EnvironmentSideSheet';
 import { fromRestPlan } from './planUtils';
 import { EnvironmentScope, useSharedEnvironment } from './sharedEnvironment';
 
-const SELECT_THRESHOLD = 3;
 const CREATE_PREFIX = 'create:';
 
 type EnvironmentSwitcherProps = {
@@ -56,17 +55,13 @@ export const EnvironmentSwitcher = ({ api, ownerTeam, environments, scope }: Env
 
   return (
     <div className="environment-switcher">
-      {options.length < SELECT_THRESHOLD ? (
-        <ChoiceChips label={label} options={options} value={environment?._id} onChange={select} />
-      ) : (
-        <ScopeSelect
-          badge={translate('api.home.config.api.test.env.badge')}
-          ariaLabel={label}
-          options={options}
-          value={environment?._id ?? ''}
-          onChange={select}
-        />
-      )}
+      <ScopeSelect
+        badge={translate('api.home.config.api.test.env.badge')}
+        ariaLabel={label}
+        options={options}
+        value={environment?._id ?? ''}
+        onChange={select}
+      />
 
       {draft && (
         <EnvironmentSideSheet

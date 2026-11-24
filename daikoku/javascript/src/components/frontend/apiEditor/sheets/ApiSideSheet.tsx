@@ -6,7 +6,7 @@ import { GlobalContext } from '../../../../contexts/globalContext';
 import * as Services from '../../../../services';
 import { IApi, ICmsPageGQL, ITeamSimple } from '../../../../types';
 import { teamApiInfoForm } from '../../../backoffice/apis/TeamApiInfo';
-import { ChoiceChips } from '../../../inputs';
+import { ExpertModeChips } from '../../../inputs';
 import { SideSheet, SideSheetActions } from '../../../utils';
 
 type ApiSideSheetProps = {
@@ -20,7 +20,7 @@ type ApiSideSheetProps = {
 
 export const ApiSideSheet = (props: ApiSideSheetProps) => {
   const { translate } = useContext(I18nContext);
-  const { tenant, expertMode, toggleExpertMode, customGraphQLClient } = useContext(GlobalContext);
+  const { tenant, expertMode, customGraphQLClient } = useContext(GlobalContext);
 
   const formRef = useRef<FormRef | undefined>(undefined);
 
@@ -50,17 +50,7 @@ export const ApiSideSheet = (props: ApiSideSheetProps) => {
         <SideSheetActions onCancel={requestClose} onSave={() => formRef.current?.handleSubmit()} />
       )}
     >
-      {!adminOnly && (
-        <ChoiceChips
-          label={translate('api.editor.mode.label')}
-          options={[
-            { value: false, label: translate('Standard mode') },
-            { value: true, label: translate('Expert mode') },
-          ]}
-          value={expertMode}
-          onChange={(expert) => expert !== expertMode && toggleExpertMode()}
-        />
-      )}
+      {!adminOnly && <ExpertModeChips />}
 
       <Form
         ref={formRef}

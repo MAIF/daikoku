@@ -1887,68 +1887,15 @@ object SchemaDefinition {
       )
     )
 
-    lazy val TestingConfigType =
-      ObjectType[(DataStore, DaikokuActionContext[JsValue]), TestingConfig](
-        "TestingConfig",
-        "A configuration to try to call an api on Otorshi from the Daikoku UI",
-        () =>
-          fields[(DataStore, DaikokuActionContext[JsValue]), TestingConfig](
-            Field(
-              "otoroshiSettings",
-              StringType,
-              resolve = _.value.otoroshiSettings.value
-            ),
-            Field(
-              "authorizedEntities",
-              OptionType(AuthorizedEntitiesType),
-              resolve = _.value.authorizedEntities
-            ),
-            Field(
-              "customMetadata",
-              OptionType(JsonType),
-              resolve = _.value.customMetadata
-            ),
-            Field(
-              "customMaxPerSecond",
-              OptionType(LongType),
-              resolve = _.value.customMaxPerSecond
-            ),
-            Field(
-              "customMaxPerDay",
-              OptionType(LongType),
-              resolve = _.value.customMaxPerDay
-            ),
-            Field(
-              "customMaxPerMonth",
-              OptionType(LongType),
-              resolve = _.value.customMaxPerMonth
-            ),
-            Field(
-              "customReadOnly",
-              OptionType(BooleanType),
-              resolve = _.value.customReadOnly
-            ),
-            Field("tag", StringType, resolve = _.value.tag),
-            Field("clientName", StringType, resolve = _.value.clientName)
-          )
-      )
-
     lazy val TestingType
         : ObjectType[(DataStore, DaikokuActionContext[JsValue]), Testing] =
       deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), Testing](
         ObjectTypeName("Testing"),
-        ObjectTypeDescription("Credentials used to test an api from UI"),
+        ObjectTypeDescription("How an api can be tested from UI"),
+        ExcludeFields("username", "password", "config"),
         ReplaceField(
           "auth",
           Field("auth", TestingAuthType, resolve = _.value.auth.name)
-        ),
-        ReplaceField(
-          "config",
-          Field(
-            "config",
-            OptionType(TestingConfigType),
-            resolve = _.value.config
-          )
         )
       )
 

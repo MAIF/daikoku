@@ -18,6 +18,7 @@ import { useExportEntity } from '../../utils/useExportEntity';
 import StarsButton from '../api/StarsButton';
 import { CmsViewer } from '../CmsViewer';
 import { ApiSideSheet } from './sheets/ApiSideSheet';
+import { withoutGeneratedKey } from './sheets/TestingSideSheet';
 import { TransferApiSideSheet } from './sheets/TransferApiSideSheet';
 
 type ApiEditorHeaderProps = {
@@ -144,7 +145,12 @@ export const ApiEditorHeader = ({ api, ownerTeam, tab }: ApiEditorHeaderProps) =
       });
     });
 
-  const cloneApi = (): IApi => ({ ...api, name: `${api.name} copy`, state: 'created' });
+  const cloneApi = (): IApi => ({
+    ...api,
+    name: `${api.name} copy`,
+    state: 'created',
+    testing: withoutGeneratedKey(api.testing),
+  });
 
   return (
     <section className="api-editor__header">

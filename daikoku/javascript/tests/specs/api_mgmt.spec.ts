@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { ACCUEIL, adminApikeyId, adminApikeySecret, dwightPaperApiKeyId, exposedPort, loginAs, logout, otoroshiAdminApikeyId, otoroshiAdminApikeySecret, otoroshiDevCommandRouteId, otoroshiDevPaperRouteId, vendeursPapierExtendedDevApiKeyId } from './utils';
+import { ACCUEIL, adminApikeyId, adminApikeySecret, createApi, dwightPaperApiKeyId, exposedPort, loginAs, logout, otoroshiAdminApikeyId, otoroshiAdminApikeySecret, otoroshiDevCommandRouteId, otoroshiDevPaperRouteId, vendeursPapierExtendedDevApiKeyId } from './utils';
 import { JIM, MICHAEL } from './users';
 import otoroshi_data from '../config/otoroshi/otoroshi-state.json' with { type: "json" };
 
@@ -31,19 +31,14 @@ test('[ASOAPI-10597] - créer une API', async ({ page }) => {
   await page.goto(ACCUEIL);
   await loginAs(JIM, page);
 
-  await page.getByRole('button', { name: 'Créer une API' }).click();
-  await page.locator('#portal-root').getByText('Vendeurs').click();
-  await page.getByRole('button', { name: 'Mode expert' }).click();
-  await page.getByRole('button', { name: 'Brouillon' }).click();
-  await page.getByPlaceholder('New Api').fill('API Betterave');
-  await page.getByLabel('Desc. courte').fill("Ce n'est pas une blague Dwight. Jim ❤️");
-  await page.getByText('Versions et tags').click();
-  await page.locator('div.mrf-mt_10').filter({ hasText: "Tags" }).getByRole('button', { name: "Add" }).click();
-  await page.locator('input[name="tags\\.0\\.value"]').fill('prod');
-  await page.locator('div.mrf-mt_10').filter({ hasText: "Tags" }).getByRole('button', { name: "Add" }).click();
-  await page.locator('input[name="tags\\.1\\.value"]').fill('important');
-  //todo: find a way to fill description by playwright
-  await page.getByRole('button', { name: 'Enregistrer' }).click();
+  await createApi(page, {
+    team: 'Vendeurs',
+    expert: true,
+    name: 'API Betterave',
+    smallDescription: "Ce n'est pas une blague Dwight. Jim ❤️",
+    tags: ['prod', 'important'],
+    state: 'Brouillon',
+  });
   await expect(page.locator('h1')).toContainText('API Betterave');
   await page.getByLabel('Accueil Daikoku').click();
   await expect(page.getByRole('link', { name: 'API Betterave' })).toBeAttached();
@@ -54,7 +49,7 @@ test('[ASOAPI-10597] - créer une API', async ({ page }) => {
   await page.getByRole('link', { name: 'API Betterave' }).click();
   await page.getByRole('button', { name: 'Configurer' }).click();
   await page.getByRole('menu', { name: 'Configurer' }).getByRole('menuitem', { name: 'Configurer' }).click();
-  await page.getByRole('button', { name: 'Publiée' }).click();
+  await page.getByRole('radio', { name: 'Publiée' }).click();
   await page.getByRole('button', { name: 'Enregistrer' }).click();
 
   await page.getByText('Environnements').click();
@@ -73,7 +68,7 @@ test('[ASOAPI-10597] - créer une API', async ({ page }) => {
   await loginAs(JIM, page);
   await page.getByRole('link', { name: 'API Betterave' }).click();
   //todo: wait for better API lifecycle to test deprected
-  // await page.getByRole('button', { name: 'Dépréciée' }).click();
+  // await page.getByRole('radio', { name: 'Dépréciée' }).click();
   // await page.getByRole('button', { name: 'Enregistrer' }).click();
   // await page.getByLabel('Liste des APIs').click();
   // await page.getByRole('heading', { name: 'API Betterave' }).click();
@@ -81,7 +76,7 @@ test('[ASOAPI-10597] - créer une API', async ({ page }) => {
   // await page.locator('div.row.py-4', { hasText: 'API Betterave' }).getByLabel('paramètres').click();
   await page.getByRole('button', { name: 'Configurer' }).click();
   await page.getByRole('menu', { name: 'Configurer' }).getByRole('menuitem', { name: 'Configurer' }).click();
-  await page.getByRole('button', { name: 'Bloquée' }).click();
+  await page.getByRole('radio', { name: 'Bloquée' }).click();
   await page.getByRole('button', { name: 'Enregistrer' }).click();
   await page.getByRole('textbox', { name: 'Saisissez API Betterave pour' }).fill('API Betterave');
   await page.getByRole('button', { name: 'Confirmation' }).click();
@@ -225,11 +220,7 @@ test('[ASOAPI-10599] - supprimer une API', async ({ page }) => {
 test('sécuriser la création d\'API à l\'aide de la securité de tenant associé', async ({ page }) => {
   await page.goto(ACCUEIL);
   await loginAs(MICHAEL, page);
-  await page.getByRole('button', { name: 'Créer une API' }).click();
-  await page.getByRole('dialog').getByRole('listitem', { name: 'Vendeurs' }).click();
-  await page.getByRole('button', { name: 'Publiée' }).click();
-  await page.getByRole('textbox', { name: 'Nom' }).fill('Vente de papier API');
-  await page.getByRole('button', { name: 'Enregistrer' }).click();
+  await createApi(page, { team: 'Vendeurs', name: 'Vente de papier API', state: 'Publiée' });
   await expect(page.locator('h1')).toContainText('Vente de papier API');
   await page.getByLabel('Accueil Daikoku').click();
   await expect(page.getByRole('link', { name: 'Vente de papier API' })).toBeVisible();
@@ -249,11 +240,13 @@ test('sécuriser la création d\'API à l\'aide de la securité de tenant associ
   await page.getByRole('link', { name: 'Accueil Daikoku' }).click();
   await page.getByRole('button', { name: 'Créer une API' }).click();
   await expect(page.getByRole('dialog')).toBeVisible();
-  await expect(page.getByRole('dialog').getByRole('listitem')).toHaveCount(1);
-  await expect(page.getByRole('dialog').getByRole('listitem', { name: 'API Division' })).toBeVisible();
-  await expect(page.getByRole('dialog').getByRole('listitem', { name: 'Vendeurs' })).toBeHidden();
+  await page.getByLabel('Sélectionner une équipe pour cette API').click();
+  await expect(page.getByRole('option')).toHaveCount(1);
+  await expect(page.getByRole('option', { name: 'API Division' })).toBeVisible();
+  await expect(page.getByRole('option', { name: 'Vendeurs' })).toBeHidden();
 
-  await page.getByRole('dialog').locator('.modal-footer').getByRole('button', { name: 'Fermer' }).first().click();
+  await page.keyboard.press('Escape');
+  await page.getByRole('dialog').getByRole('button', { name: 'Annuler' }).click();
   await logout(page);
 
   await loginAs(JIM, page);
@@ -267,24 +260,15 @@ test('[ASOAPI-10597] - créer un groupe d\'API', async ({ page }) => {
   await loginAs(MICHAEL, page);
 
 
-  await page.getByRole('button', { name: 'Plus d\'options de création' }).click();
-  await page.getByRole('link', { name: 'groupe d\'APIs' }).click();
-
-  await page.locator('#portal-root').getByText('API division').click();
-  await page.getByRole('button', { name: 'Mode expert' }).click();
-  await page.getByRole('button', { name: 'Publiée' }).click();
-  await page.getByPlaceholder('New Api').fill(apiGroupName);
-  await page.getByLabel('Desc. courte').fill("Un groupe, Un parcours, une suite ❤️");
-
-
-  await page.locator('.react-form-select__indicator').first().click();
-  await page.getByText('API papier - 1.0.0', { exact: true }).click();
-
-  await page.locator('.react-form-select__indicator.react-form-select__dropdown-indicator').first().click();
-  await page.getByText('API Commande - 1.0.0', { exact: true }).click();
-
-
-  await page.getByRole('button', { name: 'Enregistrer' }).click();
+  await createApi(page, {
+    team: 'API Division',
+    group: true,
+    expert: true,
+    name: apiGroupName,
+    smallDescription: 'Un groupe, Un parcours, une suite ❤️',
+    apis: ['API papier - 1.0.0', 'API Commande - 1.0.0'],
+    state: 'Publiée',
+  });
   await expect(page.getByRole('heading', { name: apiGroupName }).first()).toBeVisible();
   await page.getByLabel('Accueil Daikoku').click();
   await page.getByRole('link', { name: apiGroupName }).click();

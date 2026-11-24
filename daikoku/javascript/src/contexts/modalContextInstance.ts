@@ -9,9 +9,6 @@ const init: TModalContext = {
   openFormModal: () => {
     console.error('ModalProvider is missing in the tree: openFormModal is a no-op');
   },
-  openTestingApikeyModal: () => {
-    console.error('ModalProvider is missing in the tree: openTestingApikeyModal is a no-op');
-  },
   openSubMetadataModal: () => {
     console.error('ModalProvider is missing in the tree: openSubMetadataModal is a no-op');
   },

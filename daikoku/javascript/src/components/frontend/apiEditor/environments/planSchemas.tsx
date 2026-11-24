@@ -329,7 +329,7 @@ export const generalSchema = (
       },
       metadata: {
         type: type.object,
-        label: translate('Metadata'),
+        label: null,
       },
       autoRotation: {
         type: type.bool,

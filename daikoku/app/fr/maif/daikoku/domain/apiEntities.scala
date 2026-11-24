@@ -556,13 +556,19 @@ case class Testing(
     name: Option[String] = None,
     username: Option[String] = None,
     password: Option[String] = None,
-    config: Option[TestingConfig] = None
+    config: Option[TestingConfig] = None,
+    allowSubscriberKeys: Boolean = false
 ) extends CanJson[Testing] {
   override def asJson: JsValue = json.TestingFormat.writes(this)
 
   def asSafeJson: JsObject =
     Json.obj(
-      "enabled" -> enabled
+      "enabled" -> enabled,
+      "url" -> url,
+      "auth" -> auth.name,
+      "name" -> name,
+      "hasTestingKey" -> username.isDefined,
+      "allowSubscriberKeys" -> allowSubscriberKeys
     )
 }
 
@@ -645,6 +651,11 @@ case class Api(
     if (hideOpenApiForGuest) baseJson - "swagger" else baseJson
 
   }
+
+  def asUserJson: JsValue =
+    json.ApiFormat.writes(this).as[JsObject] ++ Json.obj(
+      "testing" -> testing.map(_.asSafeJson).getOrElse(Json.obj())
+    )
 
   def asSimpleJson: JsValue =
     Json.obj(
