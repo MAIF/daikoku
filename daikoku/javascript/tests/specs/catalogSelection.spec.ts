@@ -250,7 +250,7 @@ test('restores off-page APIs after a failed submission and clears selection only
       .click();
     await page.getByRole('button', { name: 'Selection key', exact: true }).press('Enter');
     await page.getByRole('button', { name: 'Vérifier la demande', exact: true }).click();
-    await page.getByRole('button', { name: 'Envoyer la demande groupée', exact: true }).click();
+    await page.getByRole('button', { name: 'Créer la demande groupée', exact: true }).click();
     if (attempt === 0) {
       await expect(page.getByText('Selection submission failed', { exact: true })).toBeVisible();
       await page.getByRole('button', { name: 'Modifier la préparation', exact: true }).click();

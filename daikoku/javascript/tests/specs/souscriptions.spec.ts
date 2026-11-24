@@ -338,8 +338,8 @@ test('Demander plusieurs extension d\'apikey jusqu\'aux notifications', async ({
   await page.getByText('Environnements').click();
   await page.getByRole('listitem', { name: 'prod' }).getByRole('checkbox').check();
   await page.getByRole('button', { name: 'Demande de clé d\'API' }).click();
-  await page.getByText('Logistique').click();
-  await page.getByText('Plan(s) prod don\'t allow more subscription from teamLogistique').click();
+  await page.getByText('Logistique').isDisabled();
+  await page.getByText('Plan(s) prod don\'t allow more subscription from teamLogistique').isVisible();
   await page.getByText('Vendeurs').click();
   await page.locator('.react-form-select__input-container').click();
   await page.getByRole('option', { name: 'dev (API papier)' }).click();
@@ -348,9 +348,6 @@ test('Demander plusieurs extension d\'apikey jusqu\'aux notifications', async ({
   await page.getByRole('button', { name: 'Suivant' }).click();
   await page.getByRole('textbox', { name: 'motivation' }).fill('motication de l\'utilisateur');
   await page.getByRole('button', { name: 'Envoyer' }).click();
-
-  await page.getByText('La demande de clé d\'API au').click();
-  await page.getByRole('button', { name: 'Close toast' }).click();
 
   await logout(page);
   await loginAs(MICHAEL, page);

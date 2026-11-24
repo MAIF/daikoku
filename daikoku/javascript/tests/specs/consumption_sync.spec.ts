@@ -44,7 +44,7 @@ test.describe('Consumption sync via ElasticSearch', () => {
 
     // 1. Seed a free plan + API owned by the producer team.
     const planId = nanoidLike();
-    const plan = generatePlan({ _id: planId, customName: 'free' });
+    const plan = generatePlan({ _id: planId, customName: 'dev' });
     const api = generateApi({
       name: 'Consumption API',
       team: apiDivision,
@@ -63,8 +63,11 @@ test.describe('Consumption sync via ElasticSearch', () => {
     await page.getByText('Environnements').click();
     await page.getByRole('button', { name: "Obtenir une clé d'API" }).click();
     await page.getByText('Vendeurs').click();
+    await page.getByRole('textbox', { name: 'Nom de la clé d\'API' }).fill('My new APIkey');
+    await page.getByRole('button', { name: 'Envoyer' }).click();
     // Copy the key in clientId:clientSecret format from the tooltip.
-    await page.getByRole('button', { name: 'ClientId:ClientSecret' }).click();
+    await page.getByText('ClientId:ClientSecret').click();
+    // await page.getByRole('button', { name: 'ClientId:ClientSecret' }).click();
     const [clientId, clientSecret] = (
       await page.evaluate(() => navigator.clipboard.readText())
     ).split(':', 2);
