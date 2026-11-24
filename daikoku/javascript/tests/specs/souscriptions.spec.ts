@@ -501,8 +501,9 @@ test('[ASOAPI-10398 ASOAPI-10399] - [producteur] - désactiver/activer une clé 
     .getByRole('button', { name: 'Actions de la souscription' }).click();
   await page.getByRole('listitem', { name: 'api-commande-prod-logistique' })
     .getByRole('button', { name: 'Désactiver la souscription' }).click();
-  expect(page.getByText('Êtes-vous sûr de vouloir dé')).toBeVisible;
-  await page.getByRole('button', { name: 'Ok', exact: true }).click()
+  const confirmation = page.getByRole('dialog', { name: 'Bloquer la souscription', exact: true });
+  await expect(confirmation).toBeVisible();
+  await confirmation.getByRole('button', { name: 'Bloquer', exact: true }).click();
   await expect(page.getByRole('listitem', { name: 'api-commande-prod-logistique' }))
     .toContainText('Bloquée');
 

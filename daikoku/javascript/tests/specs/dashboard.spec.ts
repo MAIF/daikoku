@@ -152,7 +152,7 @@ test('apilist pagination', async ({ page }) => {
       const api = generateApi()
       const updatedApi = { ...api, _tenant: api.tenant, team: apiDivision, name: `${api.name}-${idx}`, description: `${api.description}-${idx}`, smallDescription: `${api.smallDescription}-${idx}` }
       return updatedApi
-    })//@ts-ignore
+    })
     .map(a => saveApi(a).then(r => r.json()))
 
   await Promise.all(apis)
@@ -171,7 +171,7 @@ for (const reuseExistingKeyring of [false, true]) {
     page,
   }) => {
     const plan = generatePlan({
-      customName: 'Batch UI plan',
+      customName: 'dev',
       aggregationApiKeysSecurity: true,
       allowMultipleKeys: reuseExistingKeyring,
     });
@@ -267,7 +267,8 @@ for (const reuseExistingKeyring of [false, true]) {
       });
     });
 
-    await page.getByRole('button', { name: 'Envoyer la demande groupée' }).click();
+    await page.getByRole('button', { name: 'Vérifier la demande' }).click();
+    await page.getByRole('button', { name: 'Créer la demande groupée' }).click();
     await expect(page.getByText(/Votre demande groupée de souscription/)).toBeVisible();
     await expect(
       page.getByRole('button', { name: 'Souscrire aux APIs sélectionnées' })
@@ -296,9 +297,9 @@ for (const reuseExistingKeyring of [false, true]) {
 }
 
 test('only selects available plans when subscribing to an environment across APIs', async ({ page }) => {
-  const dev = generatePlan({ customName: 'Available dev', aggregationApiKeysSecurity: true });
-  const pending = generatePlan({ customName: 'Pending batch plan' });
-  const privatePlan = generatePlan({ customName: 'Unauthorized plan', visibility: 'Private' });
+  const dev = generatePlan({ customName: 'dev', aggregationApiKeysSecurity: true });
+  const pending = generatePlan({ customName: 'preprod' });
+  const privatePlan = generatePlan({ customName: 'prod', visibility: 'Private' });
   const planResponses = await Promise.all([dev, pending, privatePlan].map(savePlan));
   expect(planResponses.every((response) => response.ok)).toBe(true);
   const apis = Array.from({ length: 3 }, (_, index) => generateApi({
@@ -330,9 +331,9 @@ test('only selects available plans when subscribing to an environment across API
   await page.getByRole('button', { name: 'Souscrire aux APIs sélectionnées' }).click();
   await page.getByRole('button', { name: MICHAEL.name, exact: true }).click();
   const available = page.getByRole('region', { name: 'Plans non affectés', exact: true });
-  await expect(available.getByRole('checkbox', { name: /\/ Available dev$/ })).toHaveCount(2);
-  await expect(available.getByRole('checkbox', { name: /Pending batch plan/ })).toHaveCount(0);
-  await expect(available.getByRole('checkbox', { name: /Unauthorized plan/ })).toHaveCount(0);
+  await expect(available.getByRole('checkbox', { name: dev.customName })).toHaveCount(2);
+  await expect(available.getByRole('checkbox', { name: pending.customName })).toHaveCount(0);
+  await expect(available.getByRole('checkbox', { name: privatePlan.customName })).toHaveCount(0);
   await page.getByRole('button', { name: "Préparer une clé d'API", exact: true }).click();
   await page.getByRole('textbox', { name: "Nom de la clé d'API", exact: true }).fill('Available dev');
   await available.getByRole('button', { name: 'Sélectionner les plans visibles', exact: true }).click();
@@ -342,7 +343,8 @@ test('only selects available plans when subscribing to an environment across API
     payload = route.request().postDataJSON();
     return route.fulfill({ status: 201, json: { batch: 'availability-test', state: 'pending', replayed: false } });
   });
-  await page.getByRole('button', { name: 'Envoyer la demande groupée' }).click();
+  await page.getByRole('button', { name: 'Vérifier la demande' }).click();
+  await page.getByRole('button', { name: 'Créer la demande groupée' }).click();
   await expect(page.getByText(/Votre demande groupée de souscription/)).toBeVisible();
   expect(payload?.items.map(({ api }) => api).sort()).toEqual([apis[1]._id, apis[2]._id].sort());
   expect(payload?.items.every(({ plan }) => plan === dev._id)).toBe(true);
@@ -353,19 +355,27 @@ test('only selects available plans when subscribing to an environment across API
 // but intercept batch submission: they do not verify backend batch execution.
 test.describe('keyring workspace UI', () => {
   const availableName = 'Plans non affectés';
-  const submitName = 'Envoyer la demande groupée';
+  const submitName = 'Vérifier la demande';
   const batchEndpoint = /\/api\/subscription\/team\/[^/]+\/batches$/;
 
-  async function seedWorkspace() {
+  async function seedWorkspace(additionalPlanNames: string[] = []) {
     const plan = generatePlan({
-      customName: 'Workspace dev',
+      customName: 'dev',
       aggregationApiKeysSecurity: true,
       allowMultipleKeys: true,
     });
-    expect((await savePlan(plan)).ok).toBe(true);
+    const plans = [
+      plan,
+      ...additionalPlanNames.map((customName) => generatePlan({
+        customName,
+        aggregationApiKeysSecurity: true,
+        allowMultipleKeys: true,
+      })),
+    ];
+    expect((await Promise.all(plans.map(savePlan))).every((response) => response.ok)).toBe(true);
     const apis = ['Alpha', 'Beta', 'Gamma'].map((name) => generateApi({
       name: `Workspace ${name}`,
-      possibleUsagePlans: [plan._id],
+      possibleUsagePlans: plans.map(({ _id }) => _id),
     }));
     expect((await Promise.all(apis.map(saveApi))).every((response) => response.ok)).toBe(true);
     return { apis, plan };
@@ -497,7 +507,7 @@ test.describe('keyring workspace UI', () => {
   });
 
   test('wand requests an inline destination only when compatible keys are ambiguous', async ({ page }) => {
-    const { apis } = await seedWorkspace();
+    const { apis, plan } = await seedWorkspace();
     await openWorkspace(page, apis);
     await createFolder(page, 'First destination');
     await createFolder(page, 'Second destination');
@@ -506,7 +516,7 @@ test.describe('keyring workspace UI', () => {
     const resolution = page.getByRole('region', { name: 'Choix nécessaires à la répartition', exact: true });
     await expect(resolution).toBeVisible();
     await expect(available.getByRole('checkbox')).toHaveCount(3);
-    await resolution.getByRole('combobox', { name: 'Destination pour Workspace dev', exact: true }).selectOption({ label: 'First destination' });
+    await resolution.getByRole('combobox', { name: `Destination pour ${plan.customName}`, exact: true }).selectOption({ label: 'First destination' });
     await resolution.getByRole('button', { name: 'Répartir les plans', exact: true }).click();
     await expect(resolution).toHaveCount(0);
     await expect(page.getByRole('region', { name: 'First destination', exact: true }).getByRole('checkbox')).toHaveCount(3);
@@ -518,16 +528,8 @@ test.describe('keyring workspace UI', () => {
 
   for (const display of ['environment', 'default'] as const) {
     test(`groups available plans only in environment display: ${display}`, async ({ page }) => {
-      const { apis, plan } = await seedWorkspace();
-      const production = generatePlan({
-        ...plan,
-        _id: `${plan._id}-prod`,
-        customName: 'Workspace prod',
-      });
-      expect((await savePlan(production)).ok).toBe(true);
-      expect((await Promise.all(apis.map((api) => saveApi({
-        ...api, possibleUsagePlans: [plan._id, production._id],
-      })))).every((response) => response.ok)).toBe(true);
+      const productionName = 'prod';
+      const { apis, plan } = await seedWorkspace([productionName]);
       const response = await fetch(`http://localhost:${exposedPort}/admin-api/tenants/default`, {
         method: 'PATCH',
         headers: {
@@ -545,17 +547,17 @@ test.describe('keyring workspace UI', () => {
         (groups) => groups.map((group) => group.getAttribute('data-environment'))
       );
       if (display === 'environment') {
-        await expect(available.getByRole('heading', { name: 'Workspace dev (3)', exact: true })).toBeVisible();
-        await expect(available.getByRole('heading', { name: 'Workspace prod (3)', exact: true })).toBeVisible();
+        await expect(available.getByRole('heading', { name: `${plan.customName} (3)`, exact: true })).toBeVisible();
+        await expect(available.getByRole('heading', { name: `${productionName} (3)`, exact: true })).toBeVisible();
       }
       const search = available.getByRole('searchbox', { name: 'Rechercher une API ou un plan' });
       await expect(available.getByRole('button', { name: /^Sélectionner Workspace .* sur les APIs$/ })).toHaveCount(0);
       if (display === 'environment') {
         const selectDev = available.getByRole('button', {
-          name: 'Sélectionner tous les plans visibles de Workspace dev', exact: true,
+          name: `Sélectionner tous les plans visibles de ${plan.customName}`, exact: true,
         });
         const selectProd = available.getByRole('button', {
-          name: 'Sélectionner tous les plans visibles de Workspace prod', exact: true,
+          name: `Sélectionner tous les plans visibles de ${productionName}`, exact: true,
         });
         await search.fill('Workspace Alpha');
         await selectDev.click();
@@ -578,8 +580,8 @@ test.describe('keyring workspace UI', () => {
       await search.fill('Workspace Alpha');
       await expect(available.getByRole('checkbox')).toHaveCount(2);
       if (display === 'environment') {
-        await expect(available.getByRole('heading', { name: 'Workspace dev (1)', exact: true })).toBeVisible();
-        await expect(available.getByRole('heading', { name: 'Workspace prod (1)', exact: true })).toBeVisible();
+        await expect(available.getByRole('heading', { name: `${plan.customName} (1)`, exact: true })).toBeVisible();
+        await expect(available.getByRole('heading', { name: `${productionName} (1)`, exact: true })).toBeVisible();
       }
       await available.getByRole('button', { name: 'Sélectionner les plans visibles', exact: true }).click();
       await search.fill('Workspace Beta');
@@ -683,6 +685,7 @@ test.describe('keyring workspace UI', () => {
     await first.getByRole('textbox', { name: "Nom de la clé d'API", exact: true }).fill('Renamed shared workspace');
     expect(submissions).toHaveLength(0);
     await page.getByRole('button', { name: submitName, exact: true }).click();
+    await page.getByRole('button', { name: 'Créer la demande groupée', exact: true }).click();
     await expect(page.getByText(/Votre demande groupée de souscription/)).toBeVisible();
     await expect(page).toHaveURL(/\/apis$/);
     expect(submissions).toHaveLength(1);
@@ -838,6 +841,7 @@ test.describe('keyring workspace UI', () => {
     await expect(folder.getByRole('heading', { name: 'Nouveaux accès demandés (1)', exact: true })).toBeVisible();
     expect(writes).toEqual([]);
     await page.getByRole('button', { name: submitName, exact: true }).click();
+    await page.getByRole('button', { name: 'Créer la demande groupée', exact: true }).click();
     await expect(page.getByText(/Votre demande groupée de souscription/)).toBeVisible();
     expect(payload?.newKeyrings).toEqual([]);
     expect(payload?.items).toEqual([{
@@ -882,14 +886,15 @@ test.describe('keyring workspace UI', () => {
       const incompatible = generatePlan({
         ...plan,
         _id: `${plan._id}-other`,
-        customName: incompatibility === 'environment' ? 'Workspace prod' : plan.customName,
+        customName: incompatibility === 'environment' ? 'prod' : plan.customName,
         otoroshiTarget: {
           ...plan.otoroshiTarget,
           otoroshiSettings: incompatibility === 'binding' ? 'workspace-other-otoroshi' : plan.otoroshiTarget.otoroshiSettings,
           apikeyCustomization: { ...plan.otoroshiTarget.apikeyCustomization, readOnly: incompatibility === 'readonly' },
         },
       });
-      expect((await savePlan(incompatible)).ok).toBe(true);
+      const saveResponse = await savePlan(incompatible);
+      expect(saveResponse.ok, `${saveResponse.status}: ${await saveResponse.text()}`).toBe(true);
       const otherApi = generateApi({ name: 'Workspace incompatible', possibleUsagePlans: [incompatible._id] });
       expect((await saveApi(otherApi)).ok).toBe(true);
       await openWorkspace(page, [apis[0], apis[1], otherApi]);
@@ -928,13 +933,16 @@ test.describe('keyring workspace UI', () => {
     await page.getByRole('checkbox', { name: `Sélectionner ${apis[0].name} / ${plan.customName}`, exact: true }).check();
     await moveSelection(page, 'Retry workspace');
     await page.getByRole('button', { name: submitName, exact: true }).click();
+    await page.getByRole('button', { name: 'Créer la demande groupée', exact: true }).click();
     await expect(page.getByText('Workspace temporary failure', { exact: true })).toBeVisible();
+    await page.getByRole('button', { name: 'Modifier la préparation', exact: true }).click();
     await expect(folder.getByRole('checkbox')).toHaveCount(1);
     await page.getByRole('link', { name: 'Retour au catalogue', exact: true }).click();
     const confirmation = page.getByRole('dialog', { name: 'Quitter la préparation ?', exact: true });
     await expect(confirmation).toBeVisible();
     await confirmation.getByRole('button', { name: 'Rester', exact: true }).click();
     await page.getByRole('button', { name: submitName, exact: true }).click();
+    await page.getByRole('button', { name: 'Créer la demande groupée', exact: true }).click();
     await expect(page.getByText(/Votre demande groupée de souscription/)).toBeVisible();
     await expect(page).toHaveURL(/\/apis$/);
     expect(payloads).toHaveLength(2);
