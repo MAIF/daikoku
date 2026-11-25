@@ -112,7 +112,8 @@ class HomeController(
             case dataStore: PostgresDataStore =>
               dataStore.isDatabaseReachable
                 .map(dbReachable =>
-                  if (dbReachable) ServiceStatus.Up else ServiceStatus.Down
+                  if (dbReachable && env.ready.isCompleted) ServiceStatus.Up
+                  else ServiceStatus.Down
                 )
           })
             .map(status =>

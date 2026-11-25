@@ -74,6 +74,7 @@ class DaikokuComponentsInstances(context: Context)
   lazy val translator = wire[Translator]
 
   override lazy val httpFilters: Seq[EssentialFilter] = Seq(
+    new ReadinessFilter(env),
     new SecurityFilter(env)
   ) ++ env.expositionFilters ++ env.identityFilters
 
@@ -316,6 +317,21 @@ private class ErrorHandler(env: Env) extends HttpErrorHandler {
       s"Server Error: $uuid",
       Results.InternalServerError
     )
+  }
+}
+
+private class ReadinessFilter(env: Env)(implicit
+    val mat: Materializer,
+    ec: ExecutionContext
+) extends Filter {
+  def apply(
+      nextFilter: RequestHeader => Future[Result]
+  )(request: RequestHeader): Future[Result] = {
+    if (request.path == "/health") {
+      nextFilter(request)
+    } else {
+      env.ready.flatMap(_ => nextFilter(request))
+    }
   }
 }
 
