@@ -146,9 +146,7 @@ type ApiEditorContentProps = {
   refreshApi: () => void;
 };
 
-const ApiEditorContent = (props: ApiEditorContentProps) => {
-  const { api, ownerTeam, myTeams, subscriptions, pendingSubscriptions } = props;
-
+const ApiEditorContent = ({ api, ownerTeam, myTeams, subscriptions, pendingSubscriptions, plans, refreshApi }: ApiEditorContentProps) => {
   const { tenant } = useContext(GlobalContext);
   const { translate } = useContext(I18nContext);
 
@@ -157,7 +155,7 @@ const ApiEditorContent = (props: ApiEditorContentProps) => {
   const [searchParams] = useSearchParams();
   const queryClient = useQueryClient();
 
-  const tabs = useApiTabs({ api, ownerTeam, plans: props.plans, myTeams, myKeyCount: subscriptions.length });
+  const tabs = useApiTabs({ api, ownerTeam, plans, myTeams, myKeyCount: subscriptions.length });
   const activeTab: ApiTab = params.tab === 'labels' ? 'issues' : (params.tab as ApiTab);
 
   const subscribingTeams = myTeams.filter(
@@ -201,7 +199,7 @@ const ApiEditorContent = (props: ApiEditorContentProps) => {
       }
 
       toast.success(translate('update.api.successful.toast.label'));
-      props.refreshApi();
+      refreshApi();
     });
 
   const byEnvironment = tenant.display === Display.environment;
@@ -237,7 +235,7 @@ const ApiEditorContent = (props: ApiEditorContentProps) => {
         />
 
         {byEnvironment && isEnvironmentScope(activeTab) && (
-          <EnvironmentSwitcher api={api} ownerTeam={ownerTeam} environments={props.plans} scope={activeTab} />
+          <EnvironmentSwitcher api={api} ownerTeam={ownerTeam} environments={plans} scope={activeTab} />
         )}
       </div>
 
@@ -271,11 +269,11 @@ const ApiEditorContent = (props: ApiEditorContentProps) => {
             tab={activeTab}
             api={api}
             ownerTeam={ownerTeam}
-            environments={props.plans}
-            subscriptionKeys={toTestingKeys(subscriptions, props.plans, myTeams)}
+            environments={plans}
+            subscriptionKeys={toTestingKeys(subscriptions, plans, myTeams)}
           />
         )}
-        {activeTab === 'subscriptions' && <SubscriptionsTab api={api} ownerTeam={ownerTeam} plans={props.plans} />}
+        {activeTab === 'subscriptions' && <SubscriptionsTab api={api} ownerTeam={ownerTeam} plans={plans} />}
         {activeTab === 'documentation' && !byEnvironment && (
           <DocumentationTab
             api={api}
@@ -300,7 +298,7 @@ const ApiEditorContent = (props: ApiEditorContentProps) => {
           <EnvironmentsDocumentationTab
             api={api}
             ownerTeam={ownerTeam}
-            plans={props.plans}
+            plans={plans}
             refresh={() => queryClient.invalidateQueries({ queryKey: ['plans'] })}
           />
         )}
@@ -315,7 +313,7 @@ const ApiEditorContent = (props: ApiEditorContentProps) => {
             ownerTeam={ownerTeam}
             entity={api}
             save={saveApi}
-            subscriptionKeys={toTestingKeys(subscriptions, props.plans, myTeams)}
+            subscriptionKeys={toTestingKeys(subscriptions, plans, myTeams)}
           />
         )}
         {activeTab === 'news' && <NewsTab api={api} ownerTeam={ownerTeam} />}

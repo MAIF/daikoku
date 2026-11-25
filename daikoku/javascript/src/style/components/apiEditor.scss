@@ -65,8 +65,23 @@
   margin-bottom: 6px;
 
   .scope-select {
-    width: 240px;
+    width: 220px;
     margin-bottom: 0;
+
+    .reactSelect__control {
+      min-height: 30px;
+    }
+
+    .badge {
+      padding: 2px 6px;
+      line-height: 14px;
+    }
+
+    .reactSelect__value-container,
+    .reactSelect__indicator {
+      padding-top: 0;
+      padding-bottom: 0;
+    }
   }
 
   .choice-chips {

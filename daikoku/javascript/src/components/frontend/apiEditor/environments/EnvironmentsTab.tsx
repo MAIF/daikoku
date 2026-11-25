@@ -58,8 +58,8 @@ export const EnvironmentsTab = (props: EnvironmentsTabProps) => {
 
   const { translate } = useContext(I18nContext);
   const { connectedUser, tenant, customGraphQLClient, flags } = useContext(GlobalContext);
-  const { openLoginOrRegisterModal, openFormModal, openCustomModal, openApiSelectModal, close } =
-    useContext(ModalContext);
+  const { openLoginOrRegisterModal, openFormModal, openCustomModal, openApiSelectModal, close } = useContext(ModalContext);
+
   const { canExport, exportEntity } = useExportEntity();
   const { hash } = useLocation();
   const queryClient = useQueryClient();
@@ -102,13 +102,13 @@ export const EnvironmentsTab = (props: EnvironmentsTabProps) => {
   const editEnvironment = (plan: IUsagePlan, creation: boolean, tab?: EnvironmentSheetTab) =>
     setSheet({ kind: 'environment', plan: creation ? withOnlyAvailableEnvironment(plan) : plan, creation, tab });
 
-  const createEnvironment = () => {
-    const createEmpty = () =>
-      Services.fetchNewPlan().then((plan) => {
-        close();
-        editEnvironment(fromRestPlan(plan), true);
-      });
+  const createEmpty = () =>
+    Services.fetchNewPlan().then((plan) => {
+      close();
+      editEnvironment(fromRestPlan(plan), true);
+    });
 
+  const createEnvironment = () => {
     if (!api.parent) {
       createEmpty();
       return;
@@ -359,28 +359,28 @@ export const EnvironmentsTab = (props: EnvironmentsTabProps) => {
     ...(connectedUser.isGuest
       ? []
       : [
-          columnHelper.display({
-            id: 'select',
-            meta: { hidden: !flags.multiPlanSubscriptionEnabled, size: 1 },
-            header: ({ table }) => (
-              <input
-                type="checkbox"
-                aria-label={translate('SelectAll')}
-                checked={table.getIsAllRowsSelected()}
-                onChange={table.getToggleAllRowsSelectedHandler()}
-              />
-            ),
-            cell: ({ row }) => (
-              <input
-                type="checkbox"
-                aria-label={row.original.customName}
-                checked={row.getIsSelected()}
-                disabled={!row.getCanSelect()}
-                onChange={row.getToggleSelectedHandler()}
-              />
-            ),
-          }),
-        ]),
+        columnHelper.display({
+          id: 'select',
+          meta: { hidden: !flags.multiPlanSubscriptionEnabled, size: 1 },
+          header: ({ table }) => (
+            <input
+              type="checkbox"
+              aria-label={translate('SelectAll')}
+              checked={table.getIsAllRowsSelected()}
+              onChange={table.getToggleAllRowsSelectedHandler()}
+            />
+          ),
+          cell: ({ row }) => (
+            <input
+              type="checkbox"
+              aria-label={row.original.customName}
+              checked={row.getIsSelected()}
+              disabled={!row.getCanSelect()}
+              onChange={row.getToggleSelectedHandler()}
+            />
+          ),
+        }),
+      ]),
     columnHelper.display({
       id: 'plan',
       meta: {
@@ -425,9 +425,9 @@ export const EnvironmentsTab = (props: EnvironmentsTabProps) => {
         <span>
           {row.original.subscriptionProcess.length
             ? translate({
-                key: 'api.pricings.process.value',
-                replacements: [String(row.original.subscriptionProcess.length)],
-              })
+              key: 'api.pricings.process.value',
+              replacements: [String(row.original.subscriptionProcess.length)],
+            })
             : translate('api.pricings.process.value.none')}
         </span>
       ),

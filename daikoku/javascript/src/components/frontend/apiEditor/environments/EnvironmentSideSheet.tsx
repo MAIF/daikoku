@@ -1,5 +1,7 @@
-import { Form, FormRef } from '@maif/react-forms';
+import { Form, FormRef, Schema, type } from '@maif/react-forms';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import mapValues from 'lodash/mapValues';
+import pick from 'lodash/pick';
 import { RefObject, useContext, useId, useMemo, useRef, useState } from 'react';
 import Select from 'react-select';
 import { toast } from 'sonner';
@@ -40,6 +42,8 @@ const NO_PRICING: Partial<IUsagePlan> = {
   currency: undefined,
   paymentSettings: undefined,
 };
+
+const asNumber = (value: unknown) => (typeof value === 'string' && value !== '' ? Number(value) : value);
 
 const pricingOf = (plan: IUsagePlan): Partial<IUsagePlan> => ({
   costPerMonth: plan.costPerMonth,
@@ -116,6 +120,8 @@ export const EnvironmentSideSheet = ({ api, ownerTeam, plan, creation, initialTa
 
   const otoroshi = otoroshiSchema(translate, tenant, ownerTeam, plan, otoroshis ?? []);
   const general = generalSchema(translate, tenant, api, ownerTeam, availableEnvs, confirm);
+  const quotasFormSchema = quotasSchema(translate, plan);
+  const billingFormSchema = billingSchema(translate, tenant, plan);
 
   const activeForms: Array<{ tab: EnvironmentSheetTab; ref: FormHandle }> = [
     ...(customQuotas ? [{ tab: 'settings' as const, ref: quotasRef }] : []),
@@ -125,6 +131,13 @@ export const EnvironmentSideSheet = ({ api, ownerTeam, plan, creation, initialTa
   ];
 
   const valuesOf = (ref: FormHandle) => ref.current?.methods.data() ?? {};
+
+  // data() returns raw values (numbers typed as strings) for every field of the seeded plan, not only the form's own.
+  const fieldsOf = (ref: FormHandle, schema: Schema) => {
+    const fields = pick(valuesOf(ref), Object.keys(schema));
+
+    return mapValues(fields, (value, field) => (schema[field].type === type.number ? asNumber(value) : value));
+  };
 
   const isDirty = () =>
     process !== plan.subscriptionProcess ||
@@ -141,17 +154,17 @@ export const EnvironmentSideSheet = ({ api, ownerTeam, plan, creation, initialTa
     ]);
 
   const buildPlan = (): IUsagePlan => {
-    const general = valuesOf(generalRef);
+    const generalValues = fieldsOf(generalRef, general.schema);
     const otoroshiTarget = valuesOf(otoroshiRef);
-    const aggregation = !!general.aggregationApiKeysSecurity;
+    const aggregation = !!generalValues.aggregationApiKeysSecurity;
 
     return {
       ...plan,
-      ...general,
+      ...generalValues,
       ...(customQuotas
-        ? valuesOf(quotasRef)
+        ? fieldsOf(quotasRef, quotasFormSchema)
         : { maxPerSecond: undefined, maxPerDay: undefined, maxPerMonth: undefined }),
-      ...(paid ? { ...valuesOf(billingRef), currency: { code: 'EUR' } } : NO_PRICING),
+      ...(paid ? { ...fieldsOf(billingRef, billingFormSchema), currency: { code: 'EUR' } } : NO_PRICING),
       otoroshiTarget: aggregation
         ? {
             ...otoroshiTarget,
@@ -295,7 +308,7 @@ export const EnvironmentSideSheet = ({ api, ownerTeam, plan, creation, initialTa
             {translate(customQuotas ? 'usage.plan.form.quotas.selector.true.description' : 'usage.plan.form.quotas.selector.false.description')}
           </InfoCallout>
         </div>
-        {customQuotas && <Form ref={quotasRef} schema={quotasSchema(translate, plan)} value={plan} onSubmit={() => {}} footer={() => <></>} />}
+        {customQuotas && <Form ref={quotasRef} schema={quotasFormSchema} value={plan} onSubmit={() => {}} footer={() => <></>} />}
 
         <h3>{translate('api.pricings.pricing.table.title')}</h3>
         <ChoiceChips
@@ -320,7 +333,7 @@ export const EnvironmentSideSheet = ({ api, ownerTeam, plan, creation, initialTa
         {paid && (
           <Form
             ref={billingRef}
-            schema={billingSchema(translate, tenant, plan)}
+            schema={billingFormSchema}
             value={billingValue}
             onSubmit={() => {}}
             footer={() => <></>}
