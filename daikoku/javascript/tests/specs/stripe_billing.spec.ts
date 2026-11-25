@@ -10,6 +10,8 @@ import {
   ACCUEIL,
   adminApi,
   apiDivision,
+  enableDataExporters,
+  isElasticSearchUp,
   loginAs,
   logout,
   openApiKeyCard,
@@ -118,7 +120,7 @@ const advancePastPeriodEnd = async (clockId: string, subscriptionId: string) => 
 const openProducerSubscriptionRow = async (page: Page, apiName: string, teamName: string) => {
   await page.goto(ACCUEIL);
   await page.getByRole('link', { name: apiName }).click();
-  await expect(page.locator('.api__header')).toBeAttached();
+  await expect(page.locator('.api-editor__header')).toBeAttached();
   await page.getByText('Souscriptions', { exact: true }).click();
 
   return page.locator('.table-row', { hasText: teamName });
@@ -133,6 +135,12 @@ const openPaymentRow = async (page: Page, apiName: string) => {
 test.describe('Stripe metered billing (dev only, real Stripe test mode)', () => {
   test.skip(!stripeConfigured(), 'set STRIPE_TEST_SECRET_KEY to run this test');
 
+  test.beforeAll(async () => {
+    const elasticUp = await isElasticSearchUp();
+
+    test.skip(!elasticUp, 'ElasticSearch is not running: use `mise run test:stripe`');
+  });
+
   test.beforeEach(async () => {
     await Promise.all([
       adminApi('/state/reset', { method: 'POST' }),
@@ -144,7 +152,7 @@ test.describe('Stripe metered billing (dev only, real Stripe test mode)', () => 
           'Otoroshi-Client-Secret': otoroshiAdminApikeySecret,
           Host: 'otoroshi-api.oto.tools',
         },
-        body: JSON.stringify(otoroshi_data),
+        body: JSON.stringify(enableDataExporters(otoroshi_data)),
       }),
     ]);
   });
@@ -503,11 +511,10 @@ test.describe('Stripe metered billing (dev only, real Stripe test mode)', () => 
     await logout(page);
     await loginAs(MICHAEL, page);
     const blockedRow = await openProducerSubscriptionRow(page, api.name, 'Vendeurs');
-    await blockedRow.getByRole('button', { name: 'Actions de la souscription' }).click();
-    await blockedRow.getByRole('button', { name: 'Désactiver la souscription' }).click();
+    await blockedRow.getByRole('switch', { name: 'Désactiver la souscription' }).click();
     await page.getByLabel("Motif (facultatif), transmis à l'équipe abonnée").fill('Facture impayée');
     await page.getByRole('button', { name: 'Bloquer', exact: true }).click();
-    await expect(blockedRow).toContainText('Bloquée');
+    await expect(blockedRow).toContainText('Désactivée');
     await expect.poll(collectionPause, { timeout: 30_000 }).toBe('void');
 
     await logout(page);
@@ -523,8 +530,7 @@ test.describe('Stripe metered billing (dev only, real Stripe test mode)', () => 
     await logout(page);
     await loginAs(MICHAEL, page);
     const unblockedRow = await openProducerSubscriptionRow(page, api.name, 'Vendeurs');
-    await unblockedRow.getByRole('button', { name: 'Actions de la souscription' }).click();
-    await unblockedRow.getByRole('button', { name: 'Activer la souscription' }).click();
+    await unblockedRow.getByRole('switch', { name: 'Activer la souscription' }).click();
     await expect(unblockedRow).toContainText('Activée');
     await expect.poll(collectionPause, { timeout: 30_000 }).toBeNull();
   });

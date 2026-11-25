@@ -2,7 +2,7 @@ import { expect, Page, test } from '@playwright/test';
 import otoroshi_data from '../config/otoroshi/otoroshi-state.json' with { type : "json" };;
 import { DWIGHT, JIM, MICHAEL } from './users';
 import {
-  ACCUEIL, adminApikeyId, adminApikeySecret, createApi, exposedPort, loginAs, logout, otoroshiAdminApikeyId, otoroshiAdminApikeySecret
+  ACCUEIL, adminApikeyId, adminApikeySecret, chooseApiSettingsAction, createApi, exposedPort, loginAs, logout, otoroshiAdminApikeyId, otoroshiAdminApikeySecret
 } from './utils';
 
 
@@ -72,8 +72,7 @@ const updateApiLifeCycle = async (page: Page, apiName: string, state: ApiLifeCyc
 const passAPIToDraft = async ({ page }, apiName: string, assertResult: boolean = true) => {
   await page.goto(ACCUEIL);
   await page.getByRole('link', { name: `API ${apiName}` }).click();
-  await page.getByRole('button', { name: 'Configurer' }).click();
-  await page.getByRole('menuitem', { name: 'Configurer' }).click();
+  await chooseApiSettingsAction(page, 'Modifier');
   await page.getByRole('radio', { name: 'Brouillon' }).click();
   await page.getByRole('button', { name: 'Enregistrer' }).click();
   if (assertResult) {
@@ -85,8 +84,7 @@ const passAPIToDraft = async ({ page }, apiName: string, assertResult: boolean =
 const passAPIToPublished = async ({ page }, apiName: string, assertResult: boolean = true) => {
   await page.goto(ACCUEIL);
   await page.getByRole('link', { name: `API ${apiName}` }).click();
-  await page.getByRole('button', { name: 'Configurer' }).click();
-  await page.getByRole('menuitem', { name: 'Configurer' }).click();
+  await chooseApiSettingsAction(page, 'Modifier');
   await page.getByRole('radio', { name: 'Publiée' }).click();
   await page.getByRole('button', { name: 'Enregistrer' }).click();
   if (assertResult) {
@@ -97,8 +95,7 @@ const passAPIToPublished = async ({ page }, apiName: string, assertResult: boole
 
 const passAPIToDeprecated = async ({ page }, apiName: string, assertResult: boolean = true) => {
   await page.getByRole('link', { name: `API ${apiName}` }).click();
-  await page.getByRole('button', { name: 'Configurer' }).click();
-  await page.getByRole('menuitem', { name: 'Configurer' }).click();
+  await chooseApiSettingsAction(page, 'Modifier');
   await page.getByRole('radio', { name: 'Dépréciée' }).click();
 
   await Promise.all([
@@ -113,8 +110,7 @@ const passAPIToDeprecated = async ({ page }, apiName: string, assertResult: bool
 
 const passAPIToBlocked = async ({ page }, apiName: string, assertResult: boolean = true) => {
   await page.getByRole('link', { name: `API ${apiName}` }).click();
-  await page.getByRole('button', { name: 'Configurer' }).click();
-  await page.getByRole('menuitem', { name: 'Configurer' }).click();
+  await chooseApiSettingsAction(page, 'Modifier');
   await page.getByRole('radio', { name: 'Bloquée' }).click();
   await page.getByRole('button', { name: 'Enregistrer' }).click();
   await expect(page.getByRole('heading', { name: 'Attention' })).toBeVisible();
@@ -139,10 +135,10 @@ test('full Api Backward LifeCycle', async ({ page }) => {
   await page.goto(ACCUEIL);
   await loginAs(MICHAEL, page);
   await passAPIToBlocked({ page }, 'Commande')
-  await expect(page.locator(".api__header").getByText('Bloquée')).toBeVisible();
+  await expect(page.locator(".api-editor__header").getByText('Bloquée')).toBeVisible();
   await page.goto(ACCUEIL);
   await passAPIToDeprecated({ page }, 'Commande')
-  await expect(page.locator(".api__header").getByText('Dépréciée')).toBeVisible();
+  await expect(page.locator(".api-editor__header").getByText('Dépréciée')).toBeVisible();
   await page.goto(ACCUEIL);
   await passAPIToPublished({ page }, 'Commande')
 });
@@ -171,8 +167,7 @@ test('Cannot pass Draft to Blocked', async ({ page }) => {
   await loginAs(MICHAEL, page);
 
   await createApi(page, { team: 'API Division', name: 'test API' });
-  await page.getByRole('button', { name: 'Configurer' }).click();
-  await page.getByRole('menuitem', { name: 'Configurer' }).click();
+  await chooseApiSettingsAction(page, 'Modifier');
   await expect(page.getByRole('radio', { name: 'Brouillon' })).toBeEnabled();
   await expect(page.getByRole('radio', { name: 'Bloquée' })).toBeDisabled();
 });
@@ -185,8 +180,7 @@ test('Draft is disabled in the config form when the API has subscriptions', asyn
   // disables the 'Brouillon' chip (the backend 409 is covered by the Scala
   // ApiLifeCycleSpec).
   await page.getByRole('link', { name: 'API Commande' }).click();
-  await page.getByRole('button', { name: 'Configurer' }).click();
-  await page.getByRole('menuitem', { name: 'Configurer' }).click();
+  await chooseApiSettingsAction(page, 'Modifier');
   await expect(page.getByRole('radio', { name: 'Brouillon' })).toBeDisabled();
 });
 
@@ -268,7 +262,7 @@ test('Blocked sub by API owner action display a blocked state to consumer', asyn
   await loginAs(MICHAEL, page);
 
   await passAPIToBlocked({ page }, 'Commande', true);
-  await page.getByText('Souscriptions').click();
+  await page.getByRole('tab', { name: 'Souscriptions' }).click();
   const rows = page.getByRole('row', { name: 'daikoku-api-key' })
   for (const row of await rows.all()) {
     await expect(row.getByText('Bloquée')).toBeVisible();

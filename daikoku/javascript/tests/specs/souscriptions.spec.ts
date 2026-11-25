@@ -1,8 +1,8 @@
-import test, { expect } from '@playwright/test';
+import test, { expect, Locator, Page } from '@playwright/test';
 import otoroshi_data from '../config/otoroshi/otoroshi-state.json' with { type: "json" };
 import { generateApi, generatePlan, saveApi, savePlan } from './apis';
 import { JIM, MICHAEL, DWIGHT } from './users';
-import { ACCUEIL, adminApikeyId, adminApikeySecret, apiDivision, EMAIL_UI, exposedPort, findAndGoToTeam, HOME, loginAs, logistiqueCommandeProdApiKeyId, logout, otoroshiAdminApikeyId, otoroshiAdminApikeySecret, otoroshiDevCommandRouteId, otoroshiDevPaperRouteId, expectOtoroshiApiKeyGone, expectOtoroshiApiKeyEntities, updateUserRightForTeam, vendeurs, vendeursPapierExtendedDevApiKeyId } from './utils';
+import { ACCUEIL, adminApikeyId, adminApikeySecret, apiDivision, EMAIL_UI, exposedPort, findAndGoToTeam, HOME, loginAs, logistiqueCommandeProdApiKeyId, logout, otoroshiAdminApikeyId, otoroshiAdminApikeySecret, otoroshiDevCommandRouteId, otoroshiDevPaperRouteId, requestApiKey, expectOtoroshiApiKeyGone, expectOtoroshiApiKeyEntities, updateUserRightForTeam, vendeurs, vendeursPapierExtendedDevApiKeyId } from './utils';
 
 
 test.beforeEach(async () => {
@@ -28,21 +28,34 @@ test.beforeEach(async () => {
   ])
 })
 
-test('[ASOAPI-10160] - souscrire à une api', async ({ page, context }) => {
+const chooseEnvironmentAction = async (environment: Locator, actionName: string) => {
+  await environment.getByRole('button', { name: "Configurer l'environnement" }).click();
+  await environment.getByRole('menuitem', { name: actionName }).click();
+};
+
+// The sheet preselects the target when a single environment is left to create.
+const duplicateToLastAvailableEnvironment = async (page: Page, sourceName: string, targetName: string) => {
+  const source = page.getByRole('listitem', { name: sourceName, exact: true });
+  const creationSheet = page.getByRole('dialog', { name: 'Créer un environnement' });
+
+  await chooseEnvironmentAction(source, 'Dupliquer');
+  await creationSheet.getByRole('button', { name: 'Enregistrer' }).click();
+  await expect(page.getByRole('listitem', { name: targetName, exact: true })).toBeVisible();
+};
+
+test('[ASOAPI-10160] - souscrire à une api',async ({ page, context }) => {
   await context.grantPermissions(["clipboard-read", "clipboard-write"]);
 
   await page.goto(ACCUEIL);
   await loginAs(JIM, page);
   await page.getByRole('link', { name: 'API papier' }).click();
-  await page.getByText('Environnements').click();
+  await page.getByRole('tab', { name: 'Environnements' }).click();
 
-  page.getByRole('listitem', { name: 'prod' }).getByRole('button', { name: 'Demander une clé d\'API' }).click()
-  await page.getByText('Vendeurs').click();
-  await page.getByRole('button', { name: 'Souscrire en créant une clé d\'API' }).click();
-  await page.getByRole('button', { name: 'Suivant' }).click();
-  await page.getByLabel('motivation').click();
-  await page.getByLabel('motivation').fill('please');
-  await page.getByRole('button', { name: 'Envoyer' }).click();
+  await requestApiKey(page, page.getByRole('listitem', { name: 'prod' }), {
+    team: 'Vendeurs',
+    keyAttachment: 'Nouvelle',
+    motivation: 'please',
+  });
   await expect(page.getByRole('region', { name: 'Notifications' })).toContainText('La demande de clé d\'API au plan prod pour l\'équipe Vendeurs est en attente de validation');
   await page.getByRole('button', { name: 'Close toast' }).click();
   await page.route('**/api/me/subscriptions/*/1.0.0', async route => {
@@ -127,14 +140,12 @@ test('[ASOAPI-10163] - souscrire à une api avec refus', async ({ page, context 
   await page.goto(ACCUEIL);
   await loginAs(JIM, page);
   await page.getByRole('link', { name: 'API papier' }).click();
-  await page.getByText('Environnements').click();
-  page.getByRole('listitem', { name: 'prod' }).getByRole('button', { name: 'Demander une clé d\'API' }).click()
-  await page.getByText('Vendeurs').click();
-  await page.getByRole('button', { name: 'Souscrire en créant une clé d\'API' }).click();
-  await page.getByRole('button', { name: 'Suivant' }).click();
-  await page.getByLabel('motivation').click();
-  await page.getByLabel('motivation').fill('please');
-  await page.getByRole('button', { name: 'Envoyer' }).click(); //todo: ??? region ???
+  await page.getByRole('tab', { name: 'Environnements' }).click();
+  await requestApiKey(page, page.getByRole('listitem', { name: 'prod' }), {
+    team: 'Vendeurs',
+    keyAttachment: 'Nouvelle',
+    motivation: 'please',
+  });
   await expect(page.getByRole('region', { name: 'Notifications' })).toContainText('La demande de clé d\'API au plan prod pour l\'équipe Vendeurs est en attente de validation');
   await page.getByLabel('Accès aux notifications').click();
   await expect(page.getByText('0 notification')).toBeVisible();
@@ -184,12 +195,12 @@ test('[ASOAPI-10161] - Demander une extension d\'apikey - process automatique', 
   await page.goto(ACCUEIL);
   await loginAs(JIM, page);
   await page.getByRole('link', { name: 'API papier' }).click();
-  await page.getByText('Environnements').click();
-  page.getByRole('listitem', { name: 'dev' }).getByRole('button', { name: 'Obtenir une clé d\'API' }).click()
-  await page.getByText('Logistique').click();
-  await page.getByRole('button', { name: 'Souscrire en l\'ajoutant à une clé d\'API existante' }).click();
-  // joining an existing keyring: it keeps its own name, no naming step
-  await page.getByRole('button', { name: 'api commande - dev' }).click();
+  await page.getByRole('tab', { name: 'Environnements' }).click();
+  await requestApiKey(page, page.getByRole('listitem', { name: 'dev' }), {
+    team: 'Logistique',
+    keyAttachment: 'Existante',
+    keyring: 'api commande - dev',
+  });
 
   await page.goto(ACCUEIL);
   await findAndGoToTeam('Logistique', page);
@@ -234,14 +245,13 @@ test('[ASOAPI-10161] - Demander une extension d\'apikey - process manuel', async
   await page.goto(ACCUEIL);
   await loginAs(JIM, page);
   await page.getByRole('link', { name: 'API papier' }).click();
-  await page.getByText('Environnements').click();
-  page.getByRole('listitem', { name: 'prod' }).getByRole('button', { name: 'Demander une clé d\'API' }).click()
-  await page.getByText('Logistique').click();
-  await page.getByRole('button', { name: 'Souscrire en l\'ajoutant à une clé d\'API existante' }).click();
-  // joining an existing keyring: it keeps its own name, no naming step
-  await page.locator('.keyring-option', { hasText: 'prod' }).click();
-  await page.getByLabel('motivation').fill('please');
-  await page.getByRole('button', { name: 'Envoyer' }).click();
+  await page.getByRole('tab', { name: 'Environnements' }).click();
+  await requestApiKey(page, page.getByRole('listitem', { name: 'prod' }), {
+    team: 'Logistique',
+    keyAttachment: 'Existante',
+    keyring: 'prod',
+    motivation: 'please',
+  });
 
   await page.reload()
   await page.getByText('Clés d\'API').click();
@@ -320,31 +330,24 @@ test('Demander plusieurs extension d\'apikey jusqu\'aux notifications', async ({
   await page.goto(ACCUEIL);
   await loginAs(MICHAEL, page);
   await page.getByRole('link', { name: 'API papier' }).click();
-  await page.getByText('Environnements').click();
+  await page.getByRole('tab', { name: 'Environnements' }).click();
 
-  await page.locator('#prod-dropdownMenuButton').click();
-  await page.getByText('Dupliquer').nth(2).click();
-  await page.locator('.react-form-select__input-container').click();
-  await page.getByRole('option', { name: 'preprod' }).click();
-  await page.getByRole('button', { name: 'Enregistrer' }).click();
+  await duplicateToLastAvailableEnvironment(page,'prod', 'preprod');
 
   await logout(page);
   await loginAs(JIM, page);
 
   await page.getByRole('link', { name: 'API Commande' }).click();
-  await page.getByText('Environnements').click();
+  await page.getByRole('tab', { name: 'Environnements' }).click();
   await page.getByRole('listitem', { name: 'prod' }).getByRole('checkbox').check();
-  await page.getByRole('button', { name: 'Demande de clé d\'API' }).click();
-  await page.getByText('Logistique').click();
-  await page.getByText('Plan(s) prod don\'t allow more subscription from teamLogistique').click();
-  await page.getByText('Vendeurs').click();
-  await page.locator('.react-form-select__input-container').click();
-  await page.getByRole('option', { name: 'dev (API papier)' }).click();
-  // the keyring name is asked per plan inside this very form, so the button
-  // leads to the motivation step instead of confirming right away
-  await page.getByRole('button', { name: 'Suivant' }).click();
-  await page.getByRole('textbox', { name: 'motivation' }).fill('motication de l\'utilisateur');
-  await page.getByRole('button', { name: 'Envoyer' }).click();
+  await page.getByRole('button', { name: 'Obtenir les clés' }).click();
+
+  const requestSheet = page.getByRole('dialog', { name: "Demander une clé d'API" });
+  await requestSheet.getByRole('combobox', { name: 'Sélectionnez une équipe' }).click();
+  await expect(page.getByRole('option', { name: 'Logistique (déjà souscrite)' })).toBeVisible();
+  await page.getByRole('option', { name: 'Vendeurs', exact: true }).click();
+  await requestSheet.getByRole('textbox', { name: 'motivation' }).fill('motication de l\'utilisateur');
+  await requestSheet.getByRole('button', { name: 'Enregistrer' }).click();
 
   await page.getByText('La demande de clé d\'API au').click();
   await page.getByRole('button', { name: 'Close toast' }).click();
@@ -364,13 +367,9 @@ test('Selection de plans limitée', async ({ page, context }) => {
   await page.goto(ACCUEIL);
   await loginAs(MICHAEL, page);
   await page.getByRole('link', { name: 'API papier' }).click();
-  await page.getByText('Environnements').click();
+  await page.getByRole('tab', { name: 'Environnements' }).click();
 
-  await page.locator('#prod-dropdownMenuButton').click();
-  await page.getByText('Dupliquer').nth(2).click();
-  await page.locator('.react-form-select__input-container').click();
-  await page.getByRole('option', { name: 'preprod' }).click();
-  await page.getByRole('button', { name: 'Enregistrer' }).click();
+  await duplicateToLastAvailableEnvironment(page,'prod', 'preprod');
 
   await page.getByRole('listitem', { name: 'preprod' }).getByRole('checkbox').check();
   await page.getByRole('listitem', { name: 'prod', exact: true }).getByRole('checkbox').check();
@@ -392,14 +391,13 @@ test('[ASOAPI-10164] - Demander une extension d\'apikey - process manuel - refus
   await page.goto(ACCUEIL);
   await loginAs(JIM, page);
   await page.getByRole('link', { name: 'API papier' }).click();
-  await page.getByText('Environnements').click();
-  page.getByRole('listitem', { name: 'prod' }).getByRole('button', { name: 'Demander une clé d\'API' }).click()
-  await page.getByText('Logistique').click();
-  await page.getByRole('button', { name: 'Souscrire en l\'ajoutant à une clé d\'API existante' }).click();
-  // joining an existing keyring: it keeps its own name, no naming step
-  await page.locator('.keyring-option', { hasText: 'prod' }).click();
-  await page.getByLabel('motivation').fill('please');
-  await page.getByRole('button', { name: 'Envoyer' }).click();
+  await page.getByRole('tab', { name: 'Environnements' }).click();
+  await requestApiKey(page, page.getByRole('listitem', { name: 'prod' }), {
+    team: 'Logistique',
+    keyAttachment: 'Existante',
+    keyring: 'prod',
+    motivation: 'please',
+  });
 
   await logout(page);
 
@@ -466,15 +464,13 @@ test('[ASOAPI-10414] - [producteur] - Renommer une clé d\'api', async ({ page, 
   await page.goto(ACCUEIL);
   await loginAs(MICHAEL, page);
   await page.getByRole('link', { name: 'API Commande' }).click();
-  await page.getByText('Souscriptions', { exact: true }).click();
+  await page.getByRole('tab', { name: 'Souscriptions' }).click();
   const oldName = await page.getByRole('listitem', { name: 'commande-prod' }).locator('span').nth(0).innerText();
 
   await expect(page.locator('.table-rows')).toContainText('daikoku-api-key-api-commande-prod-logistique-1737463823426-1.0.0');
   await expect(page.locator('.table-rows')).toContainText(oldName);
 
-  await expect(page.getByRole('button', { name: 'Filtrer' })).toBeVisible();
-  await page.getByRole('listitem', { name: 'api-commande-prod-logistique' })
-    .getByRole('button', { name: 'Actions de la souscription' }).click();
+  await expect(page.getByRole('button', { name: 'Plus de filtres' })).toBeVisible();
 
   await page.getByRole('listitem', { name: 'commande-prod' })
     .getByRole('button', { name: 'Mettre à jour les métadonnées' }).click();
@@ -490,22 +486,21 @@ test('[ASOAPI-10398 ASOAPI-10399] - [producteur] - désactiver/activer une clé 
   await page.goto(ACCUEIL);
   await loginAs(MICHAEL, page);
   await page.getByRole('link', { name: 'API commande' }).click();
-  await expect(page.locator('.api__header')).toBeAttached()
-  await page.getByText('Souscriptions').click();
+  await expect(page.locator('.api-editor__header')).toBeAttached()
+  await page.getByRole('tab', { name: 'Souscriptions' }).click();
 
-  await expect(page.getByRole('button', { name: 'Filtrer' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Plus de filtres' })).toBeVisible();
   await page.getByRole('listitem', { name: 'api-commande-prod-logistique' })
-    .getByRole('button', { name: 'Actions de la souscription' }).click();
-  await page.getByRole('listitem', { name: 'api-commande-prod-logistique' })
-    .getByRole('button', { name: 'Désactiver la souscription' }).click();
-  expect(page.getByText('Êtes-vous sûr de vouloir dé')).toBeVisible;
-  await page.getByRole('button', { name: 'Ok', exact: true }).click()
+    .getByRole('switch', { name: 'Désactiver la souscription' }).click();
+  await page
+    .getByRole('dialog', { name: 'Bloquer la souscription' })
+    .getByRole('button', { name: 'Bloquer' })
+    .click();
   await expect(page.getByRole('listitem', { name: 'api-commande-prod-logistique' }))
-    .toContainText('Bloquée');
+    .toContainText('Désactivée');
 
-  await page.getByRole('listitem', { name: 'api-commande-prod-logistique' }).getByLabel('Actions de la souscription').click();
   await page.getByRole('listitem', { name: 'api-commande-prod-logistique' })
-    .getByRole('button', { name: 'Activer la souscription' }).click();
+    .getByRole('switch', { name: 'Activer la souscription' }).click();
   await expect(page.getByRole('listitem', { name: 'api-commande-prod-logistique' }))
     .toContainText('Activée');
 })
@@ -516,10 +511,8 @@ test('[ASOAPI-10400] - [producteur] - supprimer definitivement une clé d\'api',
   await page.goto(ACCUEIL);
   await loginAs(MICHAEL, page);
   await page.getByRole('link', { name: 'API Commande' }).click();
-  await page.getByText('Souscriptions', { exact: true }).click();
-  await expect(page.getByRole('button', { name: 'Filtrer' })).toBeVisible();
-  await page.getByRole('listitem', { name: 'api-commande-prod-logistique' })
-    .getByRole('button', { name: 'Actions de la souscription' }).click();
+  await page.getByRole('tab', { name: 'Souscriptions' }).click();
+  await expect(page.getByRole('button', { name: 'Plus de filtres' })).toBeVisible();
   await page.getByRole('listitem', { name: 'api-commande-prod' })
     .getByRole('button', { name: 'Supprimer la souscription' })
     .click();
@@ -1204,19 +1197,24 @@ test("Ne peux plus dupliquer un environnement si plus d'environnements disponibl
 
   await page.locator('body').press('Escape');
   await page.getByRole('link', { name: 'API Commande' }).click();
-  await page.getByText('Environnements').click();
-  await page.locator('[id="prod-dropdownMenuButton"]').click();
-  await page.getByText('Dupliquer').nth(2).click();
-  expect(page.locator('.react-form-select__input-container')).toContainText("")
-  await page.locator('.react-form-select__input-container').click();
-  await page.getByRole('option', { name: 'preprod' }).click();
-  await page.getByRole('button', { name: 'Enregistrer' }).click();
-  await page.locator('#preprod-dropdownMenuButton').click();
-  expect(page.getByText('Dupliquer').nth(2)).not.toBeVisible;
-  await page.getByText('Supprimer').nth(3).click();
+  await page.getByRole('tab', { name: 'Environnements' }).click();
+
+  const prod = page.getByRole('listitem', { name: 'prod', exact: true });
+  const preprod = page.getByRole('listitem', { name: 'preprod', exact: true });
+  const openMenu = (environment: Locator) =>
+    environment.getByRole('button', { name: "Configurer l'environnement" }).click();
+
+  await duplicateToLastAvailableEnvironment(page,'prod', 'preprod');
+
+  await openMenu(preprod);
+  await expect(preprod.getByRole('menuitem', { name: 'Supprimer' })).toBeVisible();
+  await expect(preprod.getByRole('menuitem', { name: 'Dupliquer' })).toBeHidden();
+  await preprod.getByRole('menuitem', { name: 'Supprimer' }).click();
   await page.getByRole('textbox', { name: 'Saisissez preprod pour' }).fill('preprod');
   await page.getByRole('button', { name: 'Confirmation' }).click();
-  await page.locator('[id="prod-dropdownMenuButton"]').click();
-  expect(page.getByText('Dupliquer').nth(2)).toBeVisible;
+  await expect(preprod).toBeHidden();
+
+  await openMenu(prod);
+  await expect(prod.getByRole('menuitem', { name: 'Dupliquer' })).toBeVisible();
 
 })

@@ -1,7 +1,7 @@
 import test, { expect } from '@playwright/test';
 import otoroshi_data from '../config/otoroshi/otoroshi-state.json' with { type: "json" };
 import { JIM, MICHAEL, PAM } from './users';
-import { ACCUEIL, adminApikeyId, adminApikeySecret, apiCommande, apiDivision, apiPapier, exposedPort, HOME, loginAs, logistique, logout, otoroshiAdminApikeyId, otoroshiAdminApikeySecret, subCommandeDevLogistique, subCommandeDevVendeurs, subCommandeProdLogistique, teamJim, vendeurs } from './utils';
+import { ACCUEIL, adminApikeyId, adminApikeySecret, apiCommande, apiDivision, apiPapier, exposedPort, HOME, loginAs, logistique, logout, otoroshiAdminApikeyId, otoroshiAdminApikeySecret, requestApiKey, subCommandeDevLogistique, subCommandeDevVendeurs, subCommandeProdLogistique, teamJim, vendeurs } from './utils';
 import { NotifProps, postNewNotif } from './notifications';
 
 
@@ -506,12 +506,11 @@ test('Notification Count différencie les notifications à valider et a consulte
   await page.goto(ACCUEIL);
   await loginAs(PAM, page)
   await page.getByRole('link', { name: 'API Commande' }).click();
-  await page.getByText('Environnements').click();
-  await page.getByRole('button', { name: 'Demander une clé d\'API' }).click();
-  await page.getByText('Pam Beesly').click();
-  await page.getByRole('button', { name: 'Suivant' }).click();
-  await page.getByRole('textbox', { name: 'motivation' }).fill('motivation');
-  await page.getByRole('button', { name: 'Envoyer' }).click();
+  await page.getByRole('tab', { name: 'Environnements' }).click();
+  await requestApiKey(page, page.getByRole('listitem', { name: 'prod' }), {
+    team: 'Pam Beesly',
+    motivation: 'motivation',
+  });
   await page.getByRole('button', { name: 'Close toast' }).click();
   await page.getByRole('button', { name: 'user menu' }).click();
   await page.getByRole('link', { name: 'Déconnexion' }).click();

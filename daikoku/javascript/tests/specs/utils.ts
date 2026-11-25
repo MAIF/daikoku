@@ -1,4 +1,4 @@
-import { expect, Page } from "@playwright/test";
+import { expect, Locator, Page } from "@playwright/test";
 import { IUser } from "./users";
 
 export const adminApikeyId = 'admin_key_client_id';
@@ -253,9 +253,50 @@ export const chooseCreationTeam = async (page: Page, team: string) => {
   await page.getByRole('option', { name: team }).click();
 };
 
+export const chooseApiSettingsAction = async (page: Page, actionName: string) => {
+  await page.getByRole('button', { name: "Paramètres de l'API" }).click();
+  await page
+    .getByRole('menu', { name: "Paramètres de l'API" })
+    .getByRole('menuitem', { name: actionName })
+    .click();
+};
+
+type ApiKeyRequest = {
+  team: string;
+  keyAttachment?: 'Existante' | 'Nouvelle';
+  keyring?: string;
+  motivation?: string;
+};
+
+export const requestApiKey = async (page: Page, environment: Locator, request: ApiKeyRequest) => {
+  const sheet = page.getByRole('dialog', { name: "Demander une clé d'API" });
+
+  await environment.getByRole('button', { name: "Obtenir une clé d'API" }).click();
+  await sheet.getByRole('combobox', { name: 'Sélectionnez une équipe' }).click();
+  await page.getByRole('option', { name: request.team, exact: true }).click();
+
+  if (request.keyAttachment) {
+    await sheet.getByRole('radio', { name: request.keyAttachment }).click();
+  }
+
+  if (request.keyring) {
+    await sheet.getByRole('combobox', { name: "Clé d'API", exact: true }).click();
+    await page.getByRole('option', { name: request.keyring }).click();
+  }
+
+  if (request.motivation) {
+    await sheet.getByRole('textbox', { name: 'motivation' }).fill(request.motivation);
+  }
+
+  await sheet.getByRole('button', { name: 'Enregistrer' }).click();
+};
+
 export const createApi = async (page: Page, api: NewApi) => {
   const sheet = page.getByRole('dialog');
-  const next = () => sheet.getByRole('button', { name: 'Suivant' }).click();
+  const goToStep = async (stepNumber: number) => {
+    await sheet.getByRole('button', { name: 'Suivant' }).click();
+    await expect(sheet.getByRole('progressbar', { name: `Étape ${stepNumber} sur 4` })).toBeVisible();
+  };
 
   await page.getByRole('button', { name: 'Créer une API' }).click();
 
@@ -264,7 +305,7 @@ export const createApi = async (page: Page, api: NewApi) => {
   }
   await sheet.getByRole('radio', { name: api.group ? 'Oui' : 'Non' }).click();
   await sheet.getByRole('radio', { name: api.expert ? 'Mode expert' : 'Mode standard' }).click();
-  await next();
+  await goToStep(2);
 
   await sheet.getByPlaceholder('New Api').fill(api.name);
   if (api.smallDescription) {
@@ -274,14 +315,32 @@ export const createApi = async (page: Page, api: NewApi) => {
     await sheet.locator('.react-form-select__dropdown-indicator').first().click();
     await page.getByText(child, { exact: true }).click();
   }
-  await next();
+  await goToStep(3);
 
   for (const [index, tag] of (api.tags ?? []).entries()) {
     await sheet.locator('div.mrf-mt_10').filter({ hasText: 'Tags' }).getByRole('button', { name: 'Add' }).click();
     await sheet.locator(`input[name="tags\\.${index}\\.value"]`).fill(tag);
   }
-  await next();
+  await goToStep(4);
 
   await sheet.getByRole('radio', { name: api.state ?? 'Brouillon' }).click();
   await sheet.getByRole('button', { name: 'Créer' }).click();
 };
+
+export const isElasticSearchUp = () =>
+  fetch('http://localhost:9200/_cluster/health')
+    .then((response) => response.ok)
+    .catch(() => false);
+
+type OtoroshiState = {
+  dataExporters: Array<object>;
+};
+
+// Exporters are disabled in the state files: without ElasticSearch they retry forever and flood Otoroshi's log file.
+export const enableDataExporters = <State extends OtoroshiState>(state: State) => ({
+  ...state,
+  dataExporters: state.dataExporters.map((exporter) => ({
+    ...exporter,
+    enabled: true,
+  })),
+});

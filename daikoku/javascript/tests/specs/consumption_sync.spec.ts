@@ -6,12 +6,15 @@ import {
   ACCUEIL,
   adminApi,
   apiDivision,
+  enableDataExporters,
   exposedPort,
+  isElasticSearchUp,
   loginAs,
   logout,
   otoroshiAdminApikeyId,
   otoroshiAdminApikeySecret,
   paperApiCall,
+  requestApiKey,
   vendeurs,
 } from './utils';
 
@@ -22,6 +25,12 @@ import {
  */
 
 test.describe('Consumption sync via ElasticSearch', () => {
+  test.beforeAll(async () => {
+    const elasticUp = await isElasticSearchUp();
+
+    test.skip(!elasticUp, 'ElasticSearch is not running: use `mise run test:consumption`');
+  });
+
   test.beforeEach(async () => {
     await Promise.all([
       adminApi('/state/reset', { method: 'POST' }),
@@ -33,7 +42,7 @@ test.describe('Consumption sync via ElasticSearch', () => {
           'Otoroshi-Client-Secret': otoroshiAdminApikeySecret,
           Host: 'otoroshi-api.oto.tools',
         },
-        body: JSON.stringify(otoroshi_data),
+        body: JSON.stringify(enableDataExporters(otoroshi_data)),
       }),
     ]);
   });
@@ -44,7 +53,7 @@ test.describe('Consumption sync via ElasticSearch', () => {
 
     // 1. Seed a free plan + API owned by the producer team.
     const planId = nanoidLike();
-    const plan = generatePlan({ _id: planId, customName: 'free' });
+    const plan = generatePlan({ _id: planId });
     const api = generateApi({
       name: 'Consumption API',
       team: apiDivision,
@@ -60,11 +69,14 @@ test.describe('Consumption sync via ElasticSearch', () => {
       .waitFor({ state: 'visible', timeout: 60_000 });
     await loginAs(JIM, page);
     await page.getByRole('link', { name: api.name }).click();
-    await page.getByText('Environnements').click();
-    await page.getByRole('button', { name: "Obtenir une clé d'API" }).click();
-    await page.getByText('Vendeurs').click();
-    // Copy the key in clientId:clientSecret format from the tooltip.
-    await page.getByRole('button', { name: 'ClientId:ClientSecret' }).click();
+    await page.getByRole('tab', { name: 'Environnements' }).click();
+    await requestApiKey(page, page.getByRole('listitem', { name: 'dev' }), {
+      team: 'Vendeurs',
+    });
+    await page
+      .getByRole('listitem', { name: `Clé d'API ${api.name} - dev` })
+      .getByRole('button', { name: 'Copier le clientId et le clientSecret' })
+      .click();
     const [clientId, clientSecret] = (
       await page.evaluate(() => navigator.clipboard.readText())
     ).split(':', 2);
@@ -144,12 +156,12 @@ test.describe('Consumption sync via ElasticSearch', () => {
     await page.goto(ACCUEIL);
     await loginAs(JIM, page);
     await page.getByRole('link', { name: pricedApi.name }).click();
-    await page.getByText('Environnements').click();
-    await page.getByRole('button', { name: "Obtenir une clé d'API" }).click();
-    await page.getByText('Vendeurs').click();
+    await page.getByRole('tab', { name: 'Environnements' }).click();
 
     const subscription = page.waitForResponse((response) => response.url().includes('/_subscribe'));
-    await page.getByRole('button', { name: 'Envoyer' }).click();
+    await requestApiKey(page, page.getByRole('listitem', { name: 'dev' }), {
+      team: 'Vendeurs',
+    });
     expect((await subscription).ok()).toBeTruthy();
 
     await logout(page);

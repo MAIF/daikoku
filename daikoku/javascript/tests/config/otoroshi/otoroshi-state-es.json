@@ -765,7 +765,7 @@
         ]
       },
       "type": "elastic",
-      "enabled": true,
+      "enabled": false,
       "id": "data_exporter_daikoku_test_es",
       "name": "daikoku test es exporter",
       "desc": "writes gateway events to ES for consumption tests",
