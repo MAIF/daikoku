@@ -1,4 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { FileCode, FlaskConical } from 'lucide-react';
 import { useContext, useEffect, useRef, useState } from 'react';
 import Select from 'react-select';
 import { toast } from 'sonner';
@@ -199,9 +200,11 @@ export function ApiTest<T extends IWithTesting>(props: ApiTestProps<T>) {
 
   const openTestingForm = () => setSheet('testing')
 
+  const testingConfigured = !!props.swagger && !!props.testing
+
   return (
     <div className="d-flex justify-content-center w-10 p-3" style={{ position: 'relative' }}>
-      <Can I={manage} a={API} team={props.ownerTeam}>
+      {testingConfigured && <Can I={manage} a={API} team={props.ownerTeam}>
         {/* <div className="mb-2 d-flex justify-content-end"> */}
         <button
           className="btn --primary"
@@ -215,18 +218,12 @@ export function ApiTest<T extends IWithTesting>(props: ApiTestProps<T>) {
         {/* </div> */}
 
         <div className="dropdown-menu" aria-labelledby={`${props.entity._id}-dropdownMenuButton`}>
-          {!props.swagger && <span
-            onClick={() => openApiDocForm()}
-            className="dropdown-item cursor-pointer"
-          >
-            {translate('api.home.config.api.spec.btn.label')}
-          </span>}
-          {props.swagger && <span
+          <span
             onClick={openTestingForm}
             className="dropdown-item cursor-pointer"
           >
             {translate('api.home.config.api.test.menu.edit')}
-          </span>}
+          </span>
           {props.entity.testing && <div className="dropdown-divider" />}
           {props.entity.testing && <span
             onClick={() => props.save({ ...props.entity, testing: null })}
@@ -235,20 +232,26 @@ export function ApiTest<T extends IWithTesting>(props: ApiTestProps<T>) {
             {translate('api.home.config.api.test.menu.delete')}
           </span>}
         </div>
-      </Can>
+      </Can>}
       {!props.swagger && (
         <Can I={manage} a={API} team={props.ownerTeam}>
-          <div className={`alert alert-info col-6 text-center mx-auto`} role='alert'>
-            <div>{translate('update.api.openapi.not.found.alert')}</div>
-            <button className="btn --secondary" onClick={openApiDocForm}>{translate('update.api.openapi.btn.label')}</button>
+          <div className="api-doc__empty">
+            <FileCode size={32} aria-hidden="true" />
+            <h3 className="api-doc__empty-title">{translate('update.api.openapi.not.found.alert')}</h3>
+            <button type="button" className="btn --primary" onClick={openApiDocForm}>
+              {translate('update.api.openapi.btn.label')}
+            </button>
           </div>
         </Can>
       )}
       {props.swagger && !props.testing && (
         <Can I={manage} a={API} team={props.ownerTeam}>
-          <div className={`alert alert-info col-6 text-center mx-auto`} role='alert'>
-            <div>{translate('update.api.testing.not.found.alert')}</div>
-            <button className="btn --secondary" onClick={openTestingForm}>{translate('update.api.testing.btn.label')}</button>
+          <div className="api-doc__empty">
+            <FlaskConical size={32} aria-hidden="true" />
+            <h3 className="api-doc__empty-title">{translate('update.api.testing.not.found.alert')}</h3>
+            <button type="button" className="btn --primary" onClick={openTestingForm}>
+              {translate('update.api.testing.btn.label')}
+            </button>
           </div>
         </Can>
       )}

@@ -1,5 +1,6 @@
 import AsyncApiComponent from "@asyncapi/react-component/browser/index.js";
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { FileCode } from 'lucide-react';
 import { useContext, useEffect, useState } from 'react';
 import Select from 'react-select';
 import { RedocStandalone, SideNavStyleEnum } from 'redoc';
@@ -88,7 +89,7 @@ export function ApiRedoc<T extends IWithSwagger>(props: ApiRedocProps<T>) {
 
 
     return <div className="d-flex col flex-column section" style={{ position: 'relative' }}>
-      <Can I={manage} a={API} team={props.ownerTeam}>
+      {props.swaggerConf && <Can I={manage} a={API} team={props.ownerTeam}>
         <button
           className="btn --primary"
           aria-label={translate('update.api.openapi.btn.label')}
@@ -113,7 +114,7 @@ export function ApiRedoc<T extends IWithSwagger>(props: ApiRedocProps<T>) {
             {translate('api.home.config.api.spec.menu.delete')}
           </span>}
         </div>
-      </Can>
+      </Can>}
       <div>
         {props.swaggerConf?.specificationType === SpecificationType.openapi &&
           <div onClickCapture={event => {
@@ -130,9 +131,12 @@ export function ApiRedoc<T extends IWithSwagger>(props: ApiRedocProps<T>) {
         {props.swaggerConf?.specificationType === SpecificationType.asyncapi && <AsyncApiComponent schema={spec} config={config} />}
         {!props.swaggerConf && (
           <Can I={manage} a={API} team={props.ownerTeam}>
-            <div className={`alert alert-info col-6 text-center mx-auto`} role='alert'>
-              <div>{translate('update.api.openapi.not.found.alert')}</div>
-              <button className="btn --secondary" onClick={openApiDocForm}>{translate('update.api.openapi.btn.label')}</button>
+            <div className="api-doc__empty">
+              <FileCode size={32} aria-hidden="true" />
+              <h3 className="api-doc__empty-title">{translate('update.api.openapi.not.found.alert')}</h3>
+              <button type="button" className="btn --primary" onClick={openApiDocForm}>
+                {translate('update.api.openapi.btn.label')}
+              </button>
             </div>
           </Can>
         )}
