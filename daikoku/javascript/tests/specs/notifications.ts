@@ -2,7 +2,6 @@ import { nanoid } from "nanoid"
 import { INotification } from "../../src/types"
 import { IUser } from "./users"
 import { adminApikeyId, adminApikeySecret, exposedPort, tenant } from "./utils"
-import { Client } from 'pg'
 
 type NotificationActionType = "ApiAccess" |
   "ApiSubscriptionDemand" |

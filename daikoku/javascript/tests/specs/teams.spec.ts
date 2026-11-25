@@ -78,7 +78,7 @@ test("un admin de tenant peut creer une équipe quelque soit la securité", asyn
     ])
   })
   //add dwight as tenant admin
-  const resp = await fetch(`http://localhost:${exposedPort}/admin-api/teams/${tenantAdminTeam}`, {
+  await fetch(`http://localhost:${exposedPort}/admin-api/teams/${tenantAdminTeam}`, {
     method: 'PATCH',
     headers: {
       "Authorization": `Basic ${btoa(adminApikeyId + ":" + adminApikeySecret)}`,

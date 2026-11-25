@@ -1,6 +1,6 @@
 import { expect, Page, test } from '@playwright/test';
 import otoroshi_data from '../config/otoroshi/otoroshi-state.json' with { type : "json" };;
-import { DWIGHT, JIM, MICHAEL } from './users';
+import { DWIGHT, MICHAEL } from './users';
 import {
   ACCUEIL, adminApikeyId, adminApikeySecret, chooseApiSettingsAction, createApi, exposedPort, loginAs, logout, otoroshiAdminApikeyId, otoroshiAdminApikeySecret
 } from './utils';
@@ -52,34 +52,6 @@ const waitForEmailTo = async (page: Page, ...addresses: string[]) => {
     )
     .toBe(true);
 };
-
-type ApiLifeCycleStates = "Brouillon" | "Publiée" | "Dépréciée" | "Bloquée"
-
-
-const updateApiLifeCycle = async (page: Page, apiName: string, state: ApiLifeCycleStates, assertResult: boolean = true) => {
-  await page.goto("/api-division/api-commande/1.0.0/description");
-  // await page.getByRole('link', { name: `API ${apiName}` }).click();
-  await page.getByRole('button', { name: 'Configurer' }).click();
-  await page.getByRole('menuitem', { name: 'Configurer' }).click();
-  await page.getByRole('radio', { name: state }).click();
-  await page.getByRole('button', { name: 'Enregistrer' }).click();
-  if (assertResult) {
-    await expect(page.locator('.api__header').getByText(state)).toBeVisible();
-  }
-  await page.goto(ACCUEIL);
-}
-
-const passAPIToDraft = async ({ page }, apiName: string, assertResult: boolean = true) => {
-  await page.goto(ACCUEIL);
-  await page.getByRole('link', { name: `API ${apiName}` }).click();
-  await chooseApiSettingsAction(page, 'Modifier');
-  await page.getByRole('radio', { name: 'Brouillon' }).click();
-  await page.getByRole('button', { name: 'Enregistrer' }).click();
-  if (assertResult) {
-    await expect(page.getByText('Brouillon')).toBeVisible();
-  }
-  await page.goto(ACCUEIL);
-}
 
 const passAPIToPublished = async ({ page }, apiName: string, assertResult: boolean = true) => {
   await page.goto(ACCUEIL);

@@ -629,9 +629,6 @@ test('[ASOAPI-10600 ASOAPI-10601] - [Consommateur] - desactiver/reactiver un cl�
   await page.getByText('Clés d\'API').click();
   //Voir les clé d'api pour api Commande
   await page.getByRole('listitem', { name: 'API Commande' }).getByLabel('Voir les clés d\'API').click();
-  // L'agrégat affiche une ligne par souscription de la  clé d'API (API papier + API
-  // Commande) ; on cible la ligne API Commande/dev.
-  const row = page.locator('.keyring-card tbody tr', { hasText: 'API Commande' });
   // On va manipuler la souscription Commande/dev (faisant partie d'une aggregation)
   //Vérifier que la clé est activé
 
