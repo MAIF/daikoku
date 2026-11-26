@@ -1,6 +1,11 @@
 import { expect, test } from '@playwright/test';
 import { JIM } from './users';
-import { ACCUEIL, HOME, loginAs } from './utils';
+import { ACCUEIL, adminApi, HOME, loginAs } from './utils';
+
+test.beforeEach(async () => {
+  const response = await adminApi('/state/reset', { method: 'POST' });
+  expect(response.ok, `Failed to reset test state: ${await response.text()}`).toBeTruthy();
+});
 
 test('shows the requesting team and motivation in grouped notification details', async ({ page }) => {
   const notification = (id: string, motivation: string | null) => ({

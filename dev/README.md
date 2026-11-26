@@ -32,6 +32,8 @@ LDAP uses the same pinned `osixia/openldap:1.5.0` image as the test stack; its
 
 Consumption and estimated-income tests also require Elasticsearch. Use
 `mise run test:consumption` for that stack rather than the LDAP-only stack.
+They live in `daikoku/javascript/tests/specs-consumption` and use
+`playwright.consumption.config.js`, separately from the standard LDAP suite.
 The ES-enabled paper route calls the local `faker` service (`/types`) so gateway
 calls do not depend on an external upstream.
 

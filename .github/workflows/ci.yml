@@ -145,6 +145,13 @@ jobs:
             playwright-config: playwright.perf.config.js
             health-url: http://localhost:13200/health
             otoroshi-health-url: http://otoroshi-api.oto.tools:8080/health
+          - name: consumption
+            compose-file: |
+              ./daikoku/javascript/tests/docker-compose-ldap.yml
+              ./daikoku/javascript/tests/docker-compose-es.yml
+            playwright-config: playwright.consumption.config.js
+            health-url: http://localhost:13200/health
+            otoroshi-health-url: http://otoroshi-api.oto.tools:8080/health
     name: "test-${{ matrix.suite.name }}"
     steps:
       - uses: actions/checkout@v7

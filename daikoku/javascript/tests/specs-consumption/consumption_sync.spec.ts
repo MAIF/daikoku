@@ -1,7 +1,7 @@
 import test, { expect } from '@playwright/test';
 import otoroshi_data from '../config/otoroshi/otoroshi-state-es.json';
-import { generateApi, generatePlan, saveApi, savePlan } from './apis';
-import { JIM, MICHAEL } from './users';
+import { generateApi, generatePlan, saveApi, savePlan } from '../specs/apis';
+import { JIM, MICHAEL } from '../specs/users';
 import {
   ACCUEIL,
   adminApi,
@@ -13,7 +13,7 @@ import {
   otoroshiAdminApikeySecret,
   paperApiCall,
   vendeurs,
-} from './utils';
+} from '../specs/utils';
 
 /**
  * Validates the consumption pipeline (no Stripe): Otoroshi writes gateway events to
