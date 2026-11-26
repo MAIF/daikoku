@@ -45,7 +45,6 @@ import {
   Can,
   CanIDoAction,
   CanIDoActionForOneOfTeams, humanReadableBigNumber,
-  isPublish,
   isSubscriptionProcessIsAutomatic,
   manage,
   Option,
@@ -57,7 +56,6 @@ import { SubscriptionHelp } from './SubscriptionHelp';
 import {
   getOtoroshiTargetReason,
   getSubscriptionHelp,
-  getVisibleSubscriptionBlockers,
   isSubscriptionDisabled,
 } from './subscriptionHelpReasons';
 
@@ -1406,14 +1404,6 @@ export const ApiPricing = (props: ApiPricingProps) => {
 
     const isAccepted = !allPossibleTeams.length;
 
-    const otoroshiTargetIsDefined =
-      !!plan.otoroshiTarget && plan.otoroshiTarget.authorizedEntities;
-    const otoroshiEntitiesIsDefined =
-      otoroshiTargetIsDefined &&
-      (!!plan.otoroshiTarget?.authorizedEntities?.groups.length ||
-        !!plan.otoroshiTarget?.authorizedEntities?.routes.length ||
-        !!plan.otoroshiTarget?.authorizedEntities?.services.length);
-
     const openTeamSelectorModal = () => {
       const alertAPIStatus = props.api.state === 'deprecated' ? confirm({
         title: translate({
@@ -1459,7 +1449,6 @@ export const ApiPricing = (props: ApiPricingProps) => {
     }
 
     return ({
-      otoroshiTargetIsDefined, otoroshiEntitiesIsDefined,
       isAccepted,
       authorizedTeams,
       openTeamSelectorModal,
@@ -1913,8 +1902,6 @@ export const ApiPricing = (props: ApiPricingProps) => {
 
           const plan: IUsagePlanGQL = info.cell.row.original
           const {
-            otoroshiTargetIsDefined,
-            otoroshiEntitiesIsDefined,
             isAccepted,
             authorizedTeams,
             openTeamSelectorModal,
@@ -1927,6 +1914,10 @@ export const ApiPricing = (props: ApiPricingProps) => {
             isGuest: connectedUser.isGuest,
           });
           const subscriptionDisabled = isSubscriptionDisabled(subscriptionHelp);
+          const canSubscribe =
+            !subscriptionDisabled &&
+            !connectedUser.isGuest &&
+            (!isAccepted || props.api.visibility === 'AdminOnly');
 
           return (
             <div className="d-flex flex-row align-items-center justify-content-end">
@@ -1937,27 +1928,22 @@ export const ApiPricing = (props: ApiPricingProps) => {
                   (
                     <Can I={manage} a={API} team={props.ownerTeam}>
                       <span className="d-inline-flex cursor-forbidden">
-                      <SubscriptionHelp help={{ blockers: getVisibleSubscriptionBlockers(subscriptionHelp) }}>
-                        <button
-                          type="button"
-                          disabled
-                          aria-label={isAutomaticProcess ? translate("Get API key") : translate('Request API key')}
-                          className="btn --primary --small --icon-only"
-                        >
-                          <KeyRound size={16} />
-                        </button>
-                      </SubscriptionHelp>
+                        <SubscriptionHelp help={subscriptionHelp}>
+                          <button
+                            type="button"
+                            disabled
+                            aria-label={isAutomaticProcess ? translate("Get API key") : translate('Request API key')}
+                            className="btn --tertiary --small --icon-only"
+                          >
+                            <KeyRound size={16} />
+                          </button>
+                        </SubscriptionHelp>
                       </span>
                     </Can>
                   )
                 }
                 {
-                  !subscriptionDisabled &&
-                  ((otoroshiTargetIsDefined && otoroshiEntitiesIsDefined) ||
-                    props.api.visibility === 'AdminOnly') &&
-                  (!isAccepted || props.api.visibility === 'AdminOnly') &&
-                  isPublish(props.api) &&
-                  props.api.state !== "blocked" &&
+                  canSubscribe &&
                   (
                     <Can
                       I={access}

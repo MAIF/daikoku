@@ -10,14 +10,6 @@ export type SubscriptionHelp = {
   blockers: SubscriptionHelpItem[];
 };
 
-export function getVisibleSubscriptionBlockers(help: SubscriptionHelp): SubscriptionHelpItem[] {
-  return help.blockers.filter((item) =>
-    item.reason === 'blocked' ||
-    item.reason === 'unpublished' ||
-    item.reason === 'target'
-  );
-}
-
 export function isSubscriptionDisabled(help: SubscriptionHelp): boolean {
   return help.blockers.length > 0;
 }

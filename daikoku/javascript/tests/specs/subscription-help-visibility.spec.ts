@@ -84,6 +84,10 @@ const checkSubscriptionHelp = async (
 
     const row = page.getByRole('listitem', { name: 'dev', exact: true });
     const button = row.getByRole('button', { name: "Obtenir une clé d'API", exact: true });
+    const expectedBlockerText =
+      configuration === 'missing target'
+        ? "Aucune cible Otoroshi n'est configurée pour ce plan."
+        : "La cible Otoroshi n'autorise aucun groupe, service ni route.";
 
     await test.step('Check the API-key button', async () => {
       if (configuration === 'configured') {
@@ -98,18 +102,12 @@ const checkSubscriptionHelp = async (
 
       await expect(button).toBeDisabled();
       const buttonTooltip = button.locator('xpath=..');
-      if (configuration === 'missing target') {
-        await expect(buttonTooltip).toHaveAttribute('data-tooltip-id');
-        await buttonTooltip.hover();
-        const tooltipId = await buttonTooltip.getAttribute('data-tooltip-id');
-        const tooltip = page.locator(`[role="tooltip"][id="${tooltipId}"]`);
-        await expect(tooltip).toBeVisible();
-        await expect(tooltip).toContainText(
-          "Aucune cible Otoroshi n'est configurée pour ce plan."
-        );
-      } else {
-        await expect(buttonTooltip).not.toHaveAttribute('data-tooltip-id');
-      }
+      await expect(buttonTooltip).toHaveAttribute('data-tooltip-id');
+      await buttonTooltip.hover();
+      const tooltipId = await buttonTooltip.getAttribute('data-tooltip-id');
+      const tooltip = page.locator(`[role="tooltip"][id="${tooltipId}"]`);
+      await expect(tooltip).toBeVisible();
+      await expect(tooltip).toContainText(expectedBlockerText);
     });
 
     await test.step('Check the Otoroshi target cell', async () => {
@@ -126,18 +124,12 @@ const checkSubscriptionHelp = async (
         const tooltipId = await label.locator('xpath=..').getAttribute('data-tooltip-id');
         const tooltip = page.locator(`[role="tooltip"][id="${tooltipId}"]`);
         await expect(tooltip).toBeVisible();
-        await expect(tooltip).toContainText(
-          configuration === 'missing target'
-            ? "Aucune cible Otoroshi n'est configurée pour ce plan."
-            : "La cible Otoroshi n'autorise aucun groupe ni route."
-        );
+        await expect(tooltip).toContainText(expectedBlockerText);
         await expect(tooltip.locator('li')).toHaveCount(1);
       }
 
       await expect(row.locator('[data-tooltip-id]')).toHaveCount(
-        !role.canManage || configuration === 'configured'
-          ? 0
-          : configuration === 'missing target' ? 2 : 1
+        !role.canManage || configuration === 'configured' ? 0 : 2
       );
     });
   } finally {

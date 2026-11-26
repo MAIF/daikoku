@@ -15,11 +15,12 @@ the initial subscription button is hidden from consumers. Users with permission 
 API keep a disabled button: Daikoku administrators, administrators of the owning team and its API
 editors. Being a tenant administrator alone does not grant this display permission.
 
-Hover over the disabled **Get API key** or **Request API key** button to read the API's blocked
-or unpublished status. Otoroshi configuration problems are shown separately in the **Otoroshi
-target** column, whose visibility is unchanged: a red **None** label replaces the target URL when
-the target is absent or has no authorized group, service or route. Hover over the label to read
-the corresponding explanation. Move the pointer away to close either tooltip.
+Hover over the disabled **Get API key** or **Request API key** button to read every reason that
+prevents the subscription: the API's blocked or unpublished status, and Otoroshi configuration
+problems. These configuration problems are also shown in the **Otoroshi target** column, whose
+visibility is unchanged: a red **None** label replaces the target URL when the target is absent or
+has no authorized group, service or route. Hover over the label to read the corresponding
+explanation. Move the pointer away to close either tooltip.
 
 AdminOnly APIs remain exempt from the Otoroshi configuration requirement. Other team eligibility,
 pending-request, subscription, payment, instance and metadata checks are not added to this initial
