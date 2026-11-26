@@ -120,6 +120,8 @@ class OtoroshiClient(env: Env) {
       if (resp.status == 200) {
         val res = resp.json.as[JsArray]
         FastFuture.successful(JsArray(res.value))
+      } else if (resp.status == 404) {
+        FastFuture.successful(JsArray())
       } else {
         Future
           .failed(

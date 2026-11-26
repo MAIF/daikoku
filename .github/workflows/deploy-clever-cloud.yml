@@ -2,10 +2,6 @@ name: Deploy to Clever Cloud
 
 on:
   workflow_dispatch:
-    inputs:
-      branch:
-        description: 'branch to deploy'
-        required: true
 
 jobs:
   deploy:
@@ -14,8 +10,6 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v7
-        with:
-          ref: ${{ inputs.branch }}
 
       - name: Set up JDK 17
         uses: actions/setup-java@v5
@@ -62,7 +56,7 @@ jobs:
       - name: Push daikoku.jar to Clever Cloud
         env:
           CLEVER_DEPLOY_URL: ${{ secrets.CLEVER_DEPLOY_URL }}
-          DEPLOYED_BRANCH: ${{ inputs.branch }}
+          DEPLOYED_BRANCH: ${{ github.ref_name }}
           GIT_SSH_COMMAND: ssh -i ~/.ssh/clever_cloud -o IdentitiesOnly=yes
         run: |
           mkdir "$RUNNER_TEMP/clever-release"

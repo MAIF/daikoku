@@ -180,7 +180,7 @@ class OtoroshiSettingsController(
                   saveSettings()
                 else
                   otoroshiClient
-                    .getServices()(using settings)
+                    .getRoutes()(using settings)
                     .flatMap { _ =>
                       saveSettings()
                     }
@@ -225,7 +225,7 @@ class OtoroshiSettingsController(
               createOtoroshi()
             else
               otoroshiClient
-                .getServices()(using settings)
+                .getRoutes()(using settings)
                 .flatMap { _ =>
                   createOtoroshi()
                 }
