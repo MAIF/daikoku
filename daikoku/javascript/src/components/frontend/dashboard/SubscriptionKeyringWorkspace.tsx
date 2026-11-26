@@ -8,6 +8,7 @@ import {
   useSensor,
   useSensors,
 } from '@dnd-kit/core';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   GripVertical,
   Import,
@@ -50,6 +51,7 @@ import { BeautifulTitle } from '../..';
 export type KeyringWorkspaceLocationState = {
   apis: IApiWithAuthorization[];
   team: ITeamSimple;
+  selectionQueryKey?: readonly string[];
 };
 
 export function SubscriptionKeyringWorkspace() {
@@ -276,11 +278,12 @@ function WorkspaceLeaveConfirmation({
   return null;
 }
 
-function KeyringWorkspace({ apis, team }: KeyringWorkspaceLocationState) {
+function KeyringWorkspace({ apis, team, selectionQueryKey }: KeyringWorkspaceLocationState) {
   const { translate } = useContext(I18nContext);
   const { tenant } = useContext(GlobalContext);
   const { close, openCustomModal } = useContext(ModalContext);
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const submitted = useRef(false);
   const {
     availablePlanSets,
@@ -291,6 +294,9 @@ function KeyringWorkspace({ apis, team }: KeyringWorkspaceLocationState) {
     submitWithMotivation,
   } = useSubscriptionBatch(apis, team, () => {
     submitted.current = true;
+    if (selectionQueryKey) {
+      queryClient.removeQueries({ queryKey: selectionQueryKey, exact: true });
+    }
     close();
     navigate('/apis', { replace: true });
   });

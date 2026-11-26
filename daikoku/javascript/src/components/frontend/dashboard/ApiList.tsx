@@ -376,7 +376,6 @@ export const ApiList = (props: ApiListProps) => {
                       const team = teams.find((candidate) => candidate._id === teamId);
                       if (!team) return;
                       close();
-                      queryClient.removeQueries({ queryKey: selectionQueryKey, exact: true });
                       navigate('/apis/subscriptions/keyrings', {
                         state: { apis: selectedApis, team, selectionQueryKey },
                       });

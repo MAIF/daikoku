@@ -27,6 +27,17 @@ directory:
 docker compose -f dev/docker-compose-ldap.yml up
 ```
 
+LDAP uses the same pinned `osixia/openldap:1.5.0` image as the test stack; its
+`--copy-service` startup option is not supported by newer `latest` images.
+
+Consumption and estimated-income tests also require Elasticsearch. Use
+`mise run test:consumption` for that stack rather than the LDAP-only stack.
+The ES-enabled paper route calls the local `faker` service (`/types`) so gateway
+calls do not depend on an external upstream.
+
+Deletion assertions poll Otoroshi for up to 45 seconds: the backend's default
+deletion queue interval is 30 seconds, although the CI stack configures one second.
+
 ## Seed data
 
 Init states (under `config/`) used when running Daikoku locally
