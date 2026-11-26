@@ -1,0 +1,78 @@
+name: Deploy to Clever Cloud
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'branch to deploy'
+        required: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.branch }}
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v5
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - uses: sbt/setup-sbt@v1
+
+      - uses: coursier/cache-action@v9
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: 'npm'
+          cache-dependency-path: daikoku/javascript/package-lock.json
+
+      - name: Build frontend
+        run: |
+          cd daikoku/javascript
+          npm ci
+          npm run build
+        env:
+          NODE_OPTIONS: --max_old_space_size=4096
+
+      - name: Build daikoku.jar
+        run: |
+          cd daikoku
+          sbt -Dsbt.color=always -Dsbt.supershell=false ';clean;assembly'
+
+      - name: Set up the Clever Cloud SSH key
+        env:
+          CLEVER_DEPLOY_URL: ${{ secrets.CLEVER_DEPLOY_URL }}
+          CLEVER_SSH_PRIVATE_KEY: ${{ secrets.CLEVER_SSH_PRIVATE_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "$CLEVER_SSH_PRIVATE_KEY" > ~/.ssh/clever_cloud
+          chmod 600 ~/.ssh/clever_cloud
+
+          CLEVER_GIT_HOST=$(echo "$CLEVER_DEPLOY_URL" | sed -E 's#^.*@([^/:]+).*$#\1#')
+          ssh-keyscan "$CLEVER_GIT_HOST" >> ~/.ssh/known_hosts
+
+      - name: Push daikoku.jar to Clever Cloud
+        env:
+          CLEVER_DEPLOY_URL: ${{ secrets.CLEVER_DEPLOY_URL }}
+          DEPLOYED_BRANCH: ${{ inputs.branch }}
+          GIT_SSH_COMMAND: ssh -i ~/.ssh/clever_cloud -o IdentitiesOnly=yes
+        run: |
+          mkdir "$RUNNER_TEMP/clever-release"
+          cp daikoku/target/scala-*/daikoku.jar "$RUNNER_TEMP/clever-release/"
+          cd "$RUNNER_TEMP/clever-release"
+
+          git init
+          git config user.email "daikoku-github-actions@users.noreply.github.com"
+          git config user.name "daikoku-github-actions"
+          git add daikoku.jar
+          git commit -m "Deploy $DEPLOYED_BRANCH"
+
+          git push --force "$CLEVER_DEPLOY_URL" HEAD:master
