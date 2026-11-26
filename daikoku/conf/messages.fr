@@ -132,6 +132,25 @@ mail.account.creation.mail.accepted.body = Bonjour [userName], </br>\
 Merci de vous être inscrit sur [tenant]. </br>\
 Après examen, nous sommes heureux de vous informer que votre demande de création de compte a été approuvée. </br>\
 
+mail.billing.price.change.title=Le tarif d''un de vos plans change
+mail.billing.price.change.body=Le tarif du plan [planName] de l''API [apiName] change le [effectiveAt]. </br>\
+À partir de cette date, les appels de l''équipe [teamName] sont facturés [costPerRequest] [currency] l''unité. </br>\
+L''abonnement mensuel passe à [costPerMonth] [currency] sur la facture suivante, le mois en cours étant déjà réglé. </br>\
+D''ici là, rien ne change. </br>\
+<a href="[link]">Voir votre souscription</a>
+mail.billing.cancellation.title=Votre résiliation a été enregistrée
+mail.billing.cancellation.body=La souscription de l''équipe [teamName] au plan [planName] de l''API [apiName] prend fin le [effectiveAt]. </br>\
+La clé d''API continue de fonctionner jusqu''à cette date, et la dernière facture couvre la consommation jusque-là. </br>\
+<a href="[link]">Voir votre souscription</a>
+mail.subscription.blocked.by.owner.title=Votre souscription a été bloquée
+mail.subscription.blocked.by.owner.body=La souscription de l''équipe [teamName] au plan [planName] de l''API [apiName] a été bloquée par l''équipe qui publie l''API. </br>\
+[reason] </br>\
+La clé d''API ne donne plus accès à ce plan tant que la souscription reste bloquée. </br>\
+<a href="[link]">Voir votre souscription</a>
+mail.subscription.unblocked.by.owner.title=Votre souscription a été rétablie
+mail.subscription.unblocked.by.owner.body=La souscription de l''équipe [teamName] au plan [planName] de l''API [apiName] a été rétablie par l''équipe qui publie l''API. </br>\
+La clé d''API donne de nouveau accès à ce plan. </br>\
+<a href="[link]">Voir votre souscription</a>
 
 mail.api.depreciation.warning.title = l''API [apiName] a été dépréciée
 mail.api.depreciation.warning.body = Bonjour [recipientName], </br>\

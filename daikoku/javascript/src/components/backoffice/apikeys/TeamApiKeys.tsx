@@ -17,11 +17,9 @@ import {
   access,
   apikey,
   isUserIsTeamAdmin,
-  manage,
-  read,
   teamPermissions,
 } from '../../utils';
-import {ExternalLink, KeyRound, BarChart} from "lucide-react";
+import { ExternalLink, KeyRound } from "lucide-react";
 
 export const TeamApiKeys = () => {
   const { isLoading, currentTeam, error } = useTeamBackOffice();
@@ -104,13 +102,6 @@ export const TeamApiKeys = () => {
                 Subscribed Apis
               </Translation>
             </h1>
-            <Link
-              to={`/${currentTeam._humanReadableId}/settings/consumption`}
-              className="btn --tertiary"
-            >
-              <BarChart className="me-1" />
-              <Translation i18nkey="See Stats">See Stats</Translation>
-            </Link>
             <div className="section p-2">
               <DynamicTable<IApi>
                 queryKey={['subscribed-apis', currentTeam._id]}

@@ -769,28 +769,6 @@ object SchemaDefinition {
       )
     )
 
-    // a plain value enum, exposed as such: this matches both the REST
-    // serialization (BillingTimeUnit.asJson is a JsString) and the frontend
-    // IBillingDuration type, where unit is a string
-    lazy val BillingTimeUnitEnumType = EnumType(
-      "BillingTimeUnit",
-      Some("Unit of a billing duration : hour, day, month or year"),
-      BillingTimeUnit.values
-        .map(unit => EnumValue(unit.name, value = unit))
-        .toList
-    )
-
-    lazy val BillingDurationType = deriveObjectType[
-      (DataStore, DaikokuActionContext[JsValue]),
-      BillingDuration
-    ](
-      ObjectTypeDescription("A possible value of billing duration"),
-      ReplaceField(
-        "unit",
-        Field("unit", BillingTimeUnitEnumType, resolve = _.value.unit)
-      )
-    )
-
     lazy val ValidationStepInterfaceType = InterfaceType(
       "ValidationStep",
       "Interface of a validation step: email, admin or payment",
@@ -985,7 +963,7 @@ object SchemaDefinition {
         "additionalPriceId",
         Field(
           "additionalPriceId",
-          OptionType(StringType),
+          StringType,
           resolve = _.value.additionalPriceId
         )
       )
@@ -1202,6 +1180,11 @@ object SchemaDefinition {
             resolve = _.value.maxPerMonth
           ),
           Field(
+            "includedRequestsPerMonth",
+            OptionType(LongType),
+            resolve = _.value.includedRequestsPerMonth
+          ),
+          Field(
             "allowMultipleKeys",
             OptionType(BooleanType),
             resolve = _.value.allowMultipleKeys
@@ -1230,16 +1213,6 @@ object SchemaDefinition {
             "otoroshiTarget",
             OptionType(OtoroshiTargetType),
             resolve = _.value.otoroshiTarget
-          ),
-          Field(
-            "trialPeriod",
-            OptionType(BillingDurationType),
-            resolve = _.value.trialPeriod
-          ),
-          Field(
-            "billingDuration",
-            OptionType(BillingDurationType),
-            resolve = _.value.billingDuration
           ),
           Field("visibility", StringType, resolve = _.value.visibility.name),
           Field(
@@ -3140,6 +3113,152 @@ object SchemaDefinition {
         )
       )
     )
+    lazy val SubscriptionPriceChangeScheduledType = new PossibleObject(
+      ObjectType(
+        "SubscriptionPriceChangeScheduled",
+        "A notification triggered when the price of a subscribed plan changes at the next period",
+        interfaces[
+          (DataStore, DaikokuActionContext[JsValue]),
+          SubscriptionPriceChangeScheduled
+        ](NotificationActionType),
+        fields[
+          (DataStore, DaikokuActionContext[JsValue]),
+          SubscriptionPriceChangeScheduled
+        ](
+          Field(
+            "subscription",
+            OptionType(ApiSubscriptionType),
+            resolve =
+              ctx => apiSubscriptionsFetcher.defer(ctx.value.subscription)
+          ),
+          Field(
+            "api",
+            OptionType(ApiType),
+            resolve = ctx => apisFetcher.defer(ctx.value.api)
+          ),
+          Field(
+            "plan",
+            OptionType(UsagePlanType),
+            resolve = ctx => usagePlansFetcher.defer(ctx.value.plan)
+          ),
+          Field(
+            "costPerMonth",
+            BigDecimalType,
+            resolve = _.value.costPerMonth
+          ),
+          Field(
+            "costPerRequest",
+            OptionType(BigDecimalType),
+            resolve = _.value.costPerRequest
+          ),
+          Field("currency", CurrencyType, resolve = _.value.currency),
+          Field(
+            "effectiveAt",
+            DateTimeUnitype,
+            resolve = _.value.effectiveAt
+          )
+        )
+      )
+    )
+
+    lazy val SubscriptionCancellationScheduledType = new PossibleObject(
+      ObjectType(
+        "SubscriptionCancellationScheduled",
+        "A notification triggered when a consumer cancels a subscription, effective at the end of the period",
+        interfaces[
+          (DataStore, DaikokuActionContext[JsValue]),
+          SubscriptionCancellationScheduled
+        ](NotificationActionType),
+        fields[
+          (DataStore, DaikokuActionContext[JsValue]),
+          SubscriptionCancellationScheduled
+        ](
+          Field(
+            "subscription",
+            OptionType(ApiSubscriptionType),
+            resolve =
+              ctx => apiSubscriptionsFetcher.defer(ctx.value.subscription)
+          ),
+          Field(
+            "api",
+            OptionType(ApiType),
+            resolve = ctx => apisFetcher.defer(ctx.value.api)
+          ),
+          Field(
+            "plan",
+            OptionType(UsagePlanType),
+            resolve = ctx => usagePlansFetcher.defer(ctx.value.plan)
+          ),
+          Field("effectiveAt", DateTimeUnitype, resolve = _.value.effectiveAt)
+        )
+      )
+    )
+
+    lazy val SubscriptionBlockedByOwnerType = new PossibleObject(
+      ObjectType(
+        "SubscriptionBlockedByOwner",
+        "A notification triggered when the API producer blocks a subscription",
+        interfaces[
+          (DataStore, DaikokuActionContext[JsValue]),
+          SubscriptionBlockedByOwner
+        ](NotificationActionType),
+        fields[
+          (DataStore, DaikokuActionContext[JsValue]),
+          SubscriptionBlockedByOwner
+        ](
+          Field(
+            "subscription",
+            OptionType(ApiSubscriptionType),
+            resolve =
+              ctx => apiSubscriptionsFetcher.defer(ctx.value.subscription)
+          ),
+          Field(
+            "api",
+            OptionType(ApiType),
+            resolve = ctx => apisFetcher.defer(ctx.value.api)
+          ),
+          Field(
+            "plan",
+            OptionType(UsagePlanType),
+            resolve = ctx => usagePlansFetcher.defer(ctx.value.plan)
+          ),
+          Field("reason", OptionType(StringType), resolve = _.value.reason)
+        )
+      )
+    )
+
+    lazy val SubscriptionUnblockedByOwnerType = new PossibleObject(
+      ObjectType(
+        "SubscriptionUnblockedByOwner",
+        "A notification triggered when the API producer unblocks a subscription",
+        interfaces[
+          (DataStore, DaikokuActionContext[JsValue]),
+          SubscriptionUnblockedByOwner
+        ](NotificationActionType),
+        fields[
+          (DataStore, DaikokuActionContext[JsValue]),
+          SubscriptionUnblockedByOwner
+        ](
+          Field(
+            "subscription",
+            OptionType(ApiSubscriptionType),
+            resolve =
+              ctx => apiSubscriptionsFetcher.defer(ctx.value.subscription)
+          ),
+          Field(
+            "api",
+            OptionType(ApiType),
+            resolve = ctx => apisFetcher.defer(ctx.value.api)
+          ),
+          Field(
+            "plan",
+            OptionType(UsagePlanType),
+            resolve = ctx => usagePlansFetcher.defer(ctx.value.plan)
+          )
+        )
+      )
+    )
+
     lazy val ApiSubscriptionTransferSuccessType = new PossibleObject(
       ObjectType(
         "ApiSubscriptionTransferSuccess",
@@ -3423,6 +3542,10 @@ object SchemaDefinition {
             CheckoutForSubscriptionType,
             ApiSubscriptionTransferSuccessType,
             AccountCreationAttemptType,
+            SubscriptionPriceChangeScheduledType,
+            SubscriptionCancellationScheduledType,
+            SubscriptionBlockedByOwnerType,
+            SubscriptionUnblockedByOwnerType,
             ApiDepreciationWarningType,
             ApiBlockingWarningType
           )
@@ -4236,6 +4359,11 @@ object SchemaDefinition {
       OptionInputType(StringType),
       description = "The optional id of a plan"
     )
+    val KEYRING_ID_OPT = Argument(
+      "keyringId",
+      OptionInputType(StringType),
+      description = "The optional id of a keyring"
+    )
     val FROM =
       Argument("from", OptionInputType(LongType), description = "Date from")
 
@@ -4573,13 +4701,14 @@ object SchemaDefinition {
           "apiKeyringEntries",
           KeyringEntriesType,
           arguments =
-            ID :: TEAM_ID_NOT_OPT :: FILTER :: LIMIT :: OFFSET :: CREATION_LABEL :: UNAVAILABLE_PLAN_LABEL :: Nil,
+            ID :: TEAM_ID_NOT_OPT :: FILTER :: KEYRING_ID_OPT :: LIMIT :: OFFSET :: CREATION_LABEL :: UNAVAILABLE_PLAN_LABEL :: Nil,
           resolve = ctx =>
             CommonServices
               .getApiKeyringEntries(
                 ctx.arg(TEAM_ID_NOT_OPT),
                 ctx.arg(ID),
                 ctx.arg(FILTER),
+                ctx.arg(KEYRING_ID_OPT),
                 ctx.arg(LIMIT),
                 ctx.arg(OFFSET),
                 ctx.arg(CREATION_LABEL),
@@ -5228,6 +5357,7 @@ object SchemaDefinition {
         apiPostsFetcher,
         apiDocumentationPagesFetcher,
         apiSubscriptionsFetcher,
+        apiKeyringSubscriptionsFetcher,
         apiSubscriptionDemandsFetcher,
         keyringsFetcher,
         usagePlansFetcher,

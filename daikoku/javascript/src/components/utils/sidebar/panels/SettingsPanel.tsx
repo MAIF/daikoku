@@ -81,7 +81,7 @@ export const SettingsPanel = () => {
   };
 
   return (
-    <div className="ms-3 mt-2 col-8 d-flex flex-column panel">
+    <div className="flex-grow-1 mx-4 d-flex flex-column panel">
       <div className="mb-3 panel__title">
         <h3>{translate('Settings')}</h3>
       </div>

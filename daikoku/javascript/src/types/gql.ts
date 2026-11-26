@@ -188,7 +188,14 @@ export interface IKeyringSubscriptionGql {
   validUntil?: number;
   tags: Array<string>;
   lastUsage?: number;
-  plan: { _id: string; customName: string; isRotationLocked?: boolean };
+  plan: {
+    _id: string;
+    customName: string;
+    isRotationLocked?: boolean;
+    paymentSettings?: {
+      thirdPartyPaymentSettingsId: string;
+    } | null;
+  };
   api: {
     _id: string;
     _humanReadableId: string;

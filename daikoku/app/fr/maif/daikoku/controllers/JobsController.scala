@@ -26,6 +26,7 @@ class JobsController(
     notificationsPurgeJob: NotificationsPurgeJob,
     apiKeyStatsJob: ApiKeyStatsJob,
     auditTrailPurgeJob: AuditTrailPurgeJob,
+    stripeReconciliationJob: StripeReconciliationJob,
     env: Env,
     cc: ControllerComponents,
     otoroshiClient: OtoroshiClient
@@ -122,6 +123,25 @@ class JobsController(
               .map(_ => Ok(Json.obj("done" -> true)))
           case _ => AppError.Unauthorized.renderF()
         }
+      }
+    }
+
+  def stripeReconciliationSyncJob(): Action[AnyContent] =
+    Action.async { ctx =>
+      ctx
+        .getQueryString("access_key")
+        .orElse(ctx.getQueryString("key")) match {
+        case Some(key) if env.config.stripeReconciliationKey == key =>
+          if (env.config.stripeReconciliationByCron) {
+            stripeReconciliationJob
+              .reconcile()
+              .map(_ => Ok(Json.obj("done" -> true)))
+          } else {
+            FastFuture.successful(
+              NotFound(Json.obj("error" -> "API not found"))
+            )
+          }
+        case _ => AppError.Unauthorized.renderF()
       }
     }
 

@@ -13,6 +13,11 @@ yourself and point it at the containers started here.
 | `docker-compose-ldap.yml` | OpenLDAP, SMTP, Redis, Otoroshi | dev against an LDAP tenant |
 | `docker-compose-oidc.yml` | OIDC mock, SMTP, Redis, Otoroshi, faker | dev against an OAuth2/OIDC tenant |
 | `docker-compose-local.yml` | Otoroshi, SMTP | dev against local auth |
+| `docker-compose-s3.yml` | Garage (S3) and its bootstrap | assets, added to every mode by `mise run dev` |
+
+The local S3 bucket settings are: bucket `daikoku`, URL `http://daikoku.s3.oto.tools:3910`,
+region `garage`, access key and secret as in `config/garage-init.sh`. The local seed already
+uses them.
 
 Volumes reference the shared fixtures under
 `daikoku/javascript/tests/config/` via relative paths, so run these from the `dev/`

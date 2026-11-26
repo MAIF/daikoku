@@ -11,7 +11,7 @@ info:
     email: oss@maif.fr
   description: Admin API of Daikoku
   title: Daikoku Admin API
-  version: 19.1.0
+  version: 19.1.1
 tags: []
 components:
   parameters:
@@ -1408,6 +1408,7 @@ components:
             enum:
               - owner
               - lifecycle
+              - ended
         thirdPartySubscriptionInformations:
           oneOf:
             - $ref: '#/components/schemas/ThirdPartySubscriptionInformations.Stripe'
@@ -1423,16 +1424,18 @@ components:
     ThirdPartySubscriptionInformations.Stripe:
       description: ThirdPartySubscriptionInformations
       properties:
+        type:
+          type: string
+          enum:
+            - stripe
         subscriptionId:
           type: string
-        primaryElementId:
-          type:
-            - string
-            - 'null'
-        meteredElementId:
-          type:
-            - string
-            - 'null'
+        customerId:
+          type: string
+      required:
+        - type
+        - subscriptionId
+        - customerId
     Keyring:
       description: Keyring
       examples:
@@ -2277,10 +2280,6 @@ components:
           anyOf:
             - $ref: '#/components/schemas/OtoroshiTarget'
             - type: 'null'
-        billingDuration:
-          anyOf:
-            - $ref: '#/components/schemas/BillingDuration'
-            - type: 'null'
         allowMultipleKeys:
           type:
             - boolean
@@ -2353,6 +2352,11 @@ components:
             - integer
             - 'null'
           format: int64
+        includedRequestsPerMonth:
+          type:
+            - integer
+            - 'null'
+          format: int64
         costPerMonth:
           type:
             - number
@@ -2363,10 +2367,6 @@ components:
             - number
             - 'null'
           format: float64
-        trialPeriod:
-          anyOf:
-            - $ref: '#/components/schemas/BillingDuration'
-            - type: 'null'
         metadata:
           type: object
           additionalProperties:
@@ -2387,20 +2387,6 @@ components:
           type: string
       required:
         - code
-    BillingDuration:
-      description: BillingDuration
-      properties:
-        value:
-          type: integer
-          format: int64
-        unit:
-          description: read case insensitively, plurals accepted (e.g. months)
-          type: string
-          enum:
-            - Hour
-            - Day
-            - Month
-            - Year
     OtoroshiTarget:
       description: Otoroshi target
       properties:
@@ -2433,11 +2419,16 @@ components:
         basePriceId:
           type: string
         additionalPriceId:
-          type:
-            - string
-            - 'null'
+          type: string
+        meterId:
+          type: string
+        meterEventName:
+          type: string
       required:
         - basePriceId
+        - additionalPriceId
+        - meterId
+        - meterEventName
     ApikeyCustomization:
       description: Apikey customization
       properties:
