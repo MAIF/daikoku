@@ -33,6 +33,9 @@ export type FlowEditorProps<Card extends FlowEditorCard> = {
     hint: string;
     insert: (position: number) => string;
     unavailable: string;
+    invalidPosition: string;
+    cannotMove: string;
+    listChanged: string;
   };
   start: ReactNode;
   end: ReactNode;

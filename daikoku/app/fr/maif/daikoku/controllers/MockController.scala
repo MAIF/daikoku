@@ -132,7 +132,7 @@ class MockController(
       Ok(req.body.as[JsObject]).future
     }
 
-  def fakeOtoroshiApiKeyResponse() =
+  def fakeHttpStepValidation() =
     Action.async(parse.json) { _ =>
       Ok(Json.obj("accept" -> true)).future
     }

@@ -2559,9 +2559,9 @@ object evolution_1910_d extends EvolutionScript {
 }
 
 
-object evolution_1910_e extends EvolutionScript {
-  override def version: String = "19.1.0_e"
-  //TODO Bon numéro de version ?
+object evolution_1920 extends EvolutionScript {
+  override def version: String = "19.2.0"
+
   override def script: (
     Option[DatastoreId],
       DataStore,
@@ -2578,10 +2578,9 @@ object evolution_1910_e extends EvolutionScript {
     ) => {
       given ExecutionContext = ec
       logger.info(
-        s"Begin evolution $version - rebuild uniq_team_personal_user without its _deleted predicate"
+        s"Begin evolution $version - add an empty teamCreationProcess to the tenants that have none"
       )
 
-      // Create an empty teamCreationProcess For the tenants that don't have it
       val statements = Seq(
         """UPDATE tenants
           |SET content = jsonb_set(content, '{teamCreationProcess}', '[]'::jsonb, true)
@@ -2603,7 +2602,7 @@ object evolution_1910_e extends EvolutionScript {
         }
         .map { _ =>
           logger.info(
-            s"[evolution $version] :: rebuilt uniq_team_personal_user"
+            s"[evolution $version] :: teamCreationProcess added to the tenants"
           )
           Done
         }
@@ -2643,7 +2642,7 @@ object evolutions {
       evolution_1910_b,
       evolution_1910_c,
       evolution_1910_d,
-      evolution_1910_e
+      evolution_1920
     )
   def run(
       dataStore: DataStore,

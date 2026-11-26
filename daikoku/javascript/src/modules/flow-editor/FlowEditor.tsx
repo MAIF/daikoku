@@ -10,6 +10,9 @@ const defaultLabels = {
   hint: 'Drag a step into the flow, or select it then choose an insertion point.',
   insert: (position: number) => `Insert at position ${position}`,
   unavailable: 'This step cannot be added.',
+  invalidPosition: 'This step cannot be placed here.',
+  cannotMove: 'This step cannot be moved.',
+  listChanged: 'The list changed during the move. Please try again.',
 };
 
 export const FlowEditor = <Card extends FlowEditorCard>({
@@ -63,7 +66,7 @@ export const FlowEditor = <Card extends FlowEditorCard>({
   const addCard = (type: Card['type'], index: number) => {
     const definition = definitionFor(type);
     if (!definition) {
-      setError(`Type de carte indisponible : ${type}.`);
+      setError(labels.unavailable);
       return;
     }
     if (definition.canAdd === false) {
@@ -71,7 +74,7 @@ export const FlowEditor = <Card extends FlowEditorCard>({
       return;
     }
     if (canInsertAt && !canInsertAt(type, index)) {
-      setError('Le step form doit rester en première position.');
+      setError(labels.invalidPosition);
       return;
     }
     setSelectedType(null);
@@ -82,14 +85,14 @@ export const FlowEditor = <Card extends FlowEditorCard>({
   const moveCard = (from: number, insertionIndex: number) => {
     const card = value[from];
     if (!card || !card.id || idCounts.get(card.id) !== 1) {
-      setError('Impossible de déplacer une carte absente ou sans identifiant unique.');
+      setError(labels.cannotMove);
       return;
     }
     if (definitionFor(card.type)?.canMove === false) return;
 
     const destination = insertionIndex > from ? insertionIndex - 1 : insertionIndex;
     if (canMoveTo && !canMoveTo(card, destination)) {
-      setError('Le step form doit rester en première position.');
+      setError(labels.invalidPosition);
       return;
     }
     if (destination === from) return;
@@ -141,7 +144,7 @@ export const FlowEditor = <Card extends FlowEditorCard>({
       return;
     }
     if (!source || value[source.index]?.id !== source.id) {
-      setError('La liste a changé pendant le déplacement. Veuillez réessayer.');
+      setError(labels.listChanged);
       return;
     }
     moveCard(source.index, index);

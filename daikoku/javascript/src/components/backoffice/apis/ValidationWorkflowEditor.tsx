@@ -628,6 +628,9 @@ export const ValidationWorkflowEditor = ({ iconTarget: IconTarget = KeyRound, ..
           hint: translate('validation.workflow.palette.hint'),
           insert: position => `${translate('validation.workflow.palette.insert')} ${position}`,
           unavailable: translate('validation.workflow.palette.unavailable'),
+          invalidPosition: translate('validation.workflow.palette.invalid.position'),
+          cannotMove: translate('validation.workflow.palette.cannot.move'),
+          listChanged: translate('validation.workflow.palette.list.changed'),
         }}
         start={<span className="badge rounded-pill bg-light text-dark border p-2">
           <Flag size={15} aria-hidden="true" /> {translate('validation.workflow.start')}

@@ -138,23 +138,17 @@ mail.team.creation.mail.confirmation.body = Merci de <a href="[urlAccept]">confi
 mail.team.creation.error.title = Échec de création d''équipe
 mail.team.creation.error.body = Une erreur technique est survenue pour la demande de création d''équipe [demandId]. Aucune action de relance n''est disponible.
 mail.team.creation.mail.validation.body = Bonjour, </br>\
-Une nouvelle équipe vient de s''inscrire sur [tenant].</br>\
-Informations sur l'équipe :</br>\
+Une demande de création d''équipe vient d''être déposée sur [tenant].</br>\
+Informations sur l''équipe :</br>\
 Nom : [userName]</br>\
 Email : [userEmail]</br>\
 Vous pouvez <a href="[urlAccept]" target="_blank">accepter</a> ou <a href="[urlDecline]" target="_blank">refuser</a> la création de l''équipe.
 
-mail.team.creation.mail.rejected.title = Votre inscription sur [tenant] n''a pas été validée
-mail.team.creation.mail.rejected.body = Bonjour [userName], </br>\
-Nous vous remercions pour votre inscription sur [tenant]. </br>\
-Après vérification, nous sommes au regret de vous informer que votre demande de création de compte n''a pas été validée. </br>\
-Voici la raison: [message] </br>\
-Si vous pensez qu''il s''agit d''une erreur ou souhaitez obtenir plus d''informations, vous pouvez contacter notre équipe de support. </br>\
+mail.team.creation.mail.rejected.title = La création de votre équipe sur [tenant] a été refusée
+mail.team.creation.mail.rejected.body = Bonjour [userName], votre demande de création d''équipe a été refusée. [message]
 
-mail.team.creation.mail.accepted.title = Votre inscription sur [tenant] a été approuvée
-mail.team.creation.mail.accepted.body = Bonjour [userName], </br>\
-Merci de vous être inscrit sur [tenant]. </br>\
-Après examen, nous sommes heureux de vous informer que votre demande de création de compte a été approuvée. </br>\
+mail.team.creation.mail.accepted.title = Votre équipe a été créée sur [tenant]
+mail.team.creation.mail.accepted.body = Bonjour [userName], votre équipe a été créée sur [tenant].
 
 mail.billing.price.change.title=Le tarif d''un de vos plans change
 mail.billing.price.change.body=Le tarif du plan [planName] de l''API [apiName] change le [effectiveAt]. </br>\
