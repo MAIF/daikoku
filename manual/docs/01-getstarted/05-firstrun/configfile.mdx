@@ -40,6 +40,53 @@ or
 | `daikoku.api.headerName`<br />(`DAIKOKU_API_HEADERNAME`) | String | "Otoroshi-Claim" | |
 | `daikoku.api.headerSecret`<br />(`DAIKOKU_API_HEADERSECRET`) | String | "secret" | |
 
+## Stripe settings
+
+Only used by tenants that configure a Stripe payment provider. The Stripe API keys
+themselves are not configured here: they belong to the tenant, and are set from the
+tenant administration page.
+
+| name <br /> (env.variable) | type | default value | description |
+|------|:----:|---------------|-------------|
+| `daikoku.stripe.url`<br />(`DAIKOKU_STRIPE_URL`) | string | "https://api.stripe.com" | Base URL of the Stripe API. Only change it to point Daikoku at a stub, for tests |
+| `daikoku.stripe.apiVersion`<br />(`DAIKOKU_STRIPE_API_VERSION`) | string | "2026-07-29.dahlia" | Value of the `Stripe-Version` header sent on every call. Pinning it keeps behaviour identical whatever default version each tenant's Stripe account is on |
+| `daikoku.stripe.reconciliation.cron`<br />(`DAIKOKU_STRIPE_RECONCILIATION_CRON`) | boolean | false | Whether the daily reconciliation job runs on this instance. Enable it on one instance only |
+| `daikoku.stripe.reconciliation.interval`<br />(`DAIKOKU_STRIPE_RECONCILIATION_INTERVAL`) | duration | 24 hours | How often reported usage is compared with what Stripe counted |
+| `daikoku.stripe.reconciliation.key`<br />(`DAIKOKU_STRIPE_RECONCILIATION_ACCESS_KEY`) | string | "secret" | Access key to run the reconciliation on demand with `POST /api/jobs/stripe/_reconcile?key=…`. Change it in production |
+
+### Webhooks
+
+Stripe reports what happens to the money: a checkout that has been paid, an invoice that has
+just been finalized, a subscription cancelled from the Stripe dashboard. Each payment
+settings entry gets its own endpoint, `POST /api/payment/<payment settings id>/_webhook`, so
+Daikoku knows which signing secret to use before opening the message. Create the endpoint in
+the Stripe dashboard, subscribe it to `checkout.session.completed`, `invoice.finalized` and
+`customer.subscription.deleted`, then paste its signing secret into the payment settings of
+the tenant.
+
+Deliveries whose signature does not verify are rejected, and so are deliveries older than
+five minutes. Without a signing secret the endpoint accepts nothing.
+
+Webhooks alone are not enough: Stripe answers a meter event before aggregating it, so an
+accepted event can still be dropped. Once a day the reconciliation job compares the usage
+Daikoku recorded as reported against what the Stripe meter actually counted and sends back
+the difference, then checks that each subscription sits on the price its plan now carries.
+
+### Failed payments
+
+Daikoku does not follow failed payments. Retries, reminder emails and what becomes of a
+subscription that stays overdue are configured in the tenant's own Stripe dashboard. When
+Stripe ends up cancelling the subscription, `customer.subscription.deleted` ends it in
+Daikoku too.
+
+Consumers end their own subscription from Daikoku, effective when the period they have paid
+for runs out, so the key works until the last paid day and the closing invoice still carries
+their usage. The billing portal uses the merchant's own default configuration, so its legal
+links, its branding and what a customer may change there belong to the Stripe dashboard.
+
+Usage billing relies on [Stripe Billing Meters](https://docs.stripe.com/billing/subscriptions/usage-based/recording-usage):
+each paid plan gets its own meter, fed with the calls of its subscribers.
+
 ## Otoroshi settings
 
 | name | type | default value | description |
@@ -70,6 +117,11 @@ or
 | `daikoku.verifierJob.key`<br />(`DAIKOKU_VERIFIER_JOB_ACCESS_KEY`) | string | "secret" | Access key to run otoroshi entities verifier job |
 | `daikoku.verifierJob.cronExpression`<br />(`DAIKOKU_VERIFIER_JOB_CRON_EXPRESSION`) | string | | **Only used when `mode = cron`**. Cron expression (sec min hour day month weekday) |
 | `daikoku.verifierJob.interval`<br />(`DAIKOKU_VERIFIER_JOB_INTERVAL`) | duration | 1hour | **Only used when `mode = interval`**. Delay in milliseconds between each run |
+| `daikoku.apikeysStatsJob.enabled`<br />(`DAIKOKU_APIKEYS_STATS_JOB_ENABLED`) | boolean | false | Value to define if the job that collects apikey consumption is enabled. This job is what reports usage to Stripe for pay-per-use plans |
+| `daikoku.apikeysStatsJob.mode`<br />(`DAIKOKU_APIKEYS_STATS_JOB_MODE`) | string | "interval" | scheduling strategy: `interval` (fixed delay loop) or `cron` (cron expression) |
+| `daikoku.apikeysStatsJob.key`<br />(`DAIKOKU_APIKEYS_STATS_JOB_ACCESS_KEY`) | string | "secret" | Access key to run the apikey consumption job |
+| `daikoku.apikeysStatsJob.cronExpression`<br />(`DAIKOKU_APIKEYS_STATS_JOB_CRON_EXPRESSION`) | string | | **Only used when `mode = cron`**. Cron expression (sec min hour day month weekday) |
+| `daikoku.apikeysStatsJob.interval`<br />(`DAIKOKU_APIKEYS_STATS_JOB_INTERVAL`) | duration | 1hour | **Only used when `mode = interval`**. Delay in milliseconds between each run |
 | `daikoku.remoteCatalogJob.enabled`<br />(`DAIKOKU_REMOTE_CATALOG_JOB_ENABLED`) | boolean | false | Value to define if the job that synchronizes remote catalogs is enabled |
 | `daikoku.remoteCatalogJob.mode`<br />(`DAIKOKU_REMOTE_CATALOG_JOB_MODE`) | string | "interval" | scheduling strategy: `interval` (fixed delay loop) or `cron` (cron expression) |
 | `daikoku.remoteCatalogJob.key`<br />(`DAIKOKU_REMOTE_CATALOG_JOB_KEY`) | string | "secret" | Access key to run the remote catalog job |

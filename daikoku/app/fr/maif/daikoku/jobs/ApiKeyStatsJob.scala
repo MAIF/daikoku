@@ -2,7 +2,7 @@ package fr.maif.daikoku.jobs
 
 import cats.data.OptionT
 import cats.implicits.catsSyntaxOptionId
-import fr.maif.daikoku.domain.BillingTimeUnit.{Day, Hour, Year}
+import fr.maif.daikoku.controllers.PaymentClient
 import fr.maif.daikoku.domain.*
 import fr.maif.daikoku.env.Env
 import fr.maif.daikoku.logger.AppLogger
@@ -27,6 +27,7 @@ enum ApiKeyStatsJobInput:
 
 class ApiKeyStatsJob(
     otoroshiClient: OtoroshiClient,
+    paymentClient: PaymentClient,
     override protected val env: Env
 ) extends AbstractJob[ApiKeyStatsJobInput] {
 
@@ -192,7 +193,10 @@ class ApiKeyStatsJob(
                                                    maybeLastConsumption: Option[ApiKeyConsumption],
                                                    completed: Boolean = false
                                                  ): Future[Seq[ApiKeyConsumption]] = {
+    val ended = subscription.blockedBy.contains(SubscriptionBlockReason.Ended)
+
     (for {
+      _ <- OptionT.fromOption[Future](Option.unless(ended)(()))
       api <- OptionT.fromOption[Future](maybeApi)
       plan <- OptionT(
         env.dataStore.usagePlanRepo
@@ -252,6 +256,13 @@ class ApiKeyStatsJob(
                 case _ => DatastoreId(IdGenerator.token(24))
               }
               .getOrElse(DatastoreId(IdGenerator.token(24)))
+            val lastReportedHits = maybeLastConsumption
+              .collect {
+                case c
+                    if !c.isComplete && c.from.withTimeAtStartOfDay() == from =>
+                  c.lastReportedHits
+              }
+              .getOrElse(0L)
 
             for {
               consumption <- otoroshiClient.getApiKeyConsumption(
@@ -298,7 +309,8 @@ class ApiKeyStatsJob(
                 to = to,
                 state =
                   if (isCompleteConsumption) ApiKeyConsumptionState.Completed
-                  else ApiKeyConsumptionState.InProgress
+                  else ApiKeyConsumptionState.InProgress,
+                lastReportedHits = lastReportedHits
               )
               saved <-
                 env.dataStore.consumptionRepo
@@ -308,35 +320,36 @@ class ApiKeyStatsJob(
                    else Future.failed(new IllegalStateException(
                      s"Could not save API key consumption ${id.value}"
                    ))
-              _ <- apiKeyConsumption.state match {
-                case ApiKeyConsumptionState.Completed
-                  if subscription.thirdPartySubscriptionInformations.isDefined =>
-                  env.dataStore.operationRepo
-                    .forTenant(tenant)
-                    .save(
-                      Operation(
-                        DatastoreId(IdGenerator.token(24)),
-                        tenant = tenant.id,
-                        itemId = id.value,
-                        itemType = ItemType.ApiKeyConsumption,
-                        action = OperationAction.Sync,
-                        payload = Json
-                          .obj(
-                            "paymentSettings" -> plan.paymentSettings
-                              .map(_.asJson)
-                              .getOrElse(JsNull)
-                              .as[JsValue],
-                            "thirdPartySubscriptionInformations" -> subscription.thirdPartySubscriptionInformations
-                              .map(_.asJson)
-                              .getOrElse(JsNull)
-                              .as[JsValue]
-                          )
-                          .some
-                      )
+              _ <-
+                if (
+                  subscription.thirdPartySubscriptionInformations.isDefined &&
+                  apiKeyConsumption.hits > lastReportedHits
+                ) {
+                  paymentClient
+                    .syncWithThirdParty(
+                      apiKeyConsumption,
+                      plan.paymentSettings,
+                      subscription.thirdPartySubscriptionInformations
                     )
-                case _ =>
+                    .flatMap {
+                      case Right(_) =>
+                        env.dataStore.consumptionRepo
+                          .forTenant(tenant)
+                          .save(
+                            apiKeyConsumption
+                              .copy(lastReportedHits = apiKeyConsumption.hits)
+                          )
+                          .map(_ => ())
+                      case Left(error) =>
+                        AppLogger.error(
+                          s"[stripe sync] ${subscription.id.value} :: ${error.getErrorMessage()}"
+                        )
+                        FastFuture.successful(())
+                    }
+                } else {
                   FastFuture.successful(())
-              }
+                }
+
             } yield {
               apiKeyConsumption
             }
@@ -382,12 +395,7 @@ class ApiKeyStatsJob(
       }
     }
 
-    val from = plan.billingDuration.map(_.unit) match {
-      case Some(Year) => DateTime.now().withDayOfYear(1).withTimeAtStartOfDay()
-      case Some(Hour) => DateTime.now().withMinuteOfHour(1)
-      case Some(Day)  => DateTime.now().withTimeAtStartOfDay()
-      case _          => periodStart.withDayOfMonth(1).withTimeAtStartOfDay()
-    }
+    val from = periodStart.withDayOfMonth(1).withTimeAtStartOfDay()
 
     val to = periodEnd.plusMonths(1).withDayOfMonth(1).withTimeAtStartOfDay()
 
@@ -409,32 +417,17 @@ class ApiKeyStatsJob(
       )
     }
       .map(consumptions => {
-        (plan.costPerMonth, plan.costPerRequest, plan.maxPerMonth) match {
-          // todo: consider trial period
-          case (None, None, Some(_)) =>
-            ApiKeyBilling(
-              hits = hits + consumptions.map(_.hits).sum,
-              total = 0
-            )
-          case (Some(costPerMonth), None, Some(_)) =>
+        (plan.costPerMonth, plan.costPerRequest) match {
+          case (Some(costPerMonth), None) =>
             ApiKeyBilling(
               hits = hits + consumptions.map(_.hits).sum,
               total = costPerMonth
             )
-          case (Some(costPerMonth), Some(costPerRequest), Some(maxPerMonth)) =>
+          case (Some(costPerMonth), Some(costPerRequest)) =>
             ApiKeyBilling(
               hits = hits + consumptions.map(_.hits).sum,
               total = costPerMonth + computeAdditionalHitsCost(
-                maxPerMonth,
-                hits + consumptions.map(_.hits).sum,
-                costPerRequest
-              )
-            )
-          case (Some(costPerMonth), Some(costPerRequest), None) =>
-            ApiKeyBilling(
-              hits = hits + consumptions.map(_.hits).sum,
-              total = costPerMonth + computeAdditionalHitsCost(
-                0,
+                plan.includedRequestsPerMonth.getOrElse(0L),
                 hits + consumptions.map(_.hits).sum,
                 costPerRequest
               )

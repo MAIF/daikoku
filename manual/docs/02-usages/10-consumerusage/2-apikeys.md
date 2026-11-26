@@ -41,6 +41,26 @@ You can see a graph to see usage or some global informations likes hits count, a
  
 Every subscription have an integration token, which make credentials accessible by admin API. This token is visible in integration token tab.
 
+## Find an API key from the search bar
+Click the search bar at the top of the screen, or press `/`, and start typing.
+Matching API keys are listed in an `ApiKeys` section, next to teams and APIs.
+Selecting one opens the API keys page of its API, showing only that API key.
+Click `Reset filters` to see all the API keys again.
+
+You can search an API key by:
+ - its name or the name of its subscription
+ - the name of its plan (environment)
+ - a tag of its subscription, or a key or a value of its metadata
+ - the beginning of its `clientId` (4 characters minimum), only for API keys whose credentials you can see
+ - a credential copied from a request, which must match exactly:
+   - a Basic auth token, with or without the `Basic` prefix
+   - the `clientId:clientSecret` pair
+   - a bearer token, with or without the `Bearer` prefix
+
+Only the API keys of your teams are searched. A Daikoku administrator searches all the API keys of the tenant.
+
+Credentials are never displayed in the results. When the search looks like a credential, it is recorded in the audit trail as `<api-key-secret>` instead of the typed value.
+
 ## View global statistics
 After clicking on the `Global stats` button, global statistics are displayed.
 It's a view of your usage by APIs, split by APIkeys.

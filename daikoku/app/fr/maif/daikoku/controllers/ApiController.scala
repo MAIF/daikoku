@@ -25,6 +25,7 @@ import fr.maif.daikoku.services.{
   ApiCrudService,
   ApiLifeCycleService,
   ApiService,
+  BillingNotificationService,
   DeletionService,
   MailService,
   UsagePlanService
@@ -47,11 +48,13 @@ import org.apache.pekko.util.ByteString
 import org.joda.time.DateTime
 import play.api.Logger
 import play.api.http.HttpEntity
-import play.api.i18n.I18nSupport
+import play.api.i18n.{I18nSupport, MessagesApi}
 import play.api.libs.json.*
 import play.api.libs.streams.Accumulator
 import play.api.mvc.*
 
+import java.nio.charset.StandardCharsets
+import java.util.Base64
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
@@ -72,15 +75,21 @@ class ApiController(
     apiLifeCycleService: ApiLifeCycleService,
     deletionService: DeletionService,
     apiCrudService: ApiCrudService,
-    usagePlanService: UsagePlanService
+    usagePlanService: UsagePlanService,
+    billingNotificationService: BillingNotificationService
 ) extends AbstractController(cc)
     with I18nSupport {
 
   implicit val ec: ExecutionContext = env.defaultExecutionContext
   implicit val ev: Env = env
   implicit val tr: Translator = translator
+  implicit val m: MessagesApi = messagesApi
 
   val logger: Logger = Logger("ApiController")
+
+  private val credentialsPattern = """^([\x21-\x7E]+?):([\x21-\x7E]+)$""".r
+  private val opaqueTokenPattern = """^\S{20,}$""".r
+  private val maxSearchLength = 512
 
   def me(): Action[AnyContent] =
     DaikokuAction.async { ctx =>
@@ -1164,8 +1173,6 @@ class ApiController(
       implicit val language: String = ctx.request.getLanguage(ctx.tenant)
       implicit val currentUser: User = ctx.user.getOrElse(GuestUser(ctx.tenant.id))
 
-      val maybeSessionId = ctx.request.getQueryString("session_id")
-
       (for {
         encryptedToken <- EitherT.fromOption[Future](
           ctx.request.getQueryString("token"),
@@ -1179,11 +1186,24 @@ class ApiController(
             .findByToken(ctx.tenant.id, token),
           AppError.EntityNotFound("token")
         )
+        demand <- EitherT.fromOptionF(
+          env.dataStore.subscriptionDemandRepo
+            .forTenant(ctx.tenant)
+            .findById(validator.demandId),
+          AppError.SubscriptionDemandNotFound
+        )
+        // a payment step is only ever validated by the signed Stripe webhook
+        _ <- EitherT.cond[Future](
+          !demand.steps.exists(step =>
+            step.id == validator.step && step.step.isInstanceOf[ValidationStep.Payment]
+          ),
+          (),
+          AppError.ForbiddenAction
+        )
 
         _ <- apiService.validateProcessWithStepValidator(
           validator,
           ctx.tenant,
-          maybeSessionId,
           host = env.requestHost(ctx.request).some
         )
       } yield
@@ -1217,7 +1237,18 @@ class ApiController(
               .forTenant(ctx.tenant)
               .deleteById(validator.id)
           )
-        } yield Redirect("/apis"))
+          demand <- EitherT.fromOptionF(
+            env.dataStore.subscriptionDemandRepo
+              .forTenant(ctx.tenant)
+              .findById(validator.demandId),
+            AppError.EntityNotFound("Subscription demand")
+          )
+        } yield Redirect(
+          env.getDaikokuUrl(
+            ctx.tenant,
+            s"/informations?message=subscription-payment-canceled&team=${demand.team.value}&demand=${demand.id.value}"
+          )
+        ))
           .leftMap(_.render())
           .merge
       }
@@ -1270,7 +1301,7 @@ class ApiController(
             AppError.ApiNotFound
           )
           _ <- EitherT.cond[Future][AppError, Unit](
-            api.team == team.id,
+            api.team == team.id || demand.team == team.id,
             (),
             AppError.EntityNotFound("Subscription demand")
           )
@@ -1301,6 +1332,15 @@ class ApiController(
               .findById(demandId),
             AppError.EntityNotFound("Subscription demand")
           )
+          api <- EitherT.fromOptionF[Future, AppError, Api](
+            env.dataStore.apiRepo.forTenant(ctx.tenant).findById(demand.api),
+            AppError.ApiNotFound
+          )
+          _ <- EitherT.cond[Future][AppError, Unit](
+            api.team == team.id || demand.team == team.id,
+            (),
+            AppError.ForbiddenAction
+          )
           result <-
             apiService.runSubscriptionProcess(demand.id, ctx.tenant, from = from.some, host = env.requestHost(ctx.request).some)
         } yield result).value
@@ -1322,6 +1362,15 @@ class ApiController(
               .forTenant(ctx.tenant)
               .findById(demandId),
             AppError.EntityNotFound("Subscription demand")
+          )
+          api <- EitherT.fromOptionF[Future, AppError, Api](
+            env.dataStore.apiRepo.forTenant(ctx.tenant).findById(demand.api),
+            AppError.ApiNotFound
+          )
+          _ <- EitherT.cond[Future][AppError, Unit](
+            api.team == team.id || demand.team == team.id,
+            (),
+            AppError.ForbiddenAction
           )
           _ <- EitherT.right[AppError](
             env.dataStore.subscriptionDemandRepo
@@ -1753,6 +1802,59 @@ class ApiController(
       }
     }
 
+  /** The consumer ends their own subscription, effective when the period they
+    * have paid for runs out. Nothing is destroyed and passing cancel=false
+    * takes it back, so this stays reversible until the last paid day.
+    */
+  def cancelApiSubscription(
+      teamId: String,
+      subscriptionId: String,
+      cancel: Option[Boolean]
+  ) =
+    DaikokuAction.async { ctx =>
+      TeamAdminOnly(
+        AuditTrailEvent(
+          s"@{user.name} has @{action} the cancellation of api subscription @{subscription.id} of @{team.name} - @{team.id}"
+        )
+      )(teamId, ctx) { team =>
+        val cancelling = cancel.getOrElse(true)
+        ctx.setCtxValue(
+          "@action",
+          if (cancelling) "scheduled" else "withdrawn"
+        )
+
+        apiSubscriptionAction(
+          ctx.tenant,
+          team,
+          subscriptionId,
+          (_: Api, plan: UsagePlan, subscription: ApiSubscription) => {
+            ctx.setCtxValue("subscription", subscription)
+
+            (for {
+              endsAt <- paymentClient.cancelAtPeriodEnd(
+                ctx.tenant,
+                subscription,
+                plan,
+                cancelling
+              )
+              _ <- EitherT.liftF[Future, AppError, Unit](
+                if (cancelling)
+                  billingNotificationService.cancellationScheduled(
+                    ctx.tenant,
+                    subscription,
+                    endsAt
+                  )
+                else FastFuture.successful(())
+              )
+            } yield subscription.asJson.as[JsObject] ++ Json.obj(
+              "cancelAtPeriodEnd" -> cancelling,
+              "endsAt" -> endsAt.getMillis
+            )).value
+          }
+        )
+      }
+    }
+
   def checkTransferLink(): Action[AnyContent] =
     DaikokuActionMaybeWithGuest.async { ctx =>
       PublicUserAccess(
@@ -1886,6 +1988,11 @@ class ApiController(
         import cats.implicits.*
 
         ctx.setCtxValue("subscription.id", subscriptionId)
+        val reason = ctx.request.body.asJson
+          .flatMap(body => (body \ "reason").asOpt[String])
+          .map(_.trim)
+          .filter(_.nonEmpty)
+
         (for {
           sub <- EitherT.fromOptionF[Future, AppError, ApiSubscription](
             env.dataStore.apiSubscriptionRepo
@@ -1898,6 +2005,13 @@ class ApiController(
             AppError.ApiNotFound
           )
           _ <- EitherT.cond[Future](api.state != ApiState.Blocked, (), AppError.ForbiddenAction)
+          _ <- EitherT.cond[Future](
+            !sub.blockedBy.contains(SubscriptionBlockReason.Ended),
+            (),
+            AppError.Forbidden(
+              "This subscription was cancelled in Stripe and cannot be reactivated: the team has to subscribe again"
+            )
+          )
           plan <- EitherT.fromOptionF[Future, AppError, UsagePlan](
             env.dataStore.usagePlanRepo
               .forTenant(ctx.tenant)
@@ -1906,11 +2020,30 @@ class ApiController(
           )
           _ <- EitherT.right[AppError](apiKeyStatsJob.syncForSubscription(sub, ctx.tenant))
           delete <- EitherT(apiService.archiveApiKey(ctx.tenant, sub, plan, enabled.getOrElse(false), byOwner = true))
+          _ <- EitherT.liftF[Future, AppError, Unit](
+            notifyOwnerBlocking(ctx.tenant, sub, enabled.getOrElse(false), reason)
+          )
         } yield Ok(delete))
           .leftMap(_.render())
           .merge
       }
     }
+
+  private def notifyOwnerBlocking(
+      tenant: Tenant,
+      subscription: ApiSubscription,
+      enabled: Boolean,
+      reason: Option[String]
+  ): Future[Unit] = {
+    val wasBlocked =
+      subscription.blockedBy.contains(SubscriptionBlockReason.Owner)
+
+    if (wasBlocked && enabled)
+      billingNotificationService.unblockedByOwner(tenant, subscription)
+    else if (!wasBlocked && !enabled)
+      billingNotificationService.blockedByOwner(tenant, subscription, reason)
+    else FastFuture.successful(())
+  }
 
   def deleteApiSubscription(teamId: String, subscriptionId: String): Action[AnyContent] =
     DaikokuAction.async { ctx =>
@@ -2564,14 +2697,134 @@ class ApiController(
       }
     }
 
+  private def secretCandidates(search: String): (String, String) = {
+    val token = search.trim.replaceFirst("(?i)^(basic|bearer)\\s+", "")
+
+    val decoded = Try(Base64.getDecoder.decode(token))
+      .map(bytes => new String(bytes, StandardCharsets.UTF_8))
+      .toOption
+
+    val credentials = decoded
+      .filter(credentialsPattern.matches)
+      .getOrElse(token)
+
+    token -> credentials
+  }
+
+  private def searchApiKeys(
+      search: String,
+      token: String,
+      credentials: String,
+      myTeams: Seq[Team],
+      ctx: DaikokuActionContext[JsValue]
+  ): Future[Seq[JsValue]] = {
+    val keyringName =
+      "COALESCE(NULLIF(k.content->>'customName', ''), k.content->'apiKey'->>'clientName')"
+
+    val scopeParams: Seq[AnyRef] = Seq(
+      ctx.tenant.id.value,
+      java.lang.Boolean.valueOf(ctx.user.isDaikokuAdmin),
+      myTeams.map(_.id.value).toArray
+    )
+
+    val bySecret =
+      "(COALESCE(k.content->>'bearerToken' = $4, false) " +
+        "OR concat(k.content->'apiKey'->>'clientId', ':', k.content->'apiKey'->>'clientSecret') = $5)"
+
+    def byMetadata(field: String) =
+      "EXISTS (SELECT 1 FROM jsonb_each_text(" +
+        s"CASE WHEN jsonb_typeof(s.content->'$field') = 'object' THEN s.content->'$field' ELSE '{}'::jsonb END" +
+        ") metadata WHERE metadata.key ~* $6 OR metadata.value ~* $6)"
+
+    val byTag =
+      "EXISTS (SELECT 1 FROM jsonb_array_elements_text(" +
+        "CASE WHEN jsonb_typeof(s.content->'tags') = 'array' THEN s.content->'tags' ELSE '[]'::jsonb END" +
+        ") tag WHERE tag ~* $6)"
+
+    val byText =
+      "s.content->>'customName' ~* $6 " +
+        s"OR $keyringName ~* $$6 " +
+        "OR p.content->>'customName' ~* $6 " +
+        s"OR $byTag " +
+        s"OR ${byMetadata("metadata")} " +
+        s"OR ${byMetadata("customMetadata")}"
+
+    val searchPattern = s".*${RegexUtil.cleanRegex(search)}.*"
+
+    val (matching, matchingParams): (String, Seq[AnyRef]) =
+      if (search.length < 4) {
+        s"$bySecret OR $byText" -> Seq(token, credentials, searchPattern)
+      } else {
+        val visibleTeams = myTeams
+          .filter(authorizations.isTeamApiKeyVisible(_, ctx.user))
+
+        val adminTeams = visibleTeams
+          .filter(_.admins().contains(ctx.user.id))
+
+        val byClientId =
+          "starts_with(k.content->'apiKey'->>'clientId', $7) " +
+            "AND ($2 OR s.content->>'team' = ANY($8::text[]) " +
+            "OR (s.content->>'team' = ANY($9::text[]) " +
+            s"AND p.content->>'integrationProcess' = '${IntegrationProcess.ApiKey.name}'))"
+
+        s"$bySecret OR $byText OR ($byClientId)" ->
+          Seq(
+            token,
+            credentials,
+            searchPattern,
+            search,
+            adminTeams.map(_.id.value).toArray,
+            visibleTeams.map(_.id.value).toArray
+          )
+      }
+
+    env.dataStore.queryRaw(
+      s"""
+        |SELECT jsonb_build_object(
+        |  'value', s._id,
+        |  'label', concat_ws(' - ', a.content->>'name', p.content->>'customName',
+        |    COALESCE(NULLIF(s.content->>'customName', ''), $keyringName)),
+        |  'team', t.content->>'_humanReadableId',
+        |  'api', a.content->>'_humanReadableId',
+        |  'version', a.content->>'currentVersion',
+        |  'keyring', k._id,
+        |  'type', 'apikey',
+        |  'bySecret', $bySecret
+        |) AS option
+        |FROM api_subscriptions s
+        |JOIN keyrings k ON k._id = s.content->>'keyring'
+        |JOIN usage_plans p ON p._id = s.content->>'plan'
+        |JOIN apis a ON a._id = s.content->>'api'
+        |JOIN teams t ON t._id = s.content->>'team'
+        |WHERE s.content->>'_tenant' = $$1
+        |  AND ($$2 OR s.content->>'team' = ANY($$3::text[]))
+        |  AND ($matching)
+        |ORDER BY ($bySecret) DESC, lower(a.content->>'name'), s._id
+        |LIMIT 5
+        |""".stripMargin,
+      "option",
+      scopeParams ++ matchingParams
+    )
+  }
+
   def search(): Action[JsValue] =
     DaikokuAction.async(parse.json) { ctx =>
       PublicUserAccess(AuditTrailEvent(s"@{user.name} has searched @{search}"))(
         ctx
       ) {
         val body = ctx.request.body.as[JsObject]
-        val search = (body \ "search").asOpt[String].getOrElse("")
-        ctx.setCtxValue("search", search)
+        val search = (body \ "search")
+          .asOpt[String]
+          .getOrElse("")
+          .trim
+          .take(maxSearchLength)
+
+        val (token, credentials) = secretCandidates(search)
+
+        val looksLikeSecret =
+          token != search ||
+            credentialsPattern.matches(credentials) ||
+            opaqueTokenPattern.matches(search)
 
         val searchPattern = s".*${RegexUtil.cleanRegex(search)}.*"
         for {
@@ -2614,7 +2867,20 @@ class ApiController(
                 )
               )
             }
+          apiKeys <- searchApiKeys(search, token, credentials, myTeams, ctx)
         } yield {
+          val foundBySecret =
+            apiKeys.exists(option => (option \ "bySecret").as[Boolean])
+
+          val auditedSearch =
+            if (looksLikeSecret || foundBySecret) {
+              "<api-key-secret>"
+            } else {
+              search
+            }
+
+          ctx.setCtxValue("search", auditedSearch)
+
           Ok(
             Json.arr(
               Json.obj(
@@ -2642,6 +2908,10 @@ class ApiController(
                     )
                   )
                 )
+              ),
+              Json.obj(
+                "label" -> "ApiKeys",
+                "options" -> JsArray(apiKeys.map(_.as[JsObject] - "bySecret"))
               )
             )
           )
@@ -3885,7 +4155,7 @@ class ApiController(
         // top of costPerMonth (see ApiKeyStatsJob and createStripePrice), never
         // a pricing on its own, so it does not make a payload complete.
         val pricingFields =
-          Seq("costPerMonth", "costPerRequest", "currency", "billingDuration")
+          Seq("costPerMonth", "costPerRequest", "currency")
         val hasNoPricing =
           pricingFields.forall(field => (body \ field).toOption.forall(_ == JsNull))
 
@@ -3897,7 +4167,7 @@ class ApiController(
               case JsError(_) =>
                 Left(
                   AppError.ParsingPayloadError(
-                    "a priced plan requires costPerMonth, currency and billingDuration"
+                    "a priced plan requires costPerMonth and currency"
                   )
                 )
             }
@@ -3911,8 +4181,10 @@ class ApiController(
             case Some(b) =>
               plan
                 .mergeBase(b)
-                .copy(costPerRequest =
-                  (body \ "costPerRequest").asOpt[BigDecimal]
+                .copy(
+                  costPerRequest = (body \ "costPerRequest").asOpt[BigDecimal],
+                  includedRequestsPerMonth =
+                    (body \ "includedRequestsPerMonth").asOpt[Long]
                 )
           }
 
@@ -3932,40 +4204,40 @@ class ApiController(
             AppError.PlanNotFound
           )
           base <- EitherT.fromEither[Future](maybeBase)
-          // Setting up a new pricing on a plan already backed by a third party
-          // product would leave that product orphaned, so it is rejected.
-          // Going back to a free plan is allowed: the product is archived
-          // asynchronously by the queue job.
+          _ <- EitherT.cond[Future][AppError, Unit](
+            base.isEmpty || paymentSettingsId.exists(id =>
+              ctx.tenant.thirdPartyPaymentSettings.exists(_.id == id)
+            ),
+            (),
+            AppError.PaymentError(
+              "a priced plan requires a payment account of the tenant"
+            )
+          )
           _ <- (plan.paymentSettings, base) match {
             case (Some(_), Some(_)) =>
               EitherT.leftT[Future, Unit](
                 AppError.EntityConflict("payment, already setup")
               )
-            case (Some(paymentSettings), None) =>
-              EitherT.liftF[Future, AppError, Unit](
-                env.dataStore.operationRepo
-                  .forTenant(ctx.tenant)
-                  .save(
-                    Operation(
-                      DatastoreId(IdGenerator.token(24)),
-                      tenant = ctx.tenant.id,
-                      itemId = plan.id.value,
-                      itemType = ItemType.ThirdPartyProduct,
-                      action = OperationAction.Delete,
-                      payload = Json
-                        .obj("paymentSettings" -> paymentSettings.asJson)
-                        .some
-                    )
-                  )
-                  .map(_ => ())
+            case (Some(_), None) =>
+              EitherT.leftT[Future, Unit](
+                AppError.PaymentError(
+                  "a priced plan cannot go back to free: change its price or delete it"
+                )
               )
             case (None, _) => EitherT.pure[Future, AppError](())
           }
           ratedPlan = applyPayment(plan, base)
+          _ <- EitherT.cond[Future][AppError, Unit](
+            !ratedPlan.includedRequestsPerMonth.exists(included =>
+              ratedPlan.maxPerMonth.exists(_ < included)
+            ),
+            (),
+            AppError.PaymentError(
+              "the included requests of a plan cannot exceed its monthly limit"
+            )
+          )
 
           ratedPlanwithSettings <- (ratedPlan.isPaymentDefined, paymentSettingsId) match {
-            // a third party provider bills the plan: create the product and add
-            // the matching step to the subscription process
             case (true, Some(id)) =>
               paymentClient
                 .createProduct(ctx.tenant, api, ratedPlan, id)
@@ -3979,8 +4251,6 @@ class ApiController(
                       )
                     )
                 }
-            // no provider: Daikoku computes the billing itself from the plan
-            // pricing (see ApiKeyStatsJob), there is nothing to set up
             case _ => EitherT.pure[Future, AppError](ratedPlan)
           }
           _ <- EitherT.liftF[Future, AppError, Boolean](
@@ -3993,32 +4263,6 @@ class ApiController(
         value.leftMap(_.render()).merge
       }
     }
-  def stopPayment(
-      teamId: String,
-      apiId: String,
-      version: String,
-      planId: String
-  ): Action[JsValue] =
-    DaikokuAction.async(parse.json) { ctx =>
-      TeamAdminOnly(
-        AuditTrailEvent(
-          s"@{user.name} has created new plan @{plan.id} for api @{api.name} to @{newTeam.name}"
-        )
-      )(teamId, ctx) { team =>
-        val value: EitherT[Future, Result, Result] = for {
-          api <- EitherT.fromOptionF(
-            env.dataStore.apiRepo.forTenant(ctx.tenant).findById(apiId),
-            AppError.ApiNotFound.render()
-          )
-          //todo: save api
-          //todo: run job to "close payment"
-          //todo: close pricing in stripe ?
-        } yield Ok(Json.obj())
-
-        value.merge
-      }
-    }
-
   def getApiSubscriptionsUsage(teamId: String): Action[JsValue] =
     DaikokuAction.async(parse.json) { ctx =>
       TeamAdminOnly(

@@ -1,0 +1,10 @@
+{
+  "object": "billing.meter_event",
+  "event_name": "daikoku_usage_seed",
+  "identifier": "seed",
+  "timestamp": 1751800000,
+  "payload": {
+    "stripe_customer_id": "cus_test123",
+    "value": "4200"
+  }
+}

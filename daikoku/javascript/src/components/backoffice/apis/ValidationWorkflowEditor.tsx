@@ -202,7 +202,6 @@ const PaymentStep = (props: ValidationStepProps) => {
           </span>
           <div className="d-flex flex-grow-1 fst-italic validation-step__infos">
             <span>{thirdPartyPaymentSettings?.name}</span>
-            <span>{thirdPartyPaymentSettings?.type}</span>
           </div>
         </div>
       );
@@ -253,7 +252,7 @@ export const ValidationWorkflowEditor = ({ iconTarget: IconTarget = KeyRound, ..
 
   const normalizeProcess = (process: IValidationStep[]): IValidationStep[] =>
     fixedFormStep
-      ? [fixedFormStep, ...process.filter(step => step.type !== 'form' )]
+      ? [fixedFormStep, ...process.filter(step => step.type !== 'form')]
       : process;
 
   const [draft, setDraft] = useState(() => {
@@ -572,7 +571,38 @@ export const ValidationWorkflowEditor = ({ iconTarget: IconTarget = KeyRound, ..
       />,
       canAdd: false,
       unavailableReason: translate('validation.workflow.palette.payment.unavailable'),
+      canMove: false,
+      canDelete: false,
+      canEdit: false,
     },
+  };
+
+  const hasFormStep = draft.some(step => step.type === 'form');
+  const paymentStepIndex = draft.findIndex(step => step.type === 'payment');
+
+  const canInsertStepAt = (type: IValidationStep['type'], insertionIndex: number) => {
+    if (paymentStepIndex !== -1 && insertionIndex > paymentStepIndex) {
+      return false;
+    }
+
+    if (type === 'form') {
+      return !hasFormStep && insertionIndex === 0;
+    }
+
+    return !hasFormStep || insertionIndex > 0;
+  };
+
+  const canMoveStepTo = (step: IValidationStep, destinationIndex: number) => {
+    // destinationIndex is counted once the moved step is taken out of the list
+    if (paymentStepIndex !== -1 && destinationIndex >= paymentStepIndex) {
+      return false;
+    }
+
+    if (!hasFormStep) {
+      return true;
+    }
+
+    return step.type === 'form' ? destinationIndex === 0 : destinationIndex > 0;
   };
 
   const Documentation = props.documentation ?? React.Fragment
@@ -605,16 +635,8 @@ export const ValidationWorkflowEditor = ({ iconTarget: IconTarget = KeyRound, ..
         end={<span className="badge rounded-pill bg-light text-dark border p-2">
           <IconTarget size={15} aria-hidden="true" />{translate('validation.workflow.end')}
         </span>}
-        canInsertAt={(type, index) => {
-          const hasForm = draft.some(step => step.type === 'form');
-          return type === 'form'
-            ? !hasForm && index === 0
-            : !hasForm || index > 0;
-        }}
-        canMoveTo={(card, destination) => {
-          if (!draft.some(step => step.type === 'form')) return true;
-          return card.type === 'form' ? destination === 0 : destination > 0;
-        }}
+        canInsertAt={canInsertStepAt}
+        canMoveTo={canMoveStepTo}
       />
       {showDocumentation && <Documentation close={() => setShowDocumentation(false)} updateProcess={(steps) => setDraft(normalizeProcess(steps))} />}
       {(!!draft.length || !!props.process.length) && (

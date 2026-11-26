@@ -1281,6 +1281,7 @@ object CommonServices {
       teamId: String,
       apiId: String,
       filter: String,
+      keyringId: Option[String],
       limit: Int,
       offset: Int,
       creationLabel: String,
@@ -1329,7 +1330,9 @@ object CommonServices {
         | FROM pending d LEFT JOIN usage_plans p ON p._id = d.content->>'plan' AND p.content->>'_tenant' = $$1
         | WHERE d.content->>'keyring' IS NULL
         |),
-        |filtered AS (SELECT * FROM entries WHERE search ILIKE '%' || $$4::text || '%' OR name ILIKE '%' || $$4::text || '%'),
+        |filtered AS (SELECT * FROM entries
+        | WHERE (search ILIKE '%' || $$4::text || '%' OR name ILIKE '%' || $$4::text || '%')
+        |   AND ($$9::text = '' OR id = 'keyring:' || $$9::text)),
         |page AS (SELECT * FROM filtered ORDER BY lower(name), id LIMIT $$5 OFFSET $$6)
         |SELECT jsonb_build_object(
         | 'entries', COALESCE((SELECT jsonb_agg(to_jsonb(page) ORDER BY lower(name), id) FROM page), '[]'::jsonb),
@@ -1351,7 +1354,8 @@ object CommonServices {
             java.lang.Integer.valueOf(limit),
             java.lang.Integer.valueOf(offset),
             creationLabel,
-            unavailablePlanLabel
+            unavailablePlanLabel,
+            keyringId.getOrElse("")
           )
         )
         .map { result =>

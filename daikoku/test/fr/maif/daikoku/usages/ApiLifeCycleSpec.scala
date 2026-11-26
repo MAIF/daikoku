@@ -973,6 +973,124 @@ class ApiLifeCycleSpec
       resp.status mustBe 403
     }
 
+    "notify the consumer team, once, when the API producer blocks or unblocks its subscription" in {
+      Await.result(waitForDaikokuSetup(), 5.second)
+
+      val plan = UsagePlan(
+        id = UsagePlanId("notified-plan"),
+        tenant = tenant.id,
+        customName = "notified",
+        customDescription = None,
+        otoroshiTarget = Some(
+          OtoroshiTarget(
+            containerizedOtoroshi,
+            Some(
+              AuthorizedEntities(routes = Set(OtoroshiRouteId(parentRouteId)))
+            )
+          )
+        ),
+        allowMultipleKeys = Some(false),
+        subscriptionProcess = SubscriptionProcess(),
+        integrationProcess = IntegrationProcess.ApiKey,
+        autoRotation = Some(false)
+      )
+      val api = defaultApi.api.copy(
+        state = ApiState.Published,
+        possibleUsagePlans = Seq(plan.id)
+      )
+      val keyring = Keyring(
+        id = KeyringId("keyring-notified"),
+        tenant = tenant.id,
+        team = teamConsumerId,
+        apiKey = otoroshiApiKey1,
+        otoroshiSettings =
+          KeyringOtoroshiBinding.Otoroshi(containerizedOtoroshi),
+        createdAt = DateTime.now(),
+        customName = "teamConsumer-apiName-planName-firstKeyring",
+        integrationToken = "test-notified"
+      )
+      val sub = ApiSubscription(
+        id = ApiSubscriptionId("sub-notified"),
+        tenant = tenant.id,
+        plan = plan.id,
+        createdAt = DateTime.now(),
+        team = teamConsumerId,
+        api = api.id,
+        by = userTeamAdminId,
+        customName = None,
+        keyring = keyring.id
+      )
+
+      setupEnvBlocking(
+        tenants = Seq(
+          tenant.copy(
+            otoroshiSettings = Set(
+              OtoroshiSettings(
+                id = containerizedOtoroshi,
+                url =
+                  s"http://otoroshi.oto.tools:${container.mappedPort(8080)}",
+                host = "otoroshi-api.oto.tools",
+                clientSecret = otoroshiAdminApiKey.clientSecret,
+                clientId = otoroshiAdminApiKey.clientId
+              )
+            )
+          )
+        ),
+        users = Seq(userAdmin, userApiEditor, user),
+        teams = Seq(defaultAdminTeam, teamOwner, teamConsumer),
+        apis = Seq(api),
+        usagePlans = Seq(plan),
+        keyrings = Seq(keyring),
+        subscriptions = Seq(sub)
+      )
+
+      val adminSession = loginWithBlocking(userAdmin, tenant)
+
+      def toggleByOwner(enabled: Boolean, reason: Option[String] = None) = {
+        val resp = httpJsonCallBlocking(
+          path =
+            s"/api/teams/${teamOwnerId.value}/subscriptions/${sub.id.value}/_archiveByOwner?enabled=$enabled",
+          method = "PUT",
+          body = reason.map(r => Json.obj("reason" -> r))
+        )(using tenant, adminSession)
+        resp.status mustBe 200
+      }
+
+      def consumerNotifications(): Seq[NotificationAction] =
+        Await
+          .result(
+            ev.dataStore.notificationRepo.forTenant(tenant).findAll(),
+            5.seconds
+          )
+          .filter(_.team.contains(teamConsumerId))
+          .map(_.action)
+          .collect {
+            case blocked: NotificationAction.SubscriptionBlockedByOwner =>
+              blocked
+            case unblocked: NotificationAction.SubscriptionUnblockedByOwner =>
+              unblocked
+          }
+
+      toggleByOwner(enabled = false, reason = Some("Abusive usage"))
+      toggleByOwner(enabled = false)
+
+      consumerNotifications() mustBe Seq(
+        NotificationAction.SubscriptionBlockedByOwner(
+          sub.id,
+          api.id,
+          plan.id,
+          Some("Abusive usage")
+        )
+      )
+
+      toggleByOwner(enabled = true)
+
+      consumerNotifications() must contain(
+        NotificationAction.SubscriptionUnblockedByOwner(sub.id, api.id, plan.id)
+      )
+      consumerNotifications().size mustBe 2
+    }
+
     "keep a shared keyring key alive for other APIs when one API is blocked" in {
       Await.result(waitForDaikokuSetup(), 5.second)
 

@@ -41,5 +41,5 @@ export const loginLocalAs = async (user: IUser, page: Page) => {
 export const findAndGoToTeam = async (team: string, page: Page) => {
   await page.getByRole('button', { name: 'Taper / pour rechercher' }).click();
   await page.getByRole('textbox', { name: 'Rechercher une API, équipe,' }).fill(team);
-  await page.locator('#portal-root').getByRole('link', { name: team }).click();
+  await page.locator('#portal-root').getByRole('link', { name: team, exact: true }).click();
 };

@@ -1,9 +1,62 @@
 import { Form, Schema, type } from '@maif/react-forms';
 import { useContext } from 'react';
-import { UseMutationResult } from '@tanstack/react-query';
+import { useMutation, UseMutationResult } from '@tanstack/react-query';
+import classNames from 'classnames';
+import { Loader } from 'lucide-react';
 
 import { I18nContext } from '../../../../contexts';
-import { IBucketSettings, ITenantFull } from '../../../../types';
+import { testBucketConfiguration } from '../../../../services';
+import { BucketTestStepStatus, IBucketSettings, isError, ITenantFull } from '../../../../types';
+
+const badgeByStatus: Record<BucketTestStepStatus, string> = {
+  success: '--success',
+  failed: '--danger',
+  skipped: '--inactive',
+};
+
+const BucketTest = (props: { tenantId: string; settings: IBucketSettings }) => {
+  const { translate } = useContext(I18nContext);
+
+  const test = useMutation({
+    mutationFn: () => testBucketConfiguration(props.tenantId, props.settings),
+  });
+
+  return (
+    <div className="d-flex flex-column gap-2">
+      <button
+        type="button"
+        className="btn --secondary align-self-start d-flex align-items-center gap-2"
+        disabled={test.isPending}
+        onClick={() => test.mutate()}
+      >
+        {test.isPending && <Loader className="--rotate" size={16} />}
+        {translate('tenant.settings.bucket.test.button.label')}
+      </button>
+
+      {test.isError && (
+        <div className="text-danger">{translate('tenant.settings.bucket.test.failed.label')}</div>
+      )}
+
+      {test.data && isError(test.data) && <div className="text-danger">{test.data.error}</div>}
+
+      {test.data && !isError(test.data) && (
+        <ul className="list-unstyled d-flex flex-column gap-1 mb-0">
+          {test.data.steps.map((step) => (
+            <li key={step.name}>
+              <div className="d-flex align-items-center gap-2">
+                <span className={classNames('badge', badgeByStatus[step.status])}>
+                  {translate(`tenant.settings.bucket.test.status.${step.status}`)}
+                </span>
+                <span>{translate(`tenant.settings.bucket.test.step.${step.name}`)}</span>
+              </div>
+              {step.error && <div className="text-danger small">{step.error}</div>}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+};
 
 export const BucketForm = (props: {
   tenant?: ITenantFull;
@@ -51,23 +104,36 @@ export const BucketForm = (props: {
       label: translate('Use V4 auth.'),
       defaultValue: true,
     },
+    testConnection: {
+      type: type.string,
+      label: null,
+      render: ({ rawValues }) =>
+        props.tenant ? <BucketTest tenantId={props.tenant._id} settings={rawValues} /> : <></>,
+    },
   };
 
   return (
-    <Form<IBucketSettings>
-      schema={schema}
-      onSubmit={(r) =>
-        props.updateTenant.mutateAsync({
-          ...props.tenant,
-          bucketSettings: r,
-        } as ITenantFull)
-      }
-      value={props.tenant?.bucketSettings}
-      options={{
-        actions: {
-          submit: { label: translate('Save') },
-        },
+    <div
+      className="m-2 me-auto"
+      style={{
+        minWidth: 560,
       }}
-    />
+    >
+      <Form<IBucketSettings>
+        schema={schema}
+        onSubmit={(r) =>
+          props.updateTenant.mutateAsync({
+            ...props.tenant,
+            bucketSettings: r,
+          } as ITenantFull)
+        }
+        value={props.tenant?.bucketSettings}
+        options={{
+          actions: {
+            submit: { label: translate('Save') },
+          },
+        }}
+      />
+    </div>
   );
 };

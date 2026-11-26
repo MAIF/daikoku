@@ -8,6 +8,7 @@ import org.apache.pekko.http.scaladsl.model.{
   ContentTypes,
   HttpHeader
 }
+import org.apache.pekko.pattern.after
 import org.apache.pekko.stream.Materializer
 import org.apache.pekko.stream.connectors.s3.*
 import org.apache.pekko.stream.connectors.s3.headers.CannedAcl
@@ -34,7 +35,7 @@ import scala.concurrent.duration.DurationInt
 import java.net.{URI, URL}
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.atomic.{AtomicBoolean, AtomicReference}
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{ExecutionContext, Future, TimeoutException}
 import scala.jdk.CollectionConverters.*
 import scala.util.Try
 
@@ -69,6 +70,19 @@ case class S3ListItem(
           .map(h => (h.name().replace("x-amz-meta-", ""), JsString(h.value())))
       ),
       "slug" -> slug
+    )
+}
+
+case class S3TestStep(
+    name: String,
+    status: String,
+    error: Option[String] = None
+) {
+  def asJson: JsValue =
+    Json.obj(
+      "name" -> name,
+      "status" -> status,
+      "error" -> error
     )
 }
 
@@ -134,7 +148,7 @@ class AssetsDataStore(actorSystem: ActorSystem)(implicit
       listBucketApiVersion = ApiVersion.ListBucketVersion2,
       // Pekko S3 1.3 filters all headers by default with this constructor.
       allowedHeaders = Map(
-        "InitiateMultipartUpload" -> Set(
+        "PutObject" -> Set(
           "x-amz-acl",
           "x-amz-meta-filename",
           "x-amz-meta-title",
@@ -150,6 +164,28 @@ class AssetsDataStore(actorSystem: ActorSystem)(implicit
     S3Attributes.settings(settings)
   }
 
+  private def putObject(
+      key: String,
+      contentType: ContentType,
+      content: Source[ByteString, ?],
+      meta: MetaHeaders = MetaHeaders(Map.empty)
+  )(implicit conf: S3Configuration): Future[ObjectMetadata] =
+    content
+      .runFold(ByteString.empty)(_ ++ _)
+      .flatMap { bytes =>
+        S3.putObject(
+          bucket = conf.bucket,
+          key = key,
+          data = Source.single(bytes),
+          contentLength = bytes.length.toLong,
+          contentType = contentType,
+          s3Headers = S3Headers()
+            .withCannedAcl(CannedAcl.Private)
+            .withMetaHeaders(meta)
+        ).withAttributes(s3ClientSettingsAttrs)
+          .runWith(Sink.head)
+      }
+
   def storeAsset(
       tenant: TenantId,
       team: TeamId,
@@ -159,7 +195,7 @@ class AssetsDataStore(actorSystem: ActorSystem)(implicit
       desc: String,
       contentType: String,
       content: Source[ByteString, ?]
-  )(implicit conf: S3Configuration): Future[MultipartUploadResult] = {
+  )(implicit conf: S3Configuration): Future[ObjectMetadata] = {
     val ref = new AtomicReference[ByteString](ByteString.empty)
     val validated = new AtomicBoolean(false)
     val ctype = ContentType
@@ -176,18 +212,8 @@ class AssetsDataStore(actorSystem: ActorSystem)(implicit
         "content-type" -> ctype.value
       )
     )
-    val sink = S3
-      .multipartUpload(
-        bucket = conf.bucket,
-        key = s"/${tenant.value}/teams/${team.value}/assets/${asset.value}",
-        contentType = ctype,
-        metaHeaders = meta,
-        cannedAcl = CannedAcl.Private, // CannedAcl.PublicRead
-        chunkingParallelism = 1
-      )
-      .withAttributes(s3ClientSettingsAttrs)
 
-    content
+    val checkedContent = content
       .map { byteString =>
         if (!validated.get()) {
           val start = ref.get()
@@ -213,8 +239,13 @@ class AssetsDataStore(actorSystem: ActorSystem)(implicit
           byteString
         }
       }
-      .toMat(sink)(Keep.right)
-      .run()
+
+    putObject(
+      s"/${tenant.value}/teams/${team.value}/assets/${asset.value}",
+      ctype,
+      checkedContent,
+      meta
+    )
   }
 
   def listAssets(tenant: TenantId, team: TeamId)(implicit
@@ -247,15 +278,19 @@ class AssetsDataStore(actorSystem: ActorSystem)(implicit
         )
       )
       .build()
-    val request = ListObjectsV2Request
-      .builder()
-      .bucket(conf.bucket)
-      .prefix(prefix)
-      .build()
+    val requests = Seq(prefix, prefix.stripPrefix("/")).distinct.map { p =>
+      ListObjectsV2Request
+        .builder()
+        .bucket(conf.bucket)
+        .prefix(p)
+        .build()
+    }
     val attrs = s3ClientSettingsAttrs
 
-    Source
-      .fromPublisher(client.listObjectsV2Paginator(request))
+    Source(requests)
+      .flatMapConcat(request =>
+        Source.fromPublisher(client.listObjectsV2Paginator(request))
+      )
       .mapConcat(_.contents().asScala.toList)
       .mapAsync(1) { obj =>
         val content = ListBucketResultContents(
@@ -279,6 +314,7 @@ class AssetsDataStore(actorSystem: ActorSystem)(implicit
           )
       }
       .runWith(Sink.seq)
+      .map(_.distinctBy(_.content.key))
       .transform { result =>
         client.close()
         result
@@ -310,6 +346,78 @@ class AssetsDataStore(actorSystem: ActorSystem)(implicit
     )
   }
 
+  def testConfiguration(
+      tenant: TenantId
+  )(implicit conf: S3Configuration): Future[Seq[S3TestStep]] = {
+    val id = IdGenerator.token(32)
+    val prefix = s"/${tenant.value}/_test"
+    val key = s"$prefix/$id"
+    val content = ByteString("daikoku bucket test")
+
+    def attempt(name: String, previous: S3TestStep*)(
+        operation: => Future[Any]
+    ): Future[S3TestStep] =
+      if (previous.exists(_.status != "success"))
+        Future.successful(S3TestStep(name, "skipped"))
+      else
+        Future
+          .firstCompletedOf(
+            Seq(
+              Future.unit.flatMap(_ => operation),
+              after(10.seconds, actorSystem.scheduler)(
+                Future.failed(
+                  new TimeoutException("no response after 10 seconds")
+                )
+              )
+            )
+          )
+          .map(_ => S3TestStep(name, "success"))
+          .recover { case e =>
+            S3TestStep(
+              name,
+              "failed",
+              Some(Option(e.getMessage).getOrElse(e.toString))
+            )
+          }
+
+    def upload: Future[Any] =
+      putObject(key, ContentTypes.`text/plain(UTF-8)`, Source.single(content))
+
+    def download: Future[Any] =
+      getAsset(key).map { case (_, bytes, _) =>
+        if (bytes != content)
+          throw new RuntimeException(
+            "the content read differs from the content written"
+          )
+      }
+
+    def listing: Future[Any] =
+      listAssets(prefix).map { items =>
+        if (!items.exists(_.content.key.endsWith(id)))
+          throw new RuntimeException(
+            "the test file is missing from the listing"
+          )
+      }
+
+    def removal: Future[Any] =
+      S3.deleteObject(conf.bucket, key)
+        .withAttributes(s3ClientSettingsAttrs)
+        .runWith(Sink.ignore)
+
+    for {
+      write <- attempt("write")(upload)
+      read <- attempt("read", write)(download)
+      list <- attempt("list", write, read)(listing)
+      cleanup <- attempt("delete")(removal)
+    } yield Seq(
+      write,
+      read,
+      list,
+      if (write.status == "success") cleanup
+      else S3TestStep("delete", "skipped")
+    )
+  }
+
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   def storeTenantAsset(
@@ -320,7 +428,7 @@ class AssetsDataStore(actorSystem: ActorSystem)(implicit
       desc: String,
       contentType: String,
       content: Source[ByteString, ?]
-  )(implicit conf: S3Configuration): Future[MultipartUploadResult] = {
+  )(implicit conf: S3Configuration): Future[ObjectMetadata] = {
     val ctype = ContentType
       .parse(contentType)
       .getOrElse(ContentTypes.`application/octet-stream`)
@@ -335,17 +443,13 @@ class AssetsDataStore(actorSystem: ActorSystem)(implicit
         "content-type" -> ctype.value
       )
     )
-    val sink = S3
-      .multipartUpload(
-        bucket = conf.bucket,
-        key = s"/${tenant.value}/tenant-assets/${asset.value}",
-        contentType = ctype,
-        metaHeaders = meta,
-        cannedAcl = CannedAcl.Private, // CannedAcl.PublicRead
-        chunkingParallelism = 1
-      )
-      .withAttributes(s3ClientSettingsAttrs)
-    content.toMat(sink)(Keep.right).run()
+
+    putObject(
+      s"/${tenant.value}/tenant-assets/${asset.value}",
+      ctype,
+      content,
+      meta
+    )
   }
 
   def getTenantAssetMetaHeaders(tenant: TenantId, asset: AssetId)(implicit
@@ -421,7 +525,7 @@ class AssetsDataStore(actorSystem: ActorSystem)(implicit
       filename: String,
       contentType: String,
       content: Source[ByteString, ?]
-  )(implicit conf: S3Configuration): Future[MultipartUploadResult] = {
+  )(implicit conf: S3Configuration): Future[ObjectMetadata] = {
     val ctype = ContentType
       .parse(contentType)
       .getOrElse(ContentTypes.`application/octet-stream`)
@@ -434,17 +538,8 @@ class AssetsDataStore(actorSystem: ActorSystem)(implicit
         "content-type" -> ctype.value
       )
     )
-    val sink = S3
-      .multipartUpload(
-        bucket = conf.bucket,
-        key = s"/users/${asset.value}",
-        contentType = ctype,
-        metaHeaders = meta,
-        cannedAcl = CannedAcl.Private, // CannedAcl.PublicRead
-        chunkingParallelism = 1
-      )
-      .withAttributes(s3ClientSettingsAttrs)
-    content.toMat(sink)(Keep.right).run()
+
+    putObject(s"/users/${asset.value}", ctype, content, meta)
   }
 
   def getUserAsset(tenant: TenantId, user: UserId, asset: AssetId)(implicit
@@ -465,7 +560,7 @@ class AssetsDataStore(actorSystem: ActorSystem)(implicit
       tenant: TenantId,
       asset: AssetId,
       content: Source[ByteString, ?]
-  )(implicit conf: S3Configuration): Future[MultipartUploadResult] = {
+  )(implicit conf: S3Configuration): Future[ObjectMetadata] = {
     val ctype = ContentType
       .parse("image/png")
       .getOrElse(ContentTypes.`application/octet-stream`)
@@ -475,17 +570,13 @@ class AssetsDataStore(actorSystem: ActorSystem)(implicit
         "asset" -> asset.value
       )
     )
-    val sink = S3
-      .multipartUpload(
-        bucket = conf.bucket,
-        key = s"/${tenant.value}/thumbnails/${asset.value}",
-        contentType = ctype,
-        metaHeaders = meta,
-        cannedAcl = CannedAcl.Private, // CannedAcl.PublicRead
-        chunkingParallelism = 1
-      )
-      .withAttributes(s3ClientSettingsAttrs)
-    content.toMat(sink)(Keep.right).run()
+
+    putObject(
+      s"/${tenant.value}/thumbnails/${asset.value}",
+      ctype,
+      content,
+      meta
+    )
   }
 /// generate pre signed url //////
 

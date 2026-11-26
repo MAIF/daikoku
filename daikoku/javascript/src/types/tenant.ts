@@ -65,6 +65,20 @@ export interface IBucketSettings {
   v4auth: boolean;
 }
 
+export type BucketTestStepName = 'write' | 'read' | 'list' | 'delete';
+export type BucketTestStepStatus = 'success' | 'failed' | 'skipped';
+
+export interface IBucketTestStep {
+  name: BucketTestStepName;
+  status: BucketTestStepStatus;
+  error: string | null;
+}
+
+export interface IBucketTestResult {
+  success: boolean;
+  steps: Array<IBucketTestStep>;
+}
+
 export enum ThirdPartyPaymentType {
   stripe = 'Stripe',
 }

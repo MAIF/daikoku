@@ -113,8 +113,6 @@ class OpenApiContractSpec extends AnyWordSpec with Matchers {
     costPerMonth = Some(BigDecimal(49)),
     costPerRequest = Some(BigDecimal("0.001")),
     currency = Some(Currency("EUR")),
-    billingDuration = Some(BillingDuration(1, BillingTimeUnit.Month)),
-    trialPeriod = Some(BillingDuration(14, BillingTimeUnit.Day)),
     otoroshiTarget = Some(
       OtoroshiTarget(
         otoroshiSettings = OtoroshiSettingsId("otoroshi-1"),

@@ -99,8 +99,8 @@ Start daikoku instance.
 --mode parameter indicate auth provider to use, --test flag indicate to start playwright test UI (ldap/oidc mode only)
 '''
 usage = '''
-flag "--mode <mode>" help="Initialization mode" default="local" {
-  choices "ldap" "oidc" "local" "empty" "dump"
+flag "--mode <mode>" help="Initialization mode, stripe needs daikoku/.env.stripe and the Stripe CLI" default="local" {
+  choices "ldap" "oidc" "local" "empty" "dump" "stripe"
 }
 flag "--test" help="Display playwright test ui, only for oidc and local modes"
 flag "--lite" help="Postgres, backend and frontend only: no Otoroshi, no mail server (local mode only)"
@@ -155,6 +155,45 @@ fi ;
 DB=$DB process-compose -f ./dev/process-compose-test.yaml -p 9999 -t=false
 '''
 
+
+# --- Stripe billing e2e (dev only, needs daikoku/.env.stripe with a test key) ---
+# Node is pinned to 22 for this run only: Playwright's JSON imports break on 23+.
+[tasks."test:stripe:run"]
+dir = "daikoku/javascript"
+tools.node = "22"
+run = "[ -f ../.env.stripe ] && . ../.env.stripe; FORCE_COLOR=1 npx playwright test stripe_billing --trace on --workers 1 --reporter=list --config ./tests/playwright.config.js"
+
+[tasks."test:stripe"]
+description="Run the Stripe billing e2e against real Stripe test mode."
+run = "process-compose -f ./dev/process-compose-test-stripe.yaml -p 9999 -t=false"
+
+# --- A billed month to look at in the UI (dev only, same needs as test:stripe) ---
+# Plays the monthly cycle scenario (paid subscription, calls, one month forward
+# on a Stripe test clock, invoice), then leaves the stack up.
+[tasks."demo:billing:run"]
+dir = "daikoku/javascript"
+tools.node = "22"
+run = '''
+[ -f ../.env.stripe ] && . ../.env.stripe
+FORCE_COLOR=1 npx playwright test stripe_billing -g "closed month" --workers 1 --reporter=list --config ./tests/playwright.config.js
+echo ""
+echo "A month has been billed. Open http://localhost:5173 and log in as jim.halpert@dundermifflin.com / password,"
+echo "then go to Vendeurs > Consommation > Paiements (and Utilisation). Quit with F10."
+'''
+
+[tasks."demo:billing"]
+description="Start the Stripe test stack, bill a full month on a test clock, and leave the app up to look at it."
+run = "process-compose -f ./dev/process-compose-test-stripe.yaml -f ./dev/process-compose-demo-billing.yaml -p 9999"
+
+# --- Consumption pipeline (Otoroshi -> ES -> Daikoku), no Stripe ---
+[tasks."test:consumption:run"]
+dir = "daikoku/javascript"
+tools.node = "22"
+run = "FORCE_COLOR=1 npx playwright test consumption_sync --trace on --workers 1 --reporter=list --config ./tests/playwright.config.js"
+
+[tasks."test:consumption"]
+description="Run the Otoroshi to Daikoku consumption e2e."
+run = "process-compose -f ./dev/process-compose-test-consumption.yaml -p 9999 -t=false"
 
 # =============================================================================
 # Consolidated Scala coverage: backend unit tests + the 3 e2e suites (ldap /
