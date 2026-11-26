@@ -191,7 +191,7 @@ class OtoroshiSettingsController(
                   saveSettings()
                 else
                   otoroshiClient
-                    .getServices()(using settingsWithManagedGroup)
+                    .getRoutes()(using settingsWithManagedGroup)
                     .flatMap { _ =>
                       saveSettings()
                     }
@@ -246,7 +246,7 @@ class OtoroshiSettingsController(
               createOtoroshi()
             else
               otoroshiClient
-                .getServices()(using settingsWithManagedGroup)
+                .getRoutes()(using settingsWithManagedGroup)
                 .flatMap { _ =>
                   createOtoroshi()
                 }
