@@ -1,7 +1,7 @@
 import { expect, Page } from '@playwright/test';
 import { createHmac } from 'node:crypto';
 
-import { ACCUEIL, adminApi, exposedPort } from './utils';
+import { ACCUEIL, adminApi, exposedPort, requestApiKey } from './utils';
 
 const STRIPE_KEY = process.env.STRIPE_TEST_SECRET_KEY;
 const STRIPE_PUBLIC_KEY = process.env.STRIPE_TEST_PUBLIC_KEY ?? 'pk_test';
@@ -90,13 +90,10 @@ export const openStripeCheckout = async (
 ): Promise<string> => {
   await page.goto(ACCUEIL);
   await page.getByRole('link', { name: opts.apiName }).click();
-  await page.getByText('Environnements').click();
-  await page.getByRole('button', { name: "Demander une clé d'API" }).click();
-  await page.getByText(opts.teamName).click();
-  await page
-    .getByRole('dialog', { name: "Choisissez le nom de la clé d'API" })
-    .getByRole('button', { name: 'Envoyer' })
-    .click();
+  await page.getByRole('tab', { name: 'Environnements' }).click();
+  await requestApiKey(page, page.getByRole('tabpanel'), {
+    team: opts.teamName,
+  });
 
   await page.waitForURL(/checkout\.stripe\.com/, { timeout: 30_000 });
   const sessionId = page.url().match(/cs_test_[A-Za-z0-9]+/)?.[0];

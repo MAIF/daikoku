@@ -45,5 +45,10 @@
 @use 'components/keyringCard.scss';
 @use 'components/catalogRuns';
 @use 'components/informations.scss';
+@use 'components/callout';
+@use 'components/sideSheet';
+@use 'components/apiEditor';
+@use 'components/apiDocumentation';
+@use 'components/apiIssues';
+@use 'components/apiStepper';
 @use 'components/placeholder.scss';
-@use 'components/callout.scss';

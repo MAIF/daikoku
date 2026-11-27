@@ -1,4 +1,11 @@
+import type { Page } from '@playwright/test';
 import { approvalProcess, expect, test } from '../fixtures/subscriptionProcess';
+
+// The editor itself lives in a side sheet, which is a dialog too.
+const stepModal = (page: Page) =>
+  page
+    .getByRole('dialog')
+    .filter({ hasNot: page.getByRole('region', { name: 'Éditeur de processus' }) });
 
 test('the palette explains unavailable steps without allowing duplicates', async ({
   page,
@@ -28,7 +35,7 @@ test('selecting a step shows insertion points and clicking elsewhere cancels', a
 
   await email.click();
   await expect(email).toHaveAttribute('aria-pressed', 'true');
-  await expect(insertionPoints).toHaveCount(5);
+  await expect(insertionPoints).toHaveCount(4);
 
   await editor.getByRole('heading').first().click();
 
@@ -49,7 +56,7 @@ test.describe('creating a process from scratch', () => {
     await editor.getByRole('button', { name: 'Courriel', exact: true }).click();
     await editor.getByRole('button', { name: 'Insérer en position 1', exact: true }).click();
 
-    const dialog = page.getByRole('dialog');
+    const dialog = stepModal(page);
     await expect(dialog).toBeVisible();
     await dialog.getByRole('button', { name: 'Annuler', exact: true }).click();
 
@@ -67,9 +74,8 @@ test.describe('creating a process from scratch', () => {
     await editor.getByRole('button', { name: 'Courriel', exact: true }).click();
     await editor.getByRole('button', { name: 'Insérer en position 1', exact: true }).click();
 
-    const dialog = page.getByRole('dialog');
+    const dialog = stepModal(page);
     await dialog.getByRole('textbox', { name: 'Sujet', exact: true }).fill('Review the request');
-    await dialog.getByRole('button', { name: 'Ajouter', exact: true }).click();
     await dialog.getByRole('textbox').nth(1).fill('first@example.org');
     await dialog.getByRole('button', { name: 'Ajouter', exact: true }).click();
     await dialog.getByRole('textbox').nth(2).fill('second@example.org');

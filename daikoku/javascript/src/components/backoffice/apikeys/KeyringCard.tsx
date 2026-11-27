@@ -33,7 +33,7 @@ import {
   isError,
 } from '../../../types';
 import { DynamicTable, DynamicTableColumnCtx, DynamicTableFeatures, FetchData } from '../../inputs';
-import { BeautifulTitle, Can, apikey, escapeRegExp, formatDate, manage } from '../../utils';
+import { BeautifulTitle, Can, InfoCallout, apikey, escapeRegExp, formatDate, manage } from '../../utils';
 import classNames from 'classnames';
 import { useExportEntity } from '../../utils/useExportEntity';
 import { DynamicTableProps } from '../../inputs/DynamicTable';
@@ -569,14 +569,18 @@ export const KeyringCard = ({ api, keyring, currentTeam, pendingCount = 0 }: Key
     enabled: {
       type: type.bool,
       label: translate('Enabled'),
-      help: translate('help.apikey.rotation'),
       disabled: keyring.isRotationLocked,
+    },
+    rotationInfo: {
+      type: type.string,
+      label: null,
+      render: () => <InfoCallout>{translate('apikey.rotation.info')}</InfoCallout>,
     },
     rotationEvery: {
       type: type.number,
       label: translate('Rotation period'),
       help: translate('help.apikey.rotation.period'),
-      disabled: ({ rawValues }: any) => !rawValues.enabled,
+      visible: ({ rawValues }: any) => !!rawValues.enabled,
       props: { steps: 1, min: 0 },
       constraints: [constraints.positive(translate('constraints.positive'))],
     },
@@ -584,7 +588,7 @@ export const KeyringCard = ({ api, keyring, currentTeam, pendingCount = 0 }: Key
       type: type.number,
       label: translate('Grace period'),
       help: translate('help.apikey.grace.period'),
-      disabled: ({ rawValues }: any) => !rawValues.enabled,
+      visible: ({ rawValues }: any) => !!rawValues.enabled,
       props: { steps: 1, min: 0 },
       constraints: [
         constraints.positive(translate('constraints.positive')),

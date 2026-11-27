@@ -9,6 +9,7 @@ import {
   logistiqueCommandeDevApiKeySecret,
   otoroshiAdminApikeyId,
   otoroshiAdminApikeySecret,
+  requestApiKey,
 } from "./utils";
 import { MICHAEL } from "./users";
 import otoroshi_data from '../config/otoroshi/otoroshi-state.json' with { type: "json" };
@@ -69,15 +70,11 @@ async function extendCommandDevKeyringToPapierDev(page: Page) {
     status: 400,
   });
   await page.goto("/api-division/api-papier/1.0.0/pricing");
-  await page
-    .getByRole("button", { name: "Obtenir une clé d'API" })
-    .nth(0)
-    .click();
-  await page.getByText("Logistique").click();
-  await page
-    .getByRole("button", { name: "Souscrire en l'ajoutant à un" })
-    .click();
-  await page.getByRole("button", { name: COMMAND_DEV_KEYRING }).click();
+  await requestApiKey(page, page.getByRole("listitem", { name: "dev" }), {
+    team: "Logistique",
+    keyAttachment: "Existante",
+    keyring: COMMAND_DEV_KEYRING,
+  });
   await expect(
     page.getByText("Votre souscription a été créée avec succès"),
   ).toBeVisible();

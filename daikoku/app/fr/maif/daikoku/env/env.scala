@@ -51,7 +51,7 @@ import play.api.{Configuration, Environment}
 
 import java.nio.file.Paths
 import scala.concurrent.duration.*
-import scala.concurrent.{Await, ExecutionContext, Future}
+import scala.concurrent.{Await, ExecutionContext, Future, Promise}
 import scala.util.{Failure, Success, Using}
 
 sealed trait DaikokuMode {
@@ -703,6 +703,8 @@ sealed trait Env {
 
   def onStartup(): Unit
 
+  def ready: Future[Unit]
+
   def onShutdown(): Unit
 
   def snowflakeGenerator: IdGenerator
@@ -1090,6 +1092,10 @@ class DaikokuEnv(
     }
   }
 
+  private val readyPromise = Promise[Unit]()
+
+  override def ready: Future[Unit] = readyPromise.future
+
   override def onStartup(): Unit = {
 
     implicit val ec: ExecutionContext = defaultExecutionContext
@@ -1097,7 +1103,7 @@ class DaikokuEnv(
     dataStore.start()
 
     Source
-      .tick(1.second, 5.seconds, ())
+      .tick(0.second, 5.seconds, ())
       .mapAsync(1) { _ =>
         initDatastore().transform {
           case Success(_) => Success(true)
@@ -1109,6 +1115,7 @@ class DaikokuEnv(
       .toMat(Sink.ignore)(Keep.right)
       .run()(using materializer)
       .map(_ => {
+        readyPromise.trySuccess(())
         logStripeListenCommands()
         dataStore.reportsInfoRepo.count().map {
           case 0 =>

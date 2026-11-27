@@ -1,5 +1,5 @@
-import { constraints, Form, format, Schema, type } from '@maif/react-forms';
-import { useContext, useState } from 'react';
+import { constraints, Form, format, FormRef, Schema, type } from '@maif/react-forms';
+import { RefObject, useContext, useState } from 'react';
 
 import { I18nContext } from '../../../contexts';
 import { ISwagger, IWithSwagger } from '../../../types';
@@ -7,11 +7,13 @@ import { ISwagger, IWithSwagger } from '../../../types';
 interface TeamApiSwaggerProps<T extends IWithSwagger> {
   value: T
   save: (s: T) => void
+  reference?: RefObject<FormRef | undefined>
 }
 
 export const TeamApiSwagger = <T extends IWithSwagger>({
   value,
-  save
+  save,
+  reference
 }: TeamApiSwaggerProps<T>) => {
   const [specificationType, setSpecificationType] = useState(value.swagger?.specificationType || "openapi")
 
@@ -130,9 +132,11 @@ export const TeamApiSwagger = <T extends IWithSwagger>({
         value={{ type: specificationType }}
       />
       <Form<ISwagger>
+        ref={reference}
         schema={schema}
         value={value.swagger}
         onSubmit={data => save({...value, swagger: {...data, specificationType}})}
+        options={{ actions: { submit: { display: !reference } } }}
       />
     </div>
   )

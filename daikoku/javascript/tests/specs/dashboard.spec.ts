@@ -5,7 +5,7 @@ import type { ISubscriptionBatchSubmission } from '../../src/types/api';
 import otoroshi_data from '../config/otoroshi/otoroshi-state.json' with { type : "json" };
 import { generateApi, generatePlan, saveApi, savePlan } from './apis';
 import { DWIGHT, JIM, MICHAEL } from './users';
-import { ACCUEIL, adminApikeyId, adminApikeySecret, apiCommande, apiDivision, apiPapier, dwightPaperSubscriptionId, exposedPort, loginAs, logout, otoroshiAdminApikeyId, otoroshiAdminApikeySecret } from './utils';
+import { ACCUEIL, adminApikeyId, adminApikeySecret, apiCommande, apiDivision, apiPapier, dwightPaperSubscriptionId, exposedPort, loginAs, logout, otoroshiAdminApikeyId, otoroshiAdminApikeySecret, requestApiKey } from './utils';
 
 
 test.beforeEach(async () => {
@@ -65,13 +65,12 @@ test('User producer can access to the dashboard', async ({ page }) => {
   await loginAs(JIM, page)
 
   await page.getByRole('link', { name: 'API papier' }).click();
-  await page.getByText('Environnements').click();
-  page.getByRole('listitem', { name: 'prod' }).getByRole('button', { name: 'Demander une clé d\'API' }).click()
-  await page.getByText('Vendeurs').click();
-  await page.getByRole('button', { name: 'Souscrire en créant une clé d\'API' }).click();
-  await page.getByRole('button', { name: 'Suivant' }).click();
-  await page.getByRole('textbox', { name: 'motivation' }).fill('I want it !!!');
-  await page.getByRole('button', { name: 'Envoyer' }).click();
+  await page.getByRole('tab', { name: 'Environnements' }).click();
+  await requestApiKey(page, page.getByRole('listitem', { name: 'prod' }), {
+    team: 'Vendeurs',
+    keyAttachment: 'Nouvelle',
+    motivation: 'I want it !!!',
+  });
   await expect(page.getByText('La demande de clé d\'API au')).toBeVisible();
   await logout(page)
 
@@ -113,13 +112,12 @@ test('api list status', async ({ page }) => {
 
 
   await page.getByRole('link', { name: 'API papier' }).click();
-  await page.getByText('Environnements').click();
-  await page.getByRole('listitem', { name: 'prod' }).getByRole('button', { name: 'Demander une clé d\'API' }).click()
-  await page.getByText('Dwight Schrute').click();
-  await page.getByRole('button', { name: 'Souscrire en créant une clé d\'API' }).click();
-  await page.getByRole('button', { name: 'Suivant' }).click();
-  await page.getByRole('textbox', { name: 'motivation' }).fill('i want it !!!!!!!');
-  await page.getByRole('button', { name: 'Envoyer' }).click();
+  await page.getByRole('tab', { name: 'Environnements' }).click();
+  await requestApiKey(page, page.getByRole('listitem', { name: 'prod' }), {
+    team: 'Dwight Schrute',
+    keyAttachment: 'Nouvelle',
+    motivation: 'i want it !!!!!!!',
+  });
   await expect(page.getByText('La demande de clé d\'API au')).toBeVisible();
 
   await page.getByRole('link', { name: 'Accueil Daikoku' }).click();
@@ -1004,7 +1002,7 @@ test('apilist display apigroups & apigroups display apilist', async ({ page }) =
   await expect(page.getByRole('listitem', { name: 'API Commande' })).toBeVisible();
   await expect(page.getByRole('listitem', { name: 'API Papier' })).toBeVisible();
   await page.getByRole('link', { name: 'API Commande' }).click();
-  await expect(page.locator('h3').filter({ hasText: 'API Commande' })).toBeVisible();
+  await expect(page.getByRole('heading', { level: 1, name: 'API Commande' })).toBeVisible();
 
 });
 

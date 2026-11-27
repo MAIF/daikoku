@@ -116,5 +116,5 @@ test('form cards cannot be moved or removed, and payment cards cannot be edited'
     'draggable',
     'false'
   );
-  await expect(payment.getByRole('button', { name: 'Modifier', exact: true })).toBeDisabled();
+  await expect(payment.getByRole('button', { name: 'Modifier', exact: true })).toHaveCount(0);
 });

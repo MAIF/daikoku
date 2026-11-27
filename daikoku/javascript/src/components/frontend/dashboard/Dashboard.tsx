@@ -1,17 +1,15 @@
-import {useQuery, useQueryClient} from "@tanstack/react-query"
-import {useContext} from "react"
-import {Link, useNavigate} from "react-router-dom"
+import {useQuery} from "@tanstack/react-query"
+import {useContext, useState} from "react"
+import {useNavigate} from "react-router-dom"
 
 
-import {I18nContext, ModalContext} from "../../../contexts"
+import {I18nContext} from "../../../contexts"
 import {GlobalContext} from "../../../contexts/globalContext"
 import * as Services from '../../../services'
 import {isError} from "../../../types"
 import {ApiList} from "./ApiList"
-import {toast} from "sonner"
 import {manage, api as API, CanIDoAction} from "../../utils/permissions"
-import {ApiFormRightPanel} from "../../utils/sidebar/panels"
-import {MoreVertical} from "lucide-react"
+import {CreateApiSideSheet} from "../apiEditor/sheets/CreateApiSideSheet"
 
 type NewHomeProps = {
   teamId?: string
@@ -37,11 +35,9 @@ export type TDashboardData = {
 export const Dashboard = (_: NewHomeProps) => {
   const {tenant, connectedUser, unreadNotificationsCount, apiCreationPermitted} = useContext(GlobalContext)
   const {translate} = useContext(I18nContext)
-  const {openTeamSelectorModal, openRightPanel} = useContext(ModalContext);
-
-  const queryClient = useQueryClient();
-
   const navigate = useNavigate()
+
+  const [creating, setCreating] = useState(false)
 
   const myTeamsRequest = useQuery({
     queryKey: ['myTeams'],
@@ -50,56 +46,12 @@ export const Dashboard = (_: NewHomeProps) => {
 
   const myTeams = myTeamsRequest.data && !isError(myTeamsRequest.data) ? myTeamsRequest.data : []
 
-  const canCreateApi =
-    !connectedUser.isGuest &&
-    (!tenant.creationSecurity || myTeams.some(t => t.apisCreationPermission))
+  const creationTeams = myTeams
+    .filter((t) => t.type !== 'Admin')
+    .filter((t) => !tenant.creationSecurity || t.apisCreationPermission)
+    .filter((t) => CanIDoAction(connectedUser, manage, API, t, apiCreationPermitted))
 
-
-  // ─── Create API ─────────────────────────────────────────────────────────
-
-  const createApi = ({teamId, isApiGroup = false}: { teamId?: string; isApiGroup?: boolean }) => {
-    if (apiCreationPermitted && !myTeamsRequest.isLoading && myTeamsRequest.data && !isError(myTeamsRequest.data)) {
-      if (!teamId) {
-        return openTeamSelectorModal({
-          allTeamSelector: false,
-          title: translate('api.creation.title.modal'),
-          description: translate('api.creation.description.modal'),
-          teams: myTeamsRequest.data
-            .filter((t) => t.type !== 'Admin')
-            .filter((t) => !tenant.creationSecurity || t.apisCreationPermission)
-            .filter((t) => CanIDoAction(connectedUser, manage, API, t, apiCreationPermitted)),
-          action: (teams) => createApi({teamId: teams[0], isApiGroup}),
-          actionLabel: translate('Create'),
-        })
-      }
-
-      const team = myTeamsRequest.data.find((t) => teamId === t._id)
-      if (!team) {
-        toast.warning('toast.no.team.found')
-      } else {
-        return openRightPanel({
-          title: isApiGroup
-            ? translate('apigroup.creation.right.panel.title')
-            : translate('api.creation.right.panel.title'),
-          content: (
-            <ApiFormRightPanel
-              team={team}
-              apigroup={isApiGroup}
-              handleSubmit={(api) =>
-                Services.createTeamApi(team._id, api).then((maybeApi) => {
-                  queryClient.invalidateQueries({queryKey: ['apis']})
-                  toast.success(translate({key: 'api.created.successful.toast', replacements: [api.name]}))
-                  if (!isError(maybeApi)) {
-                    navigate(`/${team._humanReadableId}/${maybeApi._humanReadableId}/${maybeApi.currentVersion}/description`)
-                  }
-                })
-              }
-            />
-          ),
-        })
-      }
-    }
-  }
+  const canCreateApi = !connectedUser.isGuest && creationTeams.length > 0
 
   return (
     <main className='flex-grow-1 d-flex flex-column gap-3 main' role="main">
@@ -134,37 +86,16 @@ export const Dashboard = (_: NewHomeProps) => {
         </div>
         <div>
 
-          {canCreateApi && <div className="d-flex justify-content-end gap-1">
-            <button type="button"
-                    className='btn --primary'
-                    onClick={() => createApi({})}>
-              <p className="m-0">{translate('dashboard.create.api.button.label')}</p>
+          {canCreateApi && (
+            <button type="button" className='btn --primary' onClick={() => setCreating(true)}>
+              {translate('dashboard.create.api.button.label')}
             </button>
-            <div className="nav_item dropdown" style={{color: '#fff'}}>
-              <button type="button"
-                      className='btn --secondary --icon-only'
-                      data-bs-toggle="dropdown" aria-expanded="false"
-                      aria-label={translate('dashboard.more.creation.option.button.label')}>
-                <MoreVertical />
-              </button>
-              <div className="dropdown-menu">
-                <div className="ms-3 mt-2 col-8 d-flex flex-column panel">
-                  <div className="blocks">
-                    <div className="mb-3 block">
-                      <div className="ms-2 block__entries block__border d-flex flex-column">
-                        <Link to={'#'} onClick={() => createApi({isApiGroup: true})} className="block__entry__link">
-                          {translate('dashboard.create.apigroup.button.label')}
-                        </Link>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>}
+          )}
         </div>
       </div>
       <ApiList/>
+
+      {creating && <CreateApiSideSheet teams={creationTeams} onClose={() => setCreating(false)} />}
     </main>
   )
 }

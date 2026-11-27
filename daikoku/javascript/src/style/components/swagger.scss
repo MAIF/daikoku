@@ -1,20 +1,44 @@
 @use "../variables";
 
 .swagger-ui .info hgroup.main a {
-    word-break: break-all;
+  word-break: break-all;
+}
+
+.swagger-ui {
+  color: variables.$primary-color;
+
+  .btn {
+    color: variables.$primary-color;
   }
-  
-  .swagger-ui {
+
+  .copy-to-clipboard button svg path {
+    fill: variables.$primary-color
+  }
+
+  .copy-to-clipboard,
+  .copy-to-clipboard:active {
+    background: transparent;
+    opacity: .6;
+    transition: opacity .15s;
+  }
+
+  .copy-to-clipboard:hover {
+    opacity: 1;
+  }
+
+  .opblock .opblock-summary .view-line-link.copy-to-clipboard,
+  .opblock .opblock-summary:hover .view-line-link.copy-to-clipboard {
+    width: 24px;
+    margin: 0;
+    transition: none;
+  }
+}
+
+.swagger-ui .errors-wrapper {
+
+  hgroup h4,
+  .errors h4,
+  .errors small {
     color: variables.$sidebar-text-color;
-    .btn {
-      color: variables.$sidebar-text-color;
-    }
   }
-  
-  .swagger-ui .errors-wrapper {
-    hgroup h4,
-    .errors h4,
-    .errors small {
-      color: variables.$sidebar-text-color;
-    }
-  }
+}

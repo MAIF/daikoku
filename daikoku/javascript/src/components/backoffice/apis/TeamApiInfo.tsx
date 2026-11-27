@@ -4,6 +4,8 @@ import { I18nContext, TranslateParams } from '../../../contexts';
 import { AssetChooserByModal, MimeTypeFilter } from '../../../contexts/modals/AssetsChooserModal';
 import * as Services from '../../../services';
 import { ICmsPageGQL, isError, ITeamSimple, ITenant } from '../../../types';
+import { ChoiceChips } from '../../inputs/ChoiceChips';
+import { InfoCallout } from '../../utils/InfoCallout';
 
 
 const Image = ({
@@ -41,6 +43,9 @@ const Image = ({
 };
 
 const reservedVersionCharacters = [';', '/', '?', ':', '@', '&', '=', '+', '$', ','];
+
+const headerSource = (rawValues: { [key: string]: any }): 'text' | 'cms' =>
+  rawValues.headerSource ?? (rawValues.header ? 'text' : 'cms');
 
 // Mirror of ApiState.checkPreviousState (apiEntities.scala) — keep in sync!
 // Allowed target states given the current (persisted) state of the API. Used to
@@ -81,6 +86,29 @@ export const teamApiInfoForm = (translate: (params: (string | TranslateParams)) 
       format: format.text,
       label: translate('Small desc.'),
     },
+    headerSource: {
+      type: type.string,
+      label: null,
+      render: ({ rawValues, onChange, setValue }) => (
+        <ChoiceChips
+          label={translate('api.form.header.source.label')}
+          options={[
+            { value: 'text', label: translate('api.form.header.source.text') },
+            { value: 'cms', label: translate('api.form.header.source.cms') },
+          ]}
+          value={headerSource(rawValues)}
+          onChange={(source) => {
+            if (source === 'text') {
+              setValue?.('customHeaderCmsPage', null);
+            } else {
+              setValue?.('header', '');
+            }
+            onChange?.(source);
+          }}
+        />
+      ), //@ts-ignore //FIXME
+      expert: true,
+    },
     header: {
       type: type.string,
       format: format.markdown,
@@ -90,11 +118,12 @@ export const teamApiInfoForm = (translate: (params: (string | TranslateParams)) 
         theme: 'monokai',
       }, //@ts-ignore //FIXME
       expert: true,
-      visible: ({ rawValues }) => !rawValues.customHeaderCmsPage,
+      visible: ({ rawValues }) => headerSource(rawValues) === 'text',
     },
     customHeaderCmsPage: {
       type: type.string,
       format: format.select,
+      visible: ({ rawValues }) => headerSource(rawValues) === 'cms',
       label: translate('api.form.cms.header.label'),
       help: translate('api.form.cms.header.help'),
       props: { isClearable: true },
@@ -142,23 +171,29 @@ export const teamApiInfoForm = (translate: (params: (string | TranslateParams)) 
     },
     state: {
       type: type.string,
-      format: format.buttonsSelect,
-      label: translate('State'),
-      options: [
-        { label: translate('api.created'), value: 'created' },
-        { label: translate('api.published'), value: 'published' },
-        { label: translate('api.deprecated'), value: 'deprecated' },
-        { label: translate('api.blocked'), value: 'blocked' },
-      ].map((o) => ({
-        ...o,
-        // Never disable the current state's own button; disable a target when it
-        // is not a valid transition, or when moving to draft (created) while the
-        // API still has subscriptions.
-        disabled:
-          o.value !== currentState &&
-          (!(ALLOWED_STATE_TRANSITIONS[currentState] ?? []).includes(o.value) ||
-            (o.value === 'created' && hasSubscriptions)),
-      })),
+      label: null,
+      render: ({ value, onChange }) => (
+        <ChoiceChips
+          label={translate('State')}
+          options={[
+            { label: translate('api.created'), value: 'created' },
+            { label: translate('api.published'), value: 'published' },
+            { label: translate('api.deprecated'), value: 'deprecated' },
+            { label: translate('api.blocked'), value: 'blocked' },
+          ].map((o) => ({
+            ...o,
+            // Never disable the current state's own button; disable a target when it
+            // is not a valid transition, or when moving to draft (created) while the
+            // API still has subscriptions.
+            disabled:
+              o.value !== currentState &&
+              (!(ALLOWED_STATE_TRANSITIONS[currentState] ?? []).includes(o.value) ||
+                (o.value === 'created' && hasSubscriptions)),
+          }))}
+          value={value}
+          onChange={(state) => onChange?.(state)}
+        />
+      ),
       defaultValue: 'created',
     },
     testable: {
@@ -188,16 +223,19 @@ export const teamApiInfoForm = (translate: (params: (string | TranslateParams)) 
     },
     visibility: {
       type: type.string,
-      format: format.buttonsSelect,
-      label: translate('Visibility'),
-      options: [
-        { label: translate('Public'), value: 'Public' },
-        { label: translate('Private'), value: 'Private' },
-        {
-          label: translate('PublicWithAuthorizations'),
-          value: 'PublicWithAuthorizations',
-        },
-      ],
+      label: null,
+      render: ({ value, onChange }) => (
+        <ChoiceChips
+          label={translate('Visibility')}
+          options={[
+            { label: translate('Public'), value: 'Public' },
+            { label: translate('PublicWithAuthorizations'), value: 'PublicWithAuthorizations' },
+            { label: translate('Private'), value: 'Private' },
+          ]}
+          value={value}
+          onChange={(visibility) => onChange?.(visibility)}
+        />
+      ),
     },
     authorizedTeams: {
       type: type.string,
@@ -211,6 +249,20 @@ export const teamApiInfoForm = (translate: (params: (string | TranslateParams)) 
         label: t.name,
         value: t._id
       }),
+    },
+    authorizedTeamsInfo: {
+      type: type.string,
+      label: null,
+      visible: ({ rawValues }) => rawValues['visibility'] !== 'Public',
+      render: ({ rawValues }) => (
+        <InfoCallout title={translate('api.form.visibility.info.title')}>
+          {translate(
+            rawValues.visibility === 'Private'
+              ? 'api.form.visibility.info.private'
+              : 'api.form.visibility.info.public.with.authorizations'
+          )}
+        </InfoCallout>
+      ),
     },
     metadata: {
       type: type.object,
@@ -249,10 +301,10 @@ export const teamApiInfoForm = (translate: (params: (string | TranslateParams)) 
     },
     {
       label: translate('api.form.header.flow.label'),
-      flow: ['header', 'customHeaderCmsPage'].filter((entry) =>
+      flow: ['headerSource', 'header', 'customHeaderCmsPage'].filter((entry) =>
         simpleOrExpertMode(entry, expert)
       ),
-      collapsed: true,
+      collapsed: false,
     },
     {
       label: translate('Versions and tags'),
@@ -263,10 +315,40 @@ export const teamApiInfoForm = (translate: (params: (string | TranslateParams)) 
     },
     {
       label: translate('Visibility'),
-      flow: ['visibility', 'authorizedTeams'].filter((entry) => simpleOrExpertMode(entry, expert)),
+      flow: ['visibility', 'authorizedTeams', 'authorizedTeamsInfo'].filter((entry) => simpleOrExpertMode(entry, expert)),
       collapsed: true,
     }
-  ];
+  ].filter((section) => section.flow.length > 0);
+
+  const section = (label: string, entries: Array<string>, expert: boolean) => ({
+    label,
+    flow: entries.filter((entry) => simpleOrExpertMode(entry, expert)),
+    collapsed: false,
+  });
+
+  const creationFlows = (expert: boolean) =>
+    [
+      [
+        section(
+          translate('api.creation.section.identity'),
+          ['name', 'smallDescription', 'image', ...(apigroup ? ['apis'] : [])],
+          expert
+        ),
+        section(translate('Metadata'), ['metadata'], expert),
+        section(translate('api.form.header.flow.label'), ['headerSource', 'header', 'customHeaderCmsPage'], expert),
+      ],
+      [
+        section(translate('api.creation.section.versions'), ['isDefault', 'currentVersion', 'supportedVersions'], expert),
+        section(translate('api.creation.section.classification'), ['tags', 'categories'], expert),
+      ],
+      [
+        section(
+          translate('api.creation.section.access'),
+          ['state', 'visibility', 'authorizedTeams', 'authorizedTeamsInfo'],
+          expert
+        ),
+      ],
+    ].map((sections) => sections.filter((s) => s.flow.length > 0));
 
   const adminFlow = ['name', 'smallDescription'];
 
@@ -287,6 +369,7 @@ export const teamApiInfoForm = (translate: (params: (string | TranslateParams)) 
   return {
     schema: apigroup ? { ...schema, ...apiGroupSchemaAddon } : schema,
     flow: (expert: boolean) => flow(expert, apigroup),
+    creationFlows,
     adminFlow,
     adminSchema
   };

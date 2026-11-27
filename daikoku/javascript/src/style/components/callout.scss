@@ -2,6 +2,48 @@
 @use "sass:color";
 @use "sass:map";
 
+.info-callout {
+  display: flex;
+  overflow: hidden;
+
+  border: 1px solid variables.$info-color;
+  border-radius: 8px;
+  background-color: variables.$neutral-color-000;
+
+  .info-callout__icon {
+    display: flex;
+    justify-content: center;
+    padding: 16px 12px;
+
+    background-color: variables.$info-color-bg;
+    color: variables.$info-color;
+  }
+
+  .info-callout__body {
+    padding: 16px;
+
+    font-size: 14px;
+    line-height: 20px;
+    color: variables.$neutral-color-900;
+  }
+
+  .info-callout__title {
+    margin-bottom: 4px;
+
+    font-size: 16px;
+    font-weight: 700;
+  }
+
+  &.--warning {
+    border-color: variables.$warning-color;
+
+    .info-callout__icon {
+      background-color: variables.$warning-color-bg;
+      color: variables.$warning-color;
+    }
+  }
+}
+
 $theme-colors: (
     primary: (color: variables.$primary-color, bg: variables.$primary-color-bg),
     success: (color: variables.$success-color, bg: variables.$success-color-bg),

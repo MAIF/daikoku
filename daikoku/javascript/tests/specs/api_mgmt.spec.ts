@@ -1,5 +1,5 @@
-import { test, expect } from '@playwright/test';
-import { ACCUEIL, adminApikeyId, adminApikeySecret, dwightPaperApiKeyId, exposedPort, loginAs, logout, otoroshiAdminApikeyId, otoroshiAdminApikeySecret, otoroshiDevCommandRouteId, vendeursPapierExtendedDevApiKeyId } from './utils';
+import { test, expect, Locator } from '@playwright/test';
+import { ACCUEIL, adminApikeyId, adminApikeySecret, chooseApiSettingsAction, createApi, dwightPaperApiKeyId, exposedPort, loginAs, logout, otoroshiAdminApikeyId, otoroshiAdminApikeySecret, otoroshiDevCommandRouteId, vendeursPapierExtendedDevApiKeyId } from './utils';
 import { JIM, MICHAEL } from './users';
 import otoroshi_data from '../config/otoroshi/otoroshi-state.json' with { type: "json" };
 
@@ -31,19 +31,14 @@ test('[ASOAPI-10597] - créer une API', async ({ page }) => {
   await page.goto(ACCUEIL);
   await loginAs(JIM, page);
 
-  await page.getByRole('button', { name: 'Créer une API' }).click();
-  await page.locator('#portal-root').getByText('Vendeurs').click();
-  await page.getByRole('button', { name: 'Mode expert' }).click();
-  await page.getByRole('button', { name: 'Brouillon' }).click();
-  await page.getByPlaceholder('New Api').fill('API Betterave');
-  await page.getByLabel('Desc. courte').fill("Ce n'est pas une blague Dwight. Jim ❤️");
-  await page.getByText('Versions et tags').click();
-  await page.locator('div.mrf-mt_10').filter({ hasText: "Tags" }).getByRole('button', { name: "Add" }).click();
-  await page.locator('input[name="tags\\.0\\.value"]').fill('prod');
-  await page.locator('div.mrf-mt_10').filter({ hasText: "Tags" }).getByRole('button', { name: "Add" }).click();
-  await page.locator('input[name="tags\\.1\\.value"]').fill('important');
-  //todo: find a way to fill description by playwright
-  await page.getByRole('button', { name: 'Enregistrer' }).click();
+  await createApi(page, {
+    team: 'Vendeurs',
+    expert: true,
+    name: 'API Betterave',
+    smallDescription: "Ce n'est pas une blague Dwight. Jim ❤️",
+    tags: ['prod', 'important'],
+    state: 'Brouillon',
+  });
   await expect(page.locator('h1')).toContainText('API Betterave');
   await page.getByLabel('Accueil Daikoku').click();
   await expect(page.getByRole('link', { name: 'API Betterave' })).toBeAttached();
@@ -52,19 +47,21 @@ test('[ASOAPI-10597] - créer une API', async ({ page }) => {
 
   await loginAs(JIM, page);
   await page.getByRole('link', { name: 'API Betterave' }).click();
-  await page.getByRole('button', { name: 'Configurer' }).click();
-  await page.getByRole('menu', { name: 'Configurer' }).getByRole('menuitem', { name: 'Configurer' }).click();
-  await page.getByRole('button', { name: 'Publiée' }).click();
+  await chooseApiSettingsAction(page, 'Modifier');
+  await page.getByRole('radio', { name: 'Publiée' }).click();
   await page.getByRole('button', { name: 'Enregistrer' }).click();
 
-  await page.getByText('Environnements').click();
+  await page.getByRole('tab', { name: 'Environnements' }).click();
   await page.getByRole('button', { name: 'Créer un environnement' }).click();
-  await page.locator('div').filter({ hasText: /^new usage plan$/ }).nth(2).click();
-  await page.getByText('dev', { exact: true }).click();
-  await page.getByRole('textbox', { name: 'Description' }).fill('environnement de developpement');
-  await page.getByRole('button', { name: 'Enregistrer' }).click();
-  await expect(page.getByText('dev', { exact: true })).toBeVisible();
-  await expect(page.getByText('environnement de developpement')).toBeVisible();
+  const creationSheet = page.getByRole('dialog', { name: 'Créer un environnement' });
+  await creationSheet.getByRole('combobox', { name: 'Quel environnement voulez-vous créer ?' }).click();
+  await page.getByRole('option', { name: 'dev', exact: true }).click();
+  await creationSheet.getByRole('tab', { name: 'Général' }).click();
+  await creationSheet.getByRole('textbox', { name: 'Description' }).fill('environnement de developpement');
+  await creationSheet.getByRole('button', { name: 'Enregistrer' }).click();
+  const dev = page.getByRole('listitem', { name: 'dev' });
+  await expect(dev).toBeVisible();
+  await expect(dev.getByText('environnement de developpement')).toBeVisible();
 
   await page.getByLabel('Accueil Daikoku').click();
   await expect(page.getByRole('link', { name: 'API Betterave' })).toBeVisible();
@@ -73,15 +70,14 @@ test('[ASOAPI-10597] - créer une API', async ({ page }) => {
   await loginAs(JIM, page);
   await page.getByRole('link', { name: 'API Betterave' }).click();
   //todo: wait for better API lifecycle to test deprected
-  // await page.getByRole('button', { name: 'Dépréciée' }).click();
+  // await page.getByRole('radio', { name: 'Dépréciée' }).click();
   // await page.getByRole('button', { name: 'Enregistrer' }).click();
   // await page.getByLabel('Liste des APIs').click();
   // await page.getByRole('heading', { name: 'API Betterave' }).click();
   // await page.getByLabel('Liste des APIs').click();
   // await page.locator('div.row.py-4', { hasText: 'API Betterave' }).getByLabel('paramètres').click();
-  await page.getByRole('button', { name: 'Configurer' }).click();
-  await page.getByRole('menu', { name: 'Configurer' }).getByRole('menuitem', { name: 'Configurer' }).click();
-  await page.getByRole('button', { name: 'Bloquée' }).click();
+  await chooseApiSettingsAction(page, 'Modifier');
+  await page.getByRole('radio', { name: 'Bloquée' }).click();
   await page.getByRole('button', { name: 'Enregistrer' }).click();
   await page.getByRole('textbox', { name: 'Saisissez API Betterave pour' }).fill('API Betterave');
   await page.getByRole('button', { name: 'Confirmation' }).click();
@@ -97,16 +93,14 @@ test('[ASOAPI-10597] [ASOAPI-10599] - créer/supprimer une version d\'une API', 
   await page.goto(ACCUEIL);
   await loginAs(MICHAEL, page);
   await page.getByRole('link', { name: 'API papier' }).click();
-  await page.getByRole('button', { name: 'Configurer' }).click();
-  await page.getByRole('menu', { name: 'Configurer' }).getByRole('menuitem', { name: 'Créer une nouvelle version' }).click();
+  await chooseApiSettingsAction(page, 'Créer une nouvelle version');
   await page.getByPlaceholder('Numéro de version').fill('2.0.0');
   await page.getByRole('button', { name: 'Créer' }).click();
   await expect(page).toHaveURL(`http://localhost:${exposedPort}/pP61PigzFffXTu4TX3BmvAB6iUIHY9oj/api-papier/2.0.0/description`)
 
   await expect(page.locator('[data-sonner-toast]')).toHaveCount(0);
 
-  await page.getByRole('button', { name: "Configurer" }).click({ force: true });
-  await page.getByRole('menu', { name: 'Configurer' }).getByRole('menuitem', { name: 'Configurer' }).click({ force: true });
+  await chooseApiSettingsAction(page, 'Modifier');
   await page.getByLabel('Desc. courte').fill('Le catalogue de Papier de Dunder Mifflin dans sa deuxieme version');
   await page.getByRole('button', { name: 'Enregistrer' }).click();
   await page.waitForResponse(r => r.request().url().includes('/apis/api-papier/2.0.0') && r.status() === 200)
@@ -118,10 +112,9 @@ test('[ASOAPI-10597] [ASOAPI-10599] - créer/supprimer une version d\'une API', 
   await expect(page.locator('[data-sonner-toast]')).toHaveCount(0);
 
   //supprimer la version
-  await page.getByRole('button', { name: 'Configurer' }).click();
   // await page.getByRole('link', { name: 'Configurer l\'API' }).click();
   // await page.getByText('Paramètres').click();
-  await page.getByRole('menu', { name: 'Configurer' }).getByRole('menuitem', { name: 'Supprimer' }).click();
+  await chooseApiSettingsAction(page, 'Supprimer');
   await page.getByLabel('Saisissez API papier pour').click();
   await page.getByLabel('Saisissez API papier pour').fill('API papier');
   await page.getByRole('button', { name: 'Confirmation' }).click();
@@ -168,8 +161,7 @@ test('[ASOAPI-10599] - supprimer une API', async ({ page }) => {
   await page.goto(ACCUEIL);
   await loginAs(MICHAEL, page);
   await page.getByRole('link', { name: 'API papier' }).click();
-  await page.getByRole('button', { name: "Configurer" }).click();
-  await page.getByRole('menu', { name: 'Configurer' }).getByRole('menuitem', { name: 'Supprimer' }).click();
+  await chooseApiSettingsAction(page, 'Supprimer');
   await page.getByLabel('Saisissez API papier pour').click();
   await page.getByLabel('Saisissez API papier pour').fill('API papier');
   await page.getByRole('button', { name: 'Confirmation' }).click();
@@ -225,11 +217,7 @@ test('[ASOAPI-10599] - supprimer une API', async ({ page }) => {
 test('sécuriser la création d\'API à l\'aide de la securité de tenant associé', async ({ page }) => {
   await page.goto(ACCUEIL);
   await loginAs(MICHAEL, page);
-  await page.getByRole('button', { name: 'Créer une API' }).click();
-  await page.getByRole('dialog').getByRole('listitem', { name: 'Vendeurs' }).click();
-  await page.getByRole('button', { name: 'Publiée' }).click();
-  await page.getByRole('textbox', { name: 'Nom' }).fill('Vente de papier API');
-  await page.getByRole('button', { name: 'Enregistrer' }).click();
+  await createApi(page, { team: 'Vendeurs', name: 'Vente de papier API', state: 'Publiée' });
   await expect(page.locator('h1')).toContainText('Vente de papier API');
   await page.getByLabel('Accueil Daikoku').click();
   await expect(page.getByRole('link', { name: 'Vente de papier API' })).toBeVisible();
@@ -249,11 +237,13 @@ test('sécuriser la création d\'API à l\'aide de la securité de tenant associ
   await page.getByRole('link', { name: 'Accueil Daikoku' }).click();
   await page.getByRole('button', { name: 'Créer une API' }).click();
   await expect(page.getByRole('dialog')).toBeVisible();
-  await expect(page.getByRole('dialog').getByRole('listitem')).toHaveCount(1);
-  await expect(page.getByRole('dialog').getByRole('listitem', { name: 'API Division' })).toBeVisible();
-  await expect(page.getByRole('dialog').getByRole('listitem', { name: 'Vendeurs' })).toBeHidden();
+  await page.getByLabel('Sélectionner une équipe pour cette API').click();
+  await expect(page.getByRole('option')).toHaveCount(1);
+  await expect(page.getByRole('option', { name: 'API Division' })).toBeVisible();
+  await expect(page.getByRole('option', { name: 'Vendeurs' })).toBeHidden();
 
-  await page.getByRole('dialog').locator('.modal-footer').getByRole('button', { name: 'Fermer' }).first().click();
+  await page.keyboard.press('Escape');
+  await page.getByRole('dialog').getByRole('button', { name: 'Annuler' }).click();
   await logout(page);
 
   await loginAs(JIM, page);
@@ -267,24 +257,15 @@ test('[ASOAPI-10597] - créer un groupe d\'API', async ({ page }) => {
   await loginAs(MICHAEL, page);
 
 
-  await page.getByRole('button', { name: 'Plus d\'options de création' }).click();
-  await page.getByRole('link', { name: 'groupe d\'APIs' }).click();
-
-  await page.locator('#portal-root').getByText('API division').click();
-  await page.getByRole('button', { name: 'Mode expert' }).click();
-  await page.getByRole('button', { name: 'Publiée' }).click();
-  await page.getByPlaceholder('New Api').fill(apiGroupName);
-  await page.getByLabel('Desc. courte').fill("Un groupe, Un parcours, une suite ❤️");
-
-
-  await page.locator('.react-form-select__indicator').first().click();
-  await page.getByText('API papier - 1.0.0', { exact: true }).click();
-
-  await page.locator('.react-form-select__indicator.react-form-select__dropdown-indicator').first().click();
-  await page.getByText('API Commande - 1.0.0', { exact: true }).click();
-
-
-  await page.getByRole('button', { name: 'Enregistrer' }).click();
+  await createApi(page, {
+    team: 'API Division',
+    group: true,
+    expert: true,
+    name: apiGroupName,
+    smallDescription: 'Un groupe, Un parcours, une suite ❤️',
+    apis: ['API papier - 1.0.0', 'API Commande - 1.0.0'],
+    state: 'Publiée',
+  });
   await expect(page.getByRole('heading', { name: apiGroupName }).first()).toBeVisible();
   await page.getByLabel('Accueil Daikoku').click();
   await page.getByRole('link', { name: apiGroupName }).click();
@@ -296,81 +277,44 @@ test('[ASOAPI-10597] - créer un groupe d\'API', async ({ page }) => {
   await expect(page.locator('h1')).toBeVisible();
 });
 
+const chooseEnvironmentAction = async (environment: Locator, actionName: string) => {
+  await environment.getByRole('button', { name: "Configurer l'environnement" }).click();
+  await environment.getByRole('menuitem', { name: actionName }).click();
+};
+
 test('configurer un environnement', async ({ page }) => {
   await page.goto(ACCUEIL);
   await loginAs(MICHAEL, page);
 
   await page.getByRole('link', { name: 'API papier' }).click();
-  await page.getByText('Environnements').click();
+  await page.getByRole('tab', { name: 'Environnements' }).click();
+
+  const prod = page.getByRole('listitem', { name: 'prod' });
+  const dev = page.getByRole('listitem', { name: 'dev' });
+  const environmentSheet = page.getByRole('dialog', { name: "Modifier l'environnement" });
 
   //global config
-  await page.getByRole('listitem', { name: 'prod' })
-    .getByRole('button', { name: 'Configurer' }).click()
-  await page
-    .getByRole('listitem', { name: 'prod' })
-    .getByRole('menu')
-    .getByRole('button', { name: 'Configurer l\'environnement' }).click();
-  await page.getByRole('textbox', { name: 'Description' }).fill('nouvelle description de l\'environnement');
-  await page.getByRole('button', { name: 'Enregistrer' }).click();
-  await expect(page.getByText('Le plan a été mis à jour avec')).toBeVisible();
-  await expect(page.getByText('nouvelle description de l\'')).toBeVisible();
+  await chooseEnvironmentAction(prod, 'Editer');
+  await environmentSheet.getByRole('tab', { name: 'Général' }).click();
+  await environmentSheet.getByRole('textbox', { name: 'Description' }).fill('nouvelle description de l\'environnement');
+  await environmentSheet.getByRole('button', { name: 'Enregistrer' }).click();
+  await expect(page.getByText('Le plan a été mis à jour avec succès')).toBeVisible();
+  await expect(prod.getByText('nouvelle description de l\'environnement')).toBeVisible();
 
   //quotas config
-  await expect(page
-    .getByRole('listitem', { name: 'prod' })
-    .getByText('100 req./sec')).toBeVisible();
-  await expect(page
-    .getByRole('listitem', { name: 'prod' })
-    .getByText('1000 req./jour')).toBeVisible();
-  await expect(page
-    .getByRole('listitem', { name: 'prod' })
-    .getByText('1000 req./mois')).toBeVisible();
-  await await page.getByRole('listitem', { name: 'prod' })
-    .getByRole('button', { name: 'Configurer' }).click()
-  await page
-    .getByRole('listitem', { name: 'prod' })
-    .getByRole('menu')
-    .getByRole('button', { name: 'Configurer les quotas' }).click();
-
-  await page.getByRole('button', { name: 'Configurer les quotas' }).click();
-
-  await page.getByLabel('Max. par seconde').fill('10');
-  await page.getByLabel('Max. par jour').fill('20');
-  await page.getByLabel('Max. par mois').clear();
-  await page.getByRole('button', { name: 'Save' }).click();
-  await expect(page
-    .getByRole('listitem', { name: 'prod' }).getByText('10 req./sec')).toBeVisible();
-  await expect(page.getByRole('listitem', { name: 'prod' })
-    .getByText('20 req./jour')).toBeVisible();
-  await expect(page.getByRole('listitem', { name: 'prod' })
-    .getByText('∞ req./mois')).toBeVisible();
+  await expect(prod.getByText('100 req./sec · 1000 req./jour · 1000 req./mois')).toBeVisible();
+  await chooseEnvironmentAction(prod, 'Editer');
+  await environmentSheet.getByRole('spinbutton', { name: 'Max. par seconde' }).fill('10');
+  await environmentSheet.getByRole('spinbutton', { name: 'Max. par jour' }).fill('20');
+  await environmentSheet.getByRole('spinbutton', { name: 'Max. par mois' }).clear();
+  await environmentSheet.getByRole('button', { name: 'Enregistrer' }).click();
+  await expect(prod.getByText('10 req./sec · 20 req./jour · ∞ req./mois')).toBeVisible();
 
   //process config
-  await await page.getByRole('listitem', { name: 'dev' })
-    .getByRole('button', { name: 'Configurer' }).click();
-  await page
-    .getByRole('listitem', { name: 'dev' })
-    .getByRole('menu')
-    .getByRole('button', { name: 'Modifier le processus de souscription' }).click();
-    await page.getByRole('button', { name: 'Admin. équipe' }).click();
-    await page.getByRole('button', { name: 'Insérer en position' }).click();
-  await page.getByRole('button', { name: 'Enregistrer' }).click();
-  await expect(page
-    .getByRole('listitem', { name: 'dev' })
-    .getByText('2 étapes')).toBeVisible();
-
-  //pricing config //todo: no stripe config found
-  // await await page.getByRole('listitem', { name: 'prod' })
-  //   .getByRole('button', { name: 'Configurer' }).click();
-  // await page
-  //   .getByRole('listitem', { name: 'prod' })
-  //   .getByRole('menu')
-  //   .getByRole('button', { name: 'Configurer les tarifs' }).click();
-  // await page.getByRole('button', { name: 'Avec frais Définissez des' }).click();
-  // await page.getByRole('spinbutton', { name: 'Coût par mois' }).fill('10');
-  // await page.getByRole('spinbutton', { name: 'Coût par req.' }).fill('0.08');
-  // await page.getByRole('button', { name: 'Save' }).click();
-  // await expect(page
-  //   .getByRole('listitem', { name: 'prod' })
-  //   .getByText('€/mois + 0,08 €/appels')).toBeVisible();
+  await expect(dev.getByText('Aucun')).toBeVisible();
+  await chooseEnvironmentAction(dev, 'Modifier le process');
+  await environmentSheet.getByRole('button', { name: 'Admin. équipe' }).click();
+  await environmentSheet.getByRole('button', { name: 'Insérer en position 1' }).click();
+  await environmentSheet.getByRole('button', { name: 'Enregistrer' }).click();
+  await expect(dev.getByText('2 étapes')).toBeVisible();
 })

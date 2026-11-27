@@ -232,6 +232,7 @@ DELETE  /api/tenants/:tenantId/otoroshis/:id                    fr.maif.daikoku.
 PUT     /api/tenants/:tenantId/otoroshis/:id                    fr.maif.daikoku.controllers.OtoroshiSettingsController.saveOtoroshiSettings(tenantId, id, skipValidation: Boolean ?= false)
 POST    /api/tenants/:tenantId/otoroshis                        fr.maif.daikoku.controllers.OtoroshiSettingsController.createOtoroshiSettings(tenantId, skipValidation: Boolean ?= false)
 POST    /api/teams/:teamId/testing/apikeys                      fr.maif.daikoku.controllers.OtoroshiSettingsController.createTestingApiKey(teamId)
+PUT     /api/teams/:teamId/testing/apikeys                      fr.maif.daikoku.controllers.OtoroshiSettingsController.updateTestingApiKey(teamId)
 DELETE  /api/teams/:teamId/testing/apikeys                      fr.maif.daikoku.controllers.OtoroshiSettingsController.deleteTestingApiKey(teamId)
 POST    /api/teams/:teamId/testing/:apiId/call                  fr.maif.daikoku.controllers.OtoroshiSettingsController.fakeApiCall(teamId, apiId)
 POST    /api/teams/:teamId/testing/:apiId/plans/:planId/call    fr.maif.daikoku.controllers.OtoroshiSettingsController.fakePlanCall(teamId, apiId, planId)

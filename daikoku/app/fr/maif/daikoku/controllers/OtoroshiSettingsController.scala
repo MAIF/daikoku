@@ -3,7 +3,7 @@ package fr.maif.daikoku.controllers
 import cats.data.EitherT
 import com.google.common.base.Charsets
 import fr.maif.daikoku.controllers.AppError
-import fr.maif.daikoku.actions.DaikokuAction
+import fr.maif.daikoku.actions.{DaikokuAction, DaikokuActionContext}
 import fr.maif.daikoku.audit.AuditTrailEvent
 import fr.maif.daikoku.controllers.authorizations.async.*
 import fr.maif.daikoku.domain.json.{
@@ -572,17 +572,41 @@ class OtoroshiSettingsController(
       }
     }
 
+  private def findTestingOfTeam(
+      tenant: Tenant,
+      team: Team,
+      entityType: String,
+      entityId: String
+  ): Future[Option[Testing]] =
+    entityType match {
+      case "api" =>
+        env.dataStore.apiRepo
+          .findByIdAndTeam(tenant.id, ApiId(entityId), team.id)
+          .map(_.flatMap(_.testing))
+
+      case "plan" =>
+        for {
+          api <- env.dataStore.apiRepo
+            .findByPlan(tenant.id, UsagePlanId(entityId))
+          plan <- env.dataStore.usagePlanRepo
+            .forTenant(tenant)
+            .findById(entityId)
+        } yield api
+          .filter(_.team == team.id)
+          .flatMap(_ => plan)
+          .flatMap(_.testing)
+
+      case _ => FastFuture.successful(None)
+    }
+
   def updateTestingApiKey(teamId: String) =
     DaikokuAction.async(parse.json) { ctx =>
       TeamApiEditorOnly(
         AuditTrailEvent(
           s"@{user.name} update testing @{apikey.id} apikey for team @{team.name} - @{team.id}"
         )
-      )(teamId, ctx) { _ =>
-        val entityType = (ctx.request.body \ "entity" \ "type").as[String]
-        val entityId = (ctx.request.body \ "entity" \ "_id").as[String]
-
-        val testingConfig = ctx.request.body.as(using TestingConfigFormat)
+      )(teamId, ctx) { team =>
+        val body = ctx.request.body
 
         def handleKeyJob(
             previousSettings: OtoroshiSettings,
@@ -604,21 +628,22 @@ class OtoroshiSettingsController(
         }
 
         (for {
+          entityType <- EitherT.fromOption[Future](
+            (body \ "entity" \ "type").asOpt[String],
+            AppError.ParsingPayloadError("entity type is missing")
+          )
+          entityId <- EitherT.fromOption[Future](
+            (body \ "entity" \ "_id").asOpt[String],
+            AppError.ParsingPayloadError("entity id is missing")
+          )
+          testingConfig <- EitherT.fromOption[Future](
+            body.asOpt(using TestingConfigFormat),
+            AppError.ParsingPayloadError("invalid testing configuration")
+          )
+
           testing <- EitherT.fromOptionF[Future, AppError, Testing](
-            entityType match {
-              case "api" =>
-                env.dataStore.apiRepo
-                  .forTenant(ctx.tenant)
-                  .findById(entityId)
-                  .map(api => api.flatMap(_.testing))
-              case "plan" =>
-                env.dataStore.usagePlanRepo
-                  .forTenant(ctx.tenant)
-                  .findById(entityId)
-                  .map(plan => plan.flatMap(_.testing))
-              case _ => FastFuture.successful(None)
-            },
-            AppError.EntityNotFound("Otoroshi settings")
+            findTestingOfTeam(ctx.tenant, team, entityType, entityId),
+            AppError.EntityNotFound("testing configuration")
           )
 
           otoroshiSettings <- EitherT.fromOption[Future](
@@ -632,10 +657,12 @@ class OtoroshiSettingsController(
             ),
             AppError.EntityNotFound("Otoroshi settings")
           )
+          clientId <- EitherT.fromOption[Future](
+            testing.username,
+            AppError.EntityNotFound("testing apikey")
+          )
           apiKey <- EitherT(
-            otoroshiClient.getApikey(testingConfig.clientName)(using
-              previousSettings
-            )
+            otoroshiClient.getApikey(clientId)(using previousSettings)
           )
           lastMetadata: Map[String, String] =
             testing.config
@@ -670,11 +697,17 @@ class OtoroshiSettingsController(
         AuditTrailEvent(
           s"@{user.name} delete testing @{apikey.id} apikey for team @{team.name} - @{team.id}"
         )
-      )(teamId, ctx) { _ =>
+      )(teamId, ctx) { team =>
         val otoroshiSettingsOpt =
           (ctx.request.body \ "otoroshiSettings").asOpt[String]
 
         val clientIdOpt = (ctx.request.body \ "clientId").asOpt[String]
+
+        def isTestingKeyOfTeam(key: ActualOtoroshiApiKey) =
+          key.metadata.get("daikoku_testing_only").contains("true") &&
+            key.metadata
+              .get("daikoku_created_for_team_id")
+              .contains(team.id.value)
 
         (for {
           otoroshiSettingsId <- EitherT.fromOption[Future](
@@ -690,9 +723,19 @@ class OtoroshiSettingsController(
               .find(s => s.id.value == otoroshiSettingsId),
             AppError.EntityNotFound("Otoroshi settings")
           )
-          _ <-
-            otoroshiClient
-              .deleteApiKey(clientId)(using otoroshiSettings)
+          existingKey <- otoroshiClient.getApikeyOpt(clientId)(using
+            otoroshiSettings
+          )
+          _ <- EitherT.cond[Future][AppError, Unit](
+            existingKey.forall(isTestingKeyOfTeam),
+            (),
+            AppError.ForbiddenAction
+          )
+          _ <- existingKey match {
+            case Some(_) =>
+              otoroshiClient.deleteApiKey(clientId)(using otoroshiSettings)
+            case None => EitherT.pure[Future, AppError](())
+          }
         } yield Ok(Json.obj("done" -> true)))
           .leftMap(_.render())
           .merge
@@ -701,7 +744,8 @@ class OtoroshiSettingsController(
 
   private def makeCall(
       _body: JsValue,
-      maybeTesting: Option[Testing],
+      testing: Testing,
+      credentials: Option[(String, String)],
       id: String
   ): Future[Either[AppError, Result]] = {
     val headers = (_body \ "headers")
@@ -713,25 +757,18 @@ class OtoroshiSettingsController(
     val swaggerUrl = (_body \ "url").as[String]
 
     val headerOpt = headers.find(_._2 == s"fake-$id")
-    val maybeUrl = maybeTesting match {
-      case Some(Testing(url, _, _, _, _, _, _)) =>
-        val path = Uri(swaggerUrl).path.toString()
-        url.map(u => s"$u$path")
-      case _ => None
-    }
-    val finalHeaders: Map[String, String] = {
-      maybeTesting match {
-        case Some(Testing(_, _, auth, _, username, _, _))
-            if auth.name == TestingAuth.ApiKey.name && headerOpt.isDefined =>
-          headers - headerOpt.get._1 + (headerOpt.get._1 -> username
-            .getOrElse(""))
-        case Some(Testing(_, _, auth, _, username, password, _))
-            if auth.name == TestingAuth.Basic.name =>
-          headers - "Authorization" + ("Authorization" -> s"Basic ${Base64
-              .encodeBase64String(s"${username.getOrElse("")}:${password
-                  .getOrElse("")}".getBytes(StandardCharsets.UTF_8))}")
-        case _ => headers
-      }
+    val maybeUrl =
+      testing.url.map(u => s"$u${Uri(swaggerUrl).path.toString()}")
+
+    val finalHeaders: Map[String, String] = (testing.auth, credentials) match {
+      case (TestingAuth.ApiKey, Some((clientId, _))) if headerOpt.isDefined =>
+        headers - headerOpt.get._1 + (headerOpt.get._1 -> clientId)
+      case (TestingAuth.Basic, Some((clientId, clientSecret))) =>
+        headers - "Authorization" + ("Authorization" -> s"Basic ${Base64
+            .encodeBase64String(
+              s"$clientId:$clientSecret".getBytes(StandardCharsets.UTF_8)
+            )}")
+      case _ => headers
     }
 
     maybeUrl match {
@@ -783,6 +820,53 @@ class OtoroshiSettingsController(
     }
   }
 
+  private def canSeeApi(api: Api, myTeams: Seq[Team], user: User): Boolean =
+    api.visibility == ApiVisibility.Public ||
+      user.isDaikokuAdmin ||
+      myTeams.exists(team => team.id == api.team || api.authorizedTeams.contains(team.id))
+
+  private def resolveCredentials(
+      ctx: DaikokuActionContext[JsValue],
+      testing: Testing,
+      apiId: ApiId,
+      planId: Option[UsagePlanId],
+      myTeams: Seq[Team]
+  ): EitherT[Future, AppError, Option[(String, String)]] =
+    (ctx.request.body \ "subscription").asOpt[String] match {
+      case None =>
+        EitherT.pure[Future, AppError](
+          testing.username.map(_ -> testing.password.getOrElse(""))
+        )
+      case Some(subscriptionId) =>
+        for {
+          _ <- EitherT.cond[Future][AppError, Unit](
+            testing.allowSubscriberKeys,
+            (),
+            AppError.ForbiddenAction
+          )
+          subscription <- EitherT.fromOptionF(
+            env.dataStore.apiSubscriptionRepo
+              .forTenant(ctx.tenant)
+              .findById(subscriptionId),
+            AppError.SubscriptionNotFound
+          )
+          _ <- EitherT.cond[Future][AppError, Unit](
+            subscription.api == apiId &&
+              planId.forall(_ == subscription.plan) &&
+              subscription.state == ApiSubscriptionState.Active &&
+              myTeams.exists(_.id == subscription.team),
+            (),
+            AppError.ForbiddenAction
+          )
+          keyring <- EitherT.fromOptionF(
+            env.dataStore.keyringRepo
+              .forTenant(ctx.tenant)
+              .findById(subscription.keyring),
+            AppError.SubscriptionNotFound
+          )
+        } yield Some(keyring.apiKey.clientId -> keyring.apiKey.clientSecret)
+    }
+
   def fakeApiCall(teamId: String, apiId: String) =
     DaikokuAction.async(parse.json) { ctx =>
       (for {
@@ -797,12 +881,22 @@ class OtoroshiSettingsController(
             .findByIdAndTeam(ctx.tenant.id, ApiId(apiId), team.id),
           AppError.ApiNotFound
         )
+        myTeams <- EitherT.liftF[Future, AppError, Seq[Team]](
+          env.dataStore.teamRepo.myTeams(ctx.tenant, ctx.user)
+        )
         _ <- EitherT.cond[Future][AppError, Unit](
-          api.testing.exists(_.enabled),
+          canSeeApi(api, myTeams, ctx.user),
           (),
+          AppError.ApiNotFound
+        )
+        testing <- EitherT.fromOption[Future](
+          api.testing.filter(_.enabled),
           AppError.ForbiddenAction
         )
-        result <- EitherT(makeCall(ctx.request.body, api.testing, api.id.value))
+        credentials <- resolveCredentials(ctx, testing, api.id, None, myTeams)
+        result <- EitherT(
+          makeCall(ctx.request.body, testing, credentials, api.id.value)
+        )
       } yield result)
         .leftMap(_.render())
         .merge
@@ -822,6 +916,14 @@ class OtoroshiSettingsController(
             .findByIdAndTeam(ctx.tenant.id, ApiId(apiId), team.id),
           AppError.ApiNotFound
         )
+        myTeams <- EitherT.liftF[Future, AppError, Seq[Team]](
+          env.dataStore.teamRepo.myTeams(ctx.tenant, ctx.user)
+        )
+        _ <- EitherT.cond[Future][AppError, Unit](
+          canSeeApi(api, myTeams, ctx.user),
+          (),
+          AppError.ApiNotFound
+        )
         _ <- EitherT.cond[Future][AppError, Unit](
           api.possibleUsagePlans.exists(_.value == planId),
           (),
@@ -833,13 +935,20 @@ class OtoroshiSettingsController(
             .findById(planId),
           AppError.PlanNotFound
         )
-        _ <- EitherT.cond[Future][AppError, Unit](
-          plan.testing.exists(_.enabled),
-          (),
+        testing <- EitherT.fromOption[Future](
+          plan.testing.filter(_.enabled),
           AppError.ForbiddenAction
         )
-        result <-
-          EitherT(makeCall(ctx.request.body, plan.testing, plan.id.value))
+        credentials <- resolveCredentials(
+          ctx,
+          testing,
+          api.id,
+          Some(plan.id),
+          myTeams
+        )
+        result <- EitherT(
+          makeCall(ctx.request.body, testing, credentials, plan.id.value)
+        )
       } yield result)
         .leftMap(_.render())
         .merge

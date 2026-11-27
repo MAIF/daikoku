@@ -446,6 +446,24 @@ class ApiController(
     val Admin, User, Guest = Value
   }
 
+  private def userLevelOn(api: Api, myTeams: Seq[Team], user: User): UserLevel.UserLevel = {
+    val editsApi = myTeams.exists(team =>
+      team.id == api.team &&
+        team.users.exists(u => u.userId == user.id && u.teamPermission != TeamPermission.TeamUser)
+    )
+
+    if (user.isDaikokuAdmin || editsApi) UserLevel.Admin
+    else if (user.isGuest) UserLevel.Guest
+    else UserLevel.User
+  }
+
+  private def apiJsonFor(api: Api, level: UserLevel.UserLevel, tenant: Tenant): JsValue =
+    level match {
+      case UserLevel.Guest => api.asGuestJson(tenant.apiReferenceHideForGuest.getOrElse(true))
+      case UserLevel.User  => api.asUserJson
+      case _               => api.asJson
+    }
+
   def getApi(api: Api, ctx: DaikokuActionContext[AnyContent]): EitherT[Future, AppError, JsObject] = {
     import cats.implicits.*
 
@@ -455,15 +473,7 @@ class ApiController(
           .intersect(myTeams.map(_.id))
           .nonEmpty) && (api.isSubscribable || myTeams.exists(_.id == api.team))
       ) {
-        if (ctx.user.isDaikokuAdmin) {
-          EitherT.pure[Future, AppError](UserLevel.Admin)
-        } else if (myTeams.exists(t => t.id == api.team && t.users.exists(u => u.userId == ctx.user.id && u.teamPermission != TeamPermission.TeamUser))) {
-          EitherT.pure[Future, AppError](UserLevel.Admin)
-        } else if (ctx.user.isGuest) {
-          EitherT.pure[Future, AppError](UserLevel.Guest)
-        } else {
-          EitherT.pure[Future, AppError](UserLevel.User)
-        }
+        EitherT.pure[Future, AppError](userLevelOn(api, myTeams, ctx.user))
       } else {
         EitherT.leftT[Future, UserLevel.UserLevel](AppError.ApiUnauthorized)
       }
@@ -498,10 +508,7 @@ class ApiController(
         case _ => EitherT.pure[Future, AppError](0L)
       }
     } yield {
-      val jsonApi: JsValue = level match {
-        case UserLevel.Guest => api.asGuestJson(ctx.tenant.apiReferenceHideForGuest.getOrElse(true))
-        case _ => api.asJson
-      }
+      val jsonApi = apiJsonFor(api, level, ctx.tenant)
 
       val betterApi = jsonApi.as[JsObject] ++ Json.obj(
         "pendingRequests" -> JsArray(
@@ -968,11 +975,21 @@ class ApiController(
       UberPublicUserAccess(
         AuditTrailEvent(s"@{user.name} has requested root api @{api.id}")
       )(ctx) {
-        env.dataStore.apiRepo.findRootVersion(ctx.tenant.id, apiId)
-          .map {
-            case None      => AppError.render(AppError.ApiNotFound)
-            case Some(api) => Ok(ApiFormat.writes(api))
-          }
+        (for {
+          api <- EitherT.fromOptionF[Future, AppError, Api](
+            env.dataStore.apiRepo.findRootVersion(ctx.tenant.id, apiId),
+            AppError.ApiNotFound
+          )
+          myTeams <- EitherT.liftF[Future, AppError, Seq[Team]](
+            env.dataStore.teamRepo.myTeams(ctx.tenant, ctx.user)
+          )
+        } yield {
+          val level = userLevelOn(api, myTeams, ctx.user)
+
+          Ok(apiJsonFor(api, level, ctx.tenant))
+        })
+          .leftMap(_.render())
+          .merge
       }
     }
 
@@ -2580,7 +2597,12 @@ class ApiController(
               case JsSuccess(api, _) => Right(api)
             }
           )
-          updatedApi <- apiCrudService.updateApi(ctx.tenant, ctx.user, oldApi, newApi)
+          updatedApi <- apiCrudService.updateApi(
+            ctx.tenant,
+            ctx.user,
+            oldApi,
+            newApi.copy(issues = oldApi.issues, posts = oldApi.posts, stars = oldApi.stars)
+          )
         } yield {
           ctx.setCtxValue("api.name", updatedApi.name)
           ctx.setCtxValue("api.id", updatedApi.id)

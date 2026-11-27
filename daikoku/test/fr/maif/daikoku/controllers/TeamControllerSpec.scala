@@ -79,6 +79,22 @@ class TeamControllerSpec()
     )(using workflowTenant, session)
   }
 
+  private def createdTeamNamed(name: String)(using
+      tenant: Tenant,
+      session: UserSession
+  ): Team = {
+    val myTeams = httpJsonCallBlocking("/api/me/teams")
+    myTeams.status mustBe 200
+
+    val created = myTeams.json
+      .as[JsArray]
+      .value
+      .filter(team => (team \ "name").as[String] == name)
+    created.size mustBe 1
+
+    created.head.as(using json.TeamFormat)
+  }
+
   private def withValidationResponse(
       responseBody: String
   )(test: String => Unit): Unit = {
@@ -390,7 +406,8 @@ class TeamControllerSpec()
         method = "POST",
         body = Some(teamOwner.asJson)
       )(using tenant, session)
-      respCreation.status mustBe 201
+      respCreation.status mustBe 200
+      val createdTeam = createdTeamNamed(teamOwner.name)(using tenant, session)
 
       val respCreation2 = httpJsonCallBlocking(
         path = "/api/teams",
@@ -400,14 +417,14 @@ class TeamControllerSpec()
       respCreation2.status mustBe 409
 
       val respUpdate = httpJsonCallBlocking(
-        path = s"/api/teams/${teamOwnerId.value}",
+        path = s"/api/teams/${createdTeam.id.value}",
         method = "PUT",
-        body = Some(teamOwner.copy(name = "bobby team").asJson)
+        body = Some(createdTeam.copy(name = "bobby team").asJson)
       )(using tenant, session)
       respUpdate.status mustBe 200
 
       val respGet =
-        httpJsonCallBlocking(s"/api/teams/${teamOwnerId.value}")(using
+        httpJsonCallBlocking(s"/api/teams/${createdTeam.id.value}")(using
           tenant,
           session
         )
@@ -424,7 +441,7 @@ class TeamControllerSpec()
       respUpdateNotFound.status mustBe 404
 
       val respDelete = httpJsonCallBlocking(
-        path = s"/api/teams/${teamOwnerId.value}",
+        path = s"/api/teams/${createdTeam.id.value}",
         method = "DELETE"
       )(using tenant, session)
       respDelete.status mustBe 200
@@ -448,7 +465,7 @@ class TeamControllerSpec()
         method = "POST",
         body = Some(teamOwner.asJson)
       )(using tenant, session)
-      respCreation.status mustBe 201
+      respCreation.status mustBe 200
     }
 
     "not add/remove member from a personal team" in {
@@ -610,7 +627,7 @@ class TeamControllerSpec()
         method = "POST",
         body = Some(teamOwner.asJson)
       )(using tenant, session)
-      respCreation.status mustBe 201
+      respCreation.status mustBe 200
     }
 
     "list members of a team" in {
@@ -924,10 +941,12 @@ class TeamControllerSpec()
         method = "POST",
         body = Some(teamConsumer.asJson)
       )(using tenant, session)
-      respCreation.status mustBe 201
+      respCreation.status mustBe 200
+      val createdTeam =
+        createdTeamNamed(teamConsumer.name)(using tenant, session)
 
       val respDelete = httpJsonCallBlocking(
-        path = s"/api/teams/${teamConsumerId.value}",
+        path = s"/api/teams/${createdTeam.id.value}",
         method = "DELETE"
       )(using tenant, session)
       respDelete.status mustBe 200
@@ -1301,7 +1320,7 @@ class TeamControllerSpec()
         method = "POST",
         body = Some(teamOwner.asJson)
       )(using tenant, session)
-      respCreation.status mustBe 201
+      respCreation.status mustBe 200
     }
 
     "not have full access to a team" in {

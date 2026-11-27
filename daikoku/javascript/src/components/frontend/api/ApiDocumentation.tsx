@@ -86,7 +86,7 @@ export const ApiDocumentationCartidge = (props: ApiDocumentationCartidgeProps) =
 }
 
 
-const ApiDocPage = (props: ApiDocPageProps) => {
+export const ApiDocPage = (props: ApiDocPageProps) => {
   const queryClient = useQueryClient();
   const pageRequest = useQuery({
     queryKey: ['page', { pageId: props.pageId }],

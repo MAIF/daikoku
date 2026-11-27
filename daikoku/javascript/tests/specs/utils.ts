@@ -1,4 +1,4 @@
-import { expect, Page } from "@playwright/test";
+import { expect, Locator, Page } from "@playwright/test";
 import { IUser } from "./users";
 
 export const adminApikeyId = 'admin_key_client_id';
@@ -8,22 +8,17 @@ export const otoroshiAdminApikeyId = 'admin-api-apikey-id';
 export const otoroshiAdminApikeySecret = 'admin-api-apikey-secret';
 
 export const logistiqueCommandeProdApiKeyId = 'lBHBZFjUbWx5CEShf1NYe1gO0N0vtWVQ'
-export const logistiqueCommandeProdApiKeySecret = 'YwbzNgYSup3eCdxBIRa9HqM22tGoHI02v8AfZM2glyNV9OsGVOI9mciE62y9s1Bj'
 
 export const logistiqueCommandeDevApiKeyId = '5xkCohZoc3XgDYnc8hvnmsx1NW5jwfBl'
 export const logistiqueCommandeDevApiKeySecret = 'kGTq8a3eG7FIs7T1gOVWehMxhqqIS72QFmOZ2TRM42h6jt0PvtftGd43fe4QED9w'
 
 export const vendeursPapierExtendedDevApiKeyId = 'BdGLTEAxmFsTg7NnlumBPzyX75Vre3al'
-export const vendeursPapierExtendedDevApiKeySecret = 'jmEX0x62DRmqAwL92YdF5VugN6iV3FOQuPq7idgwXTELpcQgaIBSU4sBxebapLQW'
 
 export const dwightPaperSubscriptionId = 'vk6QRoGrc8JyRiZfgcifwjzNES9l9ygQ'
 export const dwightPaperApiKeyId = "6kI1ngU9hEaF4m6aUYTgS5JWIP2mhtGq"
-export const dwightPaperApiKeySecret = "7X5BWD7ruYDLG9ho8stB1y8gdM9rWaZw6rLSaYnypP778apwDw09Yp8FBKy0z6Ke"
 
 export const otoroshiDevPaperRouteId = "route_route_dcb7d20c1-ea44-480c-9dd5-5a4d32760b3a"
-export const otoroshiProdPaperRouteId = "route_route_4e29a989-cef9-41d8-a64c-385374b1d44b"
 export const otoroshiDevCommandRouteId = "route_route_3fdac0cf-ae98-4802-9729-1b4b06de32bc"
-export const otoroshiProdCommandRouteId = "route_route_cf6f8d3e-8c11-4b6f-b080-64fbd1b8a3ec"
 
 export const exposedPort = process.env.EXPOSED_PORT || 5173;
 export const EMAIL_UI = "http://localhost:1080";
@@ -35,27 +30,19 @@ export const tenant = 'default';
 
 export const apiPapier = "qVJzX6DLRkHIEWHqPHgrM4gqMVyGXeDj"
 export const apiCommande = "G12uGyXcKMr7cWsTidiIOmzUvrxvlkrJ"
-export const apiCommandeKeyring = "4EGnOUDSp7eaC8J2d26TfO95rwUxfz9H"
 export const tenantAdminTeam = "0k7D3RIkcDwsZJQ36ml6A6qjC1PdeiY4U0pBRQDX3uyBsdkYJYdDaBc0E1YnKQFC"
 export const apiDivision = "pP61PigzFffXTu4TX3BmvAB6iUIHY9oj"
 export const vendeurs = "c9NB4pklW4QxJ3mLcxQAwqu4RvquHYv4"
 export const logistique = "jGVkVifJgKFdOq4PeoMU2XKWzEjejUfI"
 export const teamJim = "4Z9ss4YZDFCxBuLwMX4RkXi3W1JOw7kj"
-export const teamMichael = "bUM1LJH3LE4c5tanG78QnQKkMoc7fxq2"
-export const teamDwight = "3Msxj2b5tIdyCDEd9yvkaWfqfZqcEiXm"
 
 export const papierProdPlan = "D5gZYeWoq18w5GRdKFLwrbtARZ7c9I2o";
-export const papierDevPlan = "lNnh8Hkr2hX6MCf4BHrq2W4UPtW7DqaZ";
 export const commandeDevPlan = "AQuzATL1d2MBujVRsjzpQWaGuoD0uiDK";
-export const commandeProdPlan = "96JAG4xax2z3fpr1l9kDlldiZRZ6uxoL";
 
-export const demandCommandeProdForLogistique = 'X3DtdDY0Z20BdptJjtzGuxCRhrEnNWdr'
 
-export const subPapierDevDwight = 'vk6QRoGrc8JyRiZfgcifwjzNES9l9ygQ';
 export const subCommandeDevLogistique = '22T3RsirZpz5afBi4MsC8U71gtc12MxK';
 export const subCommandeProdLogistique = 'iXaRzJPRKsP0XTYUCRmYeltG3sifYdfF';
 export const subCommandeDevVendeurs = 'mRVlHMttmN0JMytFGkd4uVm4UWzI3Qwq';
-export const subPapierdevVedeurs = '4EGnOUDSp7eaC8J2d26TfO95rwUxfz9H';
 // -------------------------------------------
 
 export const loginAs = async (user: IUser, page: Page, basicUsage: boolean = true) => {
@@ -236,3 +223,111 @@ export const expectOtoroshiApiKeyEntities = async (
       },
     )
     .toEqual({ status: 200, enabled: true, entities: entityCount });
+
+export type NewApi = {
+  team?: string;
+  group?: boolean;
+  expert?: boolean;
+  name: string;
+  smallDescription?: string;
+  apis?: Array<string>;
+  tags?: Array<string>;
+  state?: 'Brouillon' | 'Publiée';
+};
+
+export const chooseCreationTeam = async (page: Page, team: string) => {
+  await page.getByLabel('Sélectionner une équipe pour cette API').click();
+  await page.getByRole('option', { name: team }).click();
+};
+
+export const chooseApiSettingsAction = async (page: Page, actionName: string) => {
+  await page.getByRole('button', { name: "Paramètres de l'API" }).click();
+  await page
+    .getByRole('menu', { name: "Paramètres de l'API" })
+    .getByRole('menuitem', { name: actionName })
+    .click();
+};
+
+type ApiKeyRequest = {
+  team: string;
+  keyAttachment?: 'Existante' | 'Nouvelle';
+  keyring?: string;
+  motivation?: string;
+};
+
+export const requestApiKey = async (page: Page, environment: Locator, request: ApiKeyRequest) => {
+  const sheet = page.getByRole('dialog', { name: "Demander une clé d'API" });
+
+  await environment.getByRole('button', { name: "Obtenir une clé d'API" }).click();
+  await sheet.getByRole('combobox', { name: 'Sélectionnez une équipe' }).click();
+  await page.getByRole('option', { name: request.team, exact: true }).click();
+
+  if (request.keyAttachment) {
+    await sheet.getByRole('radio', { name: request.keyAttachment }).click();
+  }
+
+  if (request.keyring) {
+    await sheet.getByRole('combobox', { name: "Clé d'API", exact: true }).click();
+    await page.getByRole('option', { name: request.keyring }).click();
+  }
+
+  if (request.motivation) {
+    await sheet.getByRole('textbox', { name: 'motivation' }).fill(request.motivation);
+  }
+
+  await sheet.getByRole('button', { name: 'Enregistrer' }).click();
+};
+
+export const createApi = async (page: Page, api: NewApi) => {
+  const sheet = page.getByRole('dialog');
+  const goToStep = async (stepNumber: number) => {
+    await sheet.getByRole('button', { name: 'Suivant' }).click();
+    await expect(sheet.getByRole('progressbar', { name: `Étape ${stepNumber} sur 4` })).toBeVisible();
+  };
+
+  await page.getByRole('button', { name: 'Créer une API' }).click();
+
+  if (api.team) {
+    await chooseCreationTeam(page, api.team);
+  }
+  await sheet.getByRole('radio', { name: api.group ? 'Oui' : 'Non' }).click();
+  await sheet.getByRole('radio', { name: api.expert ? 'Mode expert' : 'Mode standard' }).click();
+  await goToStep(2);
+
+  await sheet.getByPlaceholder('New Api').fill(api.name);
+  if (api.smallDescription) {
+    await sheet.getByLabel('Desc. courte').fill(api.smallDescription);
+  }
+  for (const child of api.apis ?? []) {
+    await sheet.locator('.react-form-select__dropdown-indicator').first().click();
+    await page.getByText(child, { exact: true }).click();
+  }
+  await goToStep(3);
+
+  for (const [index, tag] of (api.tags ?? []).entries()) {
+    await sheet.locator('div.mrf-mt_10').filter({ hasText: 'Tags' }).getByRole('button', { name: 'Add' }).click();
+    await sheet.locator(`input[name="tags\\.${index}\\.value"]`).fill(tag);
+  }
+  await goToStep(4);
+
+  await sheet.getByRole('radio', { name: api.state ?? 'Brouillon' }).click();
+  await sheet.getByRole('button', { name: 'Créer' }).click();
+};
+
+export const isElasticSearchUp = () =>
+  fetch('http://localhost:9200/_cluster/health')
+    .then((response) => response.ok)
+    .catch(() => false);
+
+type OtoroshiState = {
+  dataExporters: Array<object>;
+};
+
+// Exporters are disabled in the state files: without ElasticSearch they retry forever and flood Otoroshi's log file.
+export const enableDataExporters = <State extends OtoroshiState>(state: State) => ({
+  ...state,
+  dataExporters: state.dataExporters.map((exporter) => ({
+    ...exporter,
+    enabled: true,
+  })),
+});

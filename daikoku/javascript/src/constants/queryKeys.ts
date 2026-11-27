@@ -23,4 +23,6 @@ export const QUERY_KEYS = {
     entryId,
   ],
   apiKeyrings: (teamId: string, apiId: string) => ['keyrings', teamId, apiId],
+  mySubscriptions: () => ['mySubscription'] as const,
+  teamSubscriptionsWithApis: (teamId?: string) => ['team-subscriptions-with-apis', teamId] as const,
 } as const;

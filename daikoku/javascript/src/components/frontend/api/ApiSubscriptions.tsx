@@ -1,73 +1,47 @@
-import {useContext} from 'react';
-import Select from 'react-select';
+import { useContext } from 'react';
+import { useSearchParams } from 'react-router-dom';
 
-import {I18nContext} from '../../../contexts';
-import {IApi, ITeamSimple} from '../../../types';
-import {ApiKeysListForApi} from '../../backoffice/apikeys/TeamApiKeysForApi';
-import {useSearchParams} from 'react-router-dom';
+import { I18nContext } from '../../../contexts';
+import { IApi, ITeamSimple } from '../../../types';
+import { ApiKeysListForApi } from '../../backoffice/apikeys/TeamApiKeysForApi';
+import { ScopeSelect } from '../../inputs';
 
 type ApiSubscriptions = {
-  api: IApi
-  ownerTeam: ITeamSimple
-  subscribingTeams: ITeamSimple[]
-}
-
+  api: IApi;
+  ownerTeam: ITeamSimple;
+  subscribingTeams: ITeamSimple[];
+};
 
 export const ApiSubscriptions = (props: ApiSubscriptions) => {
+  const { translate } = useContext(I18nContext);
+  const [searchParams, setSearchParams] = useSearchParams();
 
-  const {translate} = useContext(I18nContext);
-  const [searchParams, setSearchParams] = useSearchParams()
-  const urlTeamId = searchParams.get("team")
-
-  const selectedTeam = props.subscribingTeams.find(t => t._id === urlTeamId)
-    ?? props.subscribingTeams[0];
+  const selectedTeam =
+    props.subscribingTeams.find((team) => team._id === searchParams.get('team')) ?? props.subscribingTeams[0];
 
   if (!selectedTeam) {
-    return <div className="alert alert-info" role="status">
-      {translate('api.subscriptions.team.empty')}
-    </div>;
+    return (
+      <div className="alert alert-info" role="status">
+        {translate('api.subscriptions.team.empty')}
+      </div>
+    );
   }
 
   return (
     <div>
-      <Select
-        className='col-3'
-        classNamePrefix="reactSelect"
-        placeholder={translate('api.subscriptions.team.select.placeholder')}
-        options={props.subscribingTeams.map(value => ({label: value.name, value: value}))}
-        onChange={t => {
-          if (!t) return;
-          setSearchParams((searchParams) => {
-            searchParams.set("team", t.value._id);
-            return searchParams;
-          });
-        }}
-        value={{label: selectedTeam?.name, value: selectedTeam}}
-        styles={{
-          valueContainer: (baseStyles) => ({
-            ...baseStyles,
-            display: 'flex'
-          }),
-        }}
-        components={{
-          IndicatorSeparator: () => null,
-          SingleValue: (props) => {
-            return <div className='d-flex align-items-center m-0' style={{
-              gap: '.5rem'
-            }}>
-              <span className={`badge --primary`}>
-                {translate('Team')}
-              </span>{props.data.label}
-            </div>
-          }
-        }}/>
-      <ApiKeysListForApi
-        key={selectedTeam._id}
-        team={selectedTeam}
-        api={props.api}
-        ownerTeam={props.ownerTeam}
-        linkToChildren={(api, team) => `/${team}/${api._humanReadableId}/${api!.currentVersion}/keyrings`}
+      <ScopeSelect
+        badge={translate('Team')}
+        ariaLabel={translate('api.subscriptions.team.select.placeholder')}
+        options={props.subscribingTeams.map((team) => ({ label: team.name, value: team._id }))}
+        value={selectedTeam._id}
+        onChange={(teamId) =>
+          setSearchParams((params) => {
+            params.set('team', teamId);
+            return params;
+          })
+        }
       />
+      <ApiKeysListForApi key={selectedTeam._id} team={selectedTeam} api={props.api} ownerTeam={props.ownerTeam} />
     </div>
-  )
-}
+  );
+};

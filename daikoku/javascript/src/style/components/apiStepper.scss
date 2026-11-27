@@ -1,0 +1,74 @@
+@use "../variables";
+
+.api-stepper {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+
+  form {
+    hr {
+      display: none;
+    }
+
+    div:has(> hr + .mrf-cursor_pointer) {
+      margin-bottom: 32px;
+    }
+
+    .mrf-cursor_pointer:has(> .mrf-collapse_label) {
+      margin-bottom: 16px;
+      padding-bottom: 4px;
+      border-bottom: 1px solid variables.$neutral-color-100;
+      pointer-events: none;
+
+      button {
+        display: none;
+      }
+    }
+
+    .mrf-collapse_label {
+      font-size: 22px;
+      font-weight: 700;
+      line-height: 28px;
+      color: variables.$neutral-color-900;
+    }
+
+    .mrf-ml_10 {
+      margin-left: 0;
+    }
+  }
+}
+
+.api-stepper__progress {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.api-stepper__title {
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 24px;
+  color: variables.$neutral-color-900;
+}
+
+.api-stepper__bars {
+  display: flex;
+  gap: 8px;
+}
+
+.api-stepper__bar {
+  flex: 1;
+  height: 4px;
+  border-radius: 1px;
+  background-color: variables.$neutral-color-300;
+
+  &.--done {
+    background-color: variables.$primary-color;
+  }
+}
+
+.api-stepper__context {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}

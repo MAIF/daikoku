@@ -7,12 +7,12 @@ import { Footer, LoginPage, SideBar, TopBar } from '../components/utils';
 import { ModalProvider, NavProvider } from '../contexts';
 
 import {
-  ApiHome,
   AtomicDesign,
   FrontOffice,
   MaybeHomePage,
   SubscriptionRetrieve
 } from '../components/frontend';
+import { ApiEditor } from '../components/frontend/apiEditor/ApiEditor';
 
 import { MessagesProvider, MyProfile, NotificationList } from '../components/backoffice';
 
@@ -242,7 +242,7 @@ export const DaikokuApp = () => {
                     path="/:teamId/:apiId/:versionId/:tab/*"
                     element={
                       <FrontOfficeRoute>
-                        <ApiHome />
+                        <ApiEditor />
                       </FrontOfficeRoute>
                     }
                   />

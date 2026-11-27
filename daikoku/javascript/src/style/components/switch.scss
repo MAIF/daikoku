@@ -124,8 +124,8 @@
   position: relative;
   display: flex;
   justify-content: center;
-  height: 34px;
-  width: 56px;
+  height: 24px;
+  width: 40px;
 }
 
 .switch-button input {
@@ -147,10 +147,11 @@
 .switch-button .slider::before {
   content: "";
   position: absolute;
-  height: 28px;
-  width: 28px;
+  height: 18px;
+  width: 18px;
   left: 3px;
-  bottom: 3px;
+  bottom: auto;
+  top: auto;
   background-color: rgb(241, 241, 241);
   transition: .3s ease;
   transition-property: background-color;

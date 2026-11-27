@@ -2,9 +2,8 @@ import { constraints, Schema } from '@maif/react-forms';
 import { IApiGQL, ISubscriptionDemandGQL, ITeamFullGql } from './gql';
 import type { IWorkflowState, WorkflowStep } from './workflow';
 import { IFastTeam, ITeamSimple, IUserSimple } from './team';
-import { ITenant, ThirdPartyPaymentType } from './tenant';
+import { ThirdPartyPaymentType } from './tenant';
 import { INotification } from './types';
-import { SubscriptionReturn } from '../services';
 
 export type ApiState = 'created' | 'published' | 'deprecated' | 'blocked';
 
@@ -116,12 +115,15 @@ export type IPlansWithCount = {
 };
 
 export interface ITesting {
+  url?: string;
   enabled: boolean;
   auth: 'ApiKey' | 'Basic';
   name?: string;
   username?: string;
   password?: string;
   config?: ITestingConfig;
+  allowSubscriberKeys?: boolean;
+  hasTestingKey?: boolean;
 }
 
 export function isApi(obj: any): obj is IApi {
@@ -181,40 +183,40 @@ export interface ISwagger {
 
 export type IValidationStep =
   | {
-      type: 'email';
-      id: string;
-      emails: Array<string>;
-      message: string;
-      title: string;
-    }
+    type: 'email';
+    id: string;
+    emails: Array<string>;
+    message: string;
+    title: string;
+  }
   | {
-      type: 'httpRequest';
-      id: string;
-      title: string;
-      url: string;
-      headers: object;
-    }
+    type: 'httpRequest';
+    id: string;
+    title: string;
+    url: string;
+    headers: object;
+  }
   | {
-      type: 'form';
-      id: string;
-      schema: Schema;
-      formatter: string;
-      title: string;
-      formKeysToMetadata?: Array<string>;
-      info?: string;
-    }
+    type: 'form';
+    id: string;
+    schema: Schema;
+    formatter: string;
+    title: string;
+    formKeysToMetadata?: Array<string>;
+    info?: string;
+  }
   | {
-      type: 'payment';
-      id: string;
-      thirdPartyPaymentSettingsId: string;
-      title?: string;
-    }
+    type: 'payment';
+    id: string;
+    thirdPartyPaymentSettingsId: string;
+    title?: string;
+  }
   | {
-      type: 'teamAdmin';
-      id: string;
-      title?: string;
-      team: string;
-    };
+    type: 'teamAdmin';
+    id: string;
+    title?: string;
+    team: string;
+  };
 
 export interface IBaseUsagePlan {
   _id: string;
@@ -635,31 +637,6 @@ export type Issue = {
   tags: Array<IIssuesTag>;
 };
 
-export interface ApiPricingProps {
-  api: IApi;
-  myTeams: Array<ITeamSimple>;
-  ownerTeam: ITeamSimple;
-  subscriptions: Array<ISubscription>;
-  inProgressDemands: Array<ISubscriptionDemand>;
-  askForApikeys: (x: {
-    team: string;
-    plan: IUsagePlan;
-    apiKey?: ISubscription;
-    motivation?: object;
-    /** only meaningful when creating a new keyring ; a joined keyring keeps its own name */
-    keyringCustomName?: string;
-    redirect?: boolean;
-  }) => Promise<SubscriptionReturn>;
-}
-
-export interface ITeamSelector {
-  teams: Array<ITeamSimple>;
-  pendingTeams: Array<string>;
-  acceptedTeams: Array<string>;
-  allowMultipleDemand?: boolean;
-  showKeyringSelectModal: (teamId: string) => void;
-  plan: IUsagePlanGQL;
-}
 export interface OtoroshiEntitiesSelectorProps {
   rawValues: IOtoroshiTarget;
   onChange: (item: any) => void;

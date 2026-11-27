@@ -211,7 +211,8 @@ const PaymentStep = (props: ValidationStepProps) => {
 type EmailOption = { option: 'all' | 'oneOf' };
 
 type ValidationWorkflowEditorProps = {
-  save: (process: Array<IValidationStep>) => Promise<void>;
+  save?: (process: Array<IValidationStep>) => Promise<void>;
+  onChange?: (process: Array<IValidationStep>) => void;
   process: Array<IValidationStep>;
   team: string;
   tenant: ITenant;
@@ -269,6 +270,10 @@ export const ValidationWorkflowEditor = ({ iconTarget: IconTarget = KeyRound, ..
     ];
   });
   const [showDocumentation, setShowDocumentation] = useState(false);
+
+  useEffect(() => {
+    props.onChange?.(draft);
+  }, [draft]);
 
   const editProcess = (name: IValidationStep['type'], index: number) => {
     //todo: use the index !!
@@ -610,6 +615,10 @@ export const ValidationWorkflowEditor = ({ iconTarget: IconTarget = KeyRound, ..
   for (const stepType of props.hiddenSteps ?? []) {
     delete visibleCardTypes[stepType];
   }
+
+  const save = props.save;
+  const hasStepsToSave = !!draft.length || !!props.process.length;
+
   return (
     <div>
       {props.documentation && <button
@@ -642,8 +651,8 @@ export const ValidationWorkflowEditor = ({ iconTarget: IconTarget = KeyRound, ..
         canMoveTo={canMoveStepTo}
       />
       {showDocumentation && <Documentation close={() => setShowDocumentation(false)} updateProcess={(steps) => setDraft(normalizeProcess(steps))} />}
-      {(!!draft.length || !!props.process.length) && (
-        <button className='btn --primary' onClick={() => props.save(normalizeProcess(draft))}>{translate("Save")}</button>
+      {save && hasStepsToSave && (
+        <button className='btn --primary' onClick={() => save(normalizeProcess(draft))}>{translate("Save")}</button>
       )}
     </div>
   );

@@ -1,8 +1,8 @@
 import { expect, Page, test } from '@playwright/test';
 import otoroshi_data from '../config/otoroshi/otoroshi-state.json' with { type : "json" };;
-import { DWIGHT, JIM, MICHAEL } from './users';
+import { DWIGHT, MICHAEL } from './users';
 import {
-  ACCUEIL, adminApikeyId, adminApikeySecret, exposedPort, loginAs, logout, otoroshiAdminApikeyId, otoroshiAdminApikeySecret
+  ACCUEIL, adminApikeyId, adminApikeySecret, chooseApiSettingsAction, createApi, exposedPort, loginAs, logout, otoroshiAdminApikeyId, otoroshiAdminApikeySecret
 } from './utils';
 
 
@@ -53,41 +53,11 @@ const waitForEmailTo = async (page: Page, ...addresses: string[]) => {
     .toBe(true);
 };
 
-type ApiLifeCycleStates = "Brouillon" | "Publiée" | "Dépréciée" | "Bloquée"
-
-
-const updateApiLifeCycle = async (page: Page, apiName: string, state: ApiLifeCycleStates, assertResult: boolean = true) => {
-  await page.goto("/api-division/api-commande/1.0.0/description");
-  // await page.getByRole('link', { name: `API ${apiName}` }).click();
-  await page.getByRole('button', { name: 'Configurer' }).click();
-  await page.getByRole('menuitem', { name: 'Configurer' }).click();
-  await page.getByRole('button', { name: state }).click();
-  await page.getByRole('button', { name: 'Enregistrer' }).click();
-  if (assertResult) {
-    await expect(page.locator('.api__header').getByText(state)).toBeVisible();
-  }
-  await page.goto(ACCUEIL);
-}
-
-const passAPIToDraft = async ({ page }, apiName: string, assertResult: boolean = true) => {
-  await page.goto(ACCUEIL);
-  await page.getByRole('link', { name: `API ${apiName}` }).click();
-  await page.getByRole('button', { name: 'Configurer' }).click();
-  await page.getByRole('menuitem', { name: 'Configurer' }).click();
-  await page.getByRole('button', { name: 'Brouillon' }).click();
-  await page.getByRole('button', { name: 'Enregistrer' }).click();
-  if (assertResult) {
-    await expect(page.getByText('Brouillon')).toBeVisible();
-  }
-  await page.goto(ACCUEIL);
-}
-
 const passAPIToPublished = async ({ page }, apiName: string, assertResult: boolean = true) => {
   await page.goto(ACCUEIL);
   await page.getByRole('link', { name: `API ${apiName}` }).click();
-  await page.getByRole('button', { name: 'Configurer' }).click();
-  await page.getByRole('menuitem', { name: 'Configurer' }).click();
-  await page.getByRole('button', { name: 'Publiée' }).click();
+  await chooseApiSettingsAction(page, 'Modifier');
+  await page.getByRole('radio', { name: 'Publiée' }).click();
   await page.getByRole('button', { name: 'Enregistrer' }).click();
   if (assertResult) {
     await expect(page.getByText('Publiée')).toBeVisible();
@@ -97,9 +67,8 @@ const passAPIToPublished = async ({ page }, apiName: string, assertResult: boole
 
 const passAPIToDeprecated = async ({ page }, apiName: string, assertResult: boolean = true) => {
   await page.getByRole('link', { name: `API ${apiName}` }).click();
-  await page.getByRole('button', { name: 'Configurer' }).click();
-  await page.getByRole('menuitem', { name: 'Configurer' }).click();
-  await page.getByRole('button', { name: 'Dépréciée' }).click();
+  await chooseApiSettingsAction(page, 'Modifier');
+  await page.getByRole('radio', { name: 'Dépréciée' }).click();
 
   await Promise.all([
     page.waitForResponse((res) => res.url().includes('visible-apis') && res.request().method() === 'GET' && res.ok()),
@@ -113,9 +82,8 @@ const passAPIToDeprecated = async ({ page }, apiName: string, assertResult: bool
 
 const passAPIToBlocked = async ({ page }, apiName: string, assertResult: boolean = true) => {
   await page.getByRole('link', { name: `API ${apiName}` }).click();
-  await page.getByRole('button', { name: 'Configurer' }).click();
-  await page.getByRole('menuitem', { name: 'Configurer' }).click();
-  await page.getByRole('button', { name: 'Bloquée' }).click();
+  await chooseApiSettingsAction(page, 'Modifier');
+  await page.getByRole('radio', { name: 'Bloquée' }).click();
   await page.getByRole('button', { name: 'Enregistrer' }).click();
   await expect(page.getByRole('heading', { name: 'Attention' })).toBeVisible();
   await page.getByRole('textbox', { name: `Saisissez API ${apiName}` }).fill(`API ${apiName}`);
@@ -139,10 +107,10 @@ test('full Api Backward LifeCycle', async ({ page }) => {
   await page.goto(ACCUEIL);
   await loginAs(MICHAEL, page);
   await passAPIToBlocked({ page }, 'Commande')
-  await expect(page.locator(".api__header").getByText('Bloquée')).toBeVisible();
+  await expect(page.locator(".api-editor__header").getByText('Bloquée')).toBeVisible();
   await page.goto(ACCUEIL);
   await passAPIToDeprecated({ page }, 'Commande')
-  await expect(page.locator(".api__header").getByText('Dépréciée')).toBeVisible();
+  await expect(page.locator(".api-editor__header").getByText('Dépréciée')).toBeVisible();
   await page.goto(ACCUEIL);
   await passAPIToPublished({ page }, 'Commande')
 });
@@ -170,14 +138,10 @@ test('Cannot pass Draft to Blocked', async ({ page }) => {
   await page.goto(ACCUEIL);
   await loginAs(MICHAEL, page);
 
-  await page.getByRole('button', { name: 'Créer une API' }).click();
-  await page.getByRole('listitem', { name: 'API Division' }).click();
-  await page.getByRole('textbox', { name: 'Nom' }).fill('test API');
-  await page.getByRole('button', { name: 'Enregistrer' }).click();
-  await page.getByRole('button', { name: 'Configurer' }).click();
-  await page.getByRole('menuitem', { name: 'Configurer' }).click();
-  await expect(page.getByRole('button', { name: 'Brouillon' })).toBeEnabled();
-  await expect(page.getByRole('button', { name: 'Bloquée' })).toBeDisabled();
+  await createApi(page, { team: 'API Division', name: 'test API' });
+  await chooseApiSettingsAction(page, 'Modifier');
+  await expect(page.getByRole('radio', { name: 'Brouillon' })).toBeEnabled();
+  await expect(page.getByRole('radio', { name: 'Bloquée' })).toBeDisabled();
 });
 
 test('Draft is disabled in the config form when the API has subscriptions', async ({ page }) => {
@@ -185,12 +149,11 @@ test('Draft is disabled in the config form when the API has subscriptions', asyn
   await loginAs(MICHAEL, page);
   // 'API Commande' is published and already has subscriptions in the seed, so
   // the subscription guard must forbid moving it (back) to draft: the client
-  // disables the 'Brouillon' option (the backend 409 is covered by the Scala
-  // ApiLifeCycleSpec). Requires @maif/react-forms to honor per-option `disabled`.
+  // disables the 'Brouillon' chip (the backend 409 is covered by the Scala
+  // ApiLifeCycleSpec).
   await page.getByRole('link', { name: 'API Commande' }).click();
-  await page.getByRole('button', { name: 'Configurer' }).click();
-  await page.getByRole('menuitem', { name: 'Configurer' }).click();
-  await expect(page.getByRole('button', { name: 'Brouillon' })).toBeDisabled();
+  await chooseApiSettingsAction(page, 'Modifier');
+  await expect(page.getByRole('radio', { name: 'Brouillon' })).toBeDisabled();
 });
 
 test('When API pass to Blocked, team mates should not have the API in their dashboard', async ({ page, browser }) => {
@@ -271,7 +234,7 @@ test('Blocked sub by API owner action display a blocked state to consumer', asyn
   await loginAs(MICHAEL, page);
 
   await passAPIToBlocked({ page }, 'Commande', true);
-  await page.getByText('Souscriptions').click();
+  await page.getByRole('tab', { name: 'Souscriptions' }).click();
   const rows = page.getByRole('row', { name: 'daikoku-api-key' })
   for (const row of await rows.all()) {
     await expect(row.getByText('Bloquée')).toBeVisible();
