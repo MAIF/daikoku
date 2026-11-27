@@ -269,10 +269,12 @@ export const EnvironmentSideSheet = ({ api, ownerTeam, plan, creation, initialTa
     );
   }
 
+  const sheetSize = tab === 'process' ? 'full' : 'wide';
+
   return (
     <SideSheet
       title={title}
-      size="wide"
+      size={sheetSize}
       onClose={onClose}
       isDirty={isDirty}
       footer={(requestClose) => (

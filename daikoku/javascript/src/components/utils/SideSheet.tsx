@@ -7,7 +7,7 @@ import { I18nContext, ModalContext } from '../../contexts';
 
 type SideSheetProps = {
   title: string;
-  size?: 'narrow' | 'wide';
+  size?: 'narrow' | 'wide' | 'full';
   isDirty?: () => boolean;
   onClose: () => void;
   onBack?: () => void;

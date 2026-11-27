@@ -163,6 +163,16 @@ class TeamController(
           (body \ "avatar").asOpt[String].getOrElse(User.DEFAULT_IMAGE)
 
         (for {
+          adminTeam <- EitherT.liftF[Future, AppError, Option[Team]](
+            env.dataStore.teamRepo.findAdminTeam(ctx.tenant.id)
+          )
+          _ <- EitherT.cond[Future][AppError, Unit](
+            !ctx.tenant.teamCreationSecurity.getOrElse(false) ||
+              ctx.user.isDaikokuAdmin ||
+              adminTeam.exists(_.users.exists(_.userId == ctx.user.id)),
+            (),
+            AppError.ForbiddenAction
+          )
           maybeTeam <- EitherT.liftF[Future, AppError, Seq[Team]](
             env.dataStore.teamRepo.findByUser(
               tenant = ctx.tenant.id,

@@ -51,6 +51,10 @@
   &.--wide {
     width: 580px;
   }
+
+  &.--full {
+    width: 95vw;
+  }
 }
 
 .side-sheet__header {

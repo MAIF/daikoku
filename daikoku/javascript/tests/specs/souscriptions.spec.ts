@@ -349,6 +349,7 @@ test('Demander plusieurs extension d\'apikey jusqu\'aux notifications', async ({
   await requestSheet.getByRole('combobox', { name: 'Sélectionnez une équipe' }).click();
   await expect(page.getByRole('option', { name: 'Logistique (déjà souscrite)' })).toBeVisible();
   await page.getByRole('option', { name: 'Vendeurs', exact: true }).click();
+  await requestSheet.getByRole('radio', { name: 'Existante' }).click();
   await requestSheet.getByRole('textbox', { name: 'motivation' }).fill('motication de l\'utilisateur');
   await requestSheet.getByRole('button', { name: 'Enregistrer' }).click();
 

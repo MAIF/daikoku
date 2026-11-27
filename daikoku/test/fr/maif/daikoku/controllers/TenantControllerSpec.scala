@@ -1634,14 +1634,19 @@ class TenantControllerSpec()
         method = "POST",
         body = newTeam.asJson.some
       )(using tenant, userSession)
-      createNewTeamResp.status mustBe 201
+      createNewTeamResp.status mustBe 200
 
-      val controlTeamResp = httpJsonCallBlocking(
-        path = s"/api/teams/${newTeam.id.value}"
+      val myTeamsResp = httpJsonCallBlocking(
+        path = "/api/me/teams"
       )(using tenant, userSession)
-      controlTeamResp.status mustBe 200
-      val controlTeam =
-        Json.parse(controlTeamResp.body[String]).as(using json.TeamFormat)
+      myTeamsResp.status mustBe 200
+      val createdTeams = Json
+        .parse(myTeamsResp.body[String])
+        .as[JsArray]
+        .value
+        .filter(team => (team \ "name").as[String] == newTeam.name)
+      createdTeams.size mustBe 1
+      val controlTeam = createdTeams.head.as(using json.TeamFormat)
 
       controlTeam.authorizedOtoroshiEntities.isDefined mustBe true
       controlTeam.authorizedOtoroshiEntities mustBe newDefaultAuthEntities

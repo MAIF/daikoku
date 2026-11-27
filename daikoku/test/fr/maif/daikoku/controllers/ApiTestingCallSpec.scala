@@ -112,7 +112,7 @@ class ApiTestingCallSpec() extends ApiControllerSpecBase {
 
       val session = loginWithBlocking(user, tenant)
       val resp = httpJsonCallBlocking(
-        path = s"/api/apis/${defaultApi.api.id.value}/_root"
+        path = s"/api/apis/${defaultApi.api.humanReadableId}/_root"
       )(using tenant, session)
 
       resp.status mustBe 200

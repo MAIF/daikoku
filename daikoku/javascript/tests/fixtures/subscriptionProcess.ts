@@ -75,13 +75,15 @@ export const test = base.extend<{
   },
   openProcessEditor: async ({ page, readSavedProcess, processApiName }, use) => {
     await readSavedProcess();
+    // The side sheet slides in: a card dragged during that animation is dropped off target.
+    await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.goto('/apis');
     await loginAs(MICHAEL, page);
     await page.getByRole('link', { name: processApiName, exact: true }).click();
     await page.getByText('Environnements', { exact: true }).click();
     await use(async () => {
       await page.getByRole('button', { name: "Configurer l'environnement", exact: true }).click();
-      await page.getByRole('button', { name: 'Modifier le processus de souscription', exact: true }).click();
+      await page.getByRole('menuitem', { name: 'Modifier le processus de souscription', exact: true }).click();
       await expect(page.getByRole('region', { name: 'Éditeur de processus' })).toBeVisible();
     });
   },

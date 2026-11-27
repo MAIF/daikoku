@@ -147,7 +147,8 @@ export const ApiKeyRequestSideSheet = (props: ApiKeyRequestSideSheetProps) => {
   };
 
   const resolvedKeyringChoices = keyringGroups.map(resolveKeyringChoice);
-  const everyKeyringChosen = resolvedKeyringChoices.every((resolved) => resolved.isComplete);
+  const everyKeyringChosen =
+    !teamSubscriptionsQuery.isLoading && resolvedKeyringChoices.every((resolved) => resolved.isComplete);
 
   const requestSinglePlan = (team: string, motivation?: object) => {
     const [keyringChoice] = resolvedKeyringChoices;
