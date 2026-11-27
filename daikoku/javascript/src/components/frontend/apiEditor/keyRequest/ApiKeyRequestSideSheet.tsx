@@ -1,14 +1,20 @@
 import { Form, FormRef } from '@maif/react-forms';
-import { useQuery } from '@tanstack/react-query';
-import { CheckCircle, Clock, XOctagon } from 'lucide-react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { nanoid } from 'nanoid';
 import { useContext, useId, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
 import Select from 'react-select';
+import { toast } from 'sonner';
 
+import { QUERY_KEYS } from '../../../../constants/queryKeys';
 import { I18nContext } from '../../../../contexts';
 import { GlobalContext } from '../../../../contexts/globalContext';
 import * as Services from '../../../../services';
 import { SubscriptionReturn } from '../../../../services';
+import {
+  BatchKeyringGroup,
+  buildBatchKeyringSelection,
+  groupBatchPlansByKeyring,
+} from '../../../../services/subscriptions';
 import {
   IApi,
   isError,
@@ -18,11 +24,11 @@ import {
   IUsagePlan,
   IUsagePlanGQL,
 } from '../../../../types';
-import { ChoiceChips } from '../../../inputs';
 import { InfoCallout, SideSheet, SideSheetActions } from '../../../utils';
 import { CmsViewerByPath } from '../../CmsViewer';
 import { candidateTeams, teamRestriction, toUsagePlan } from '../environments/planUtils';
 import { canAggregate, findCompatibleKeyrings, KeyringApiGQL } from './compatibleKeyrings';
+import { KeyringChoice, KeyringChoiceFields, ResolvedKeyringChoice } from './KeyringChoiceFields';
 
 export type AskForApikeys = (request: {
   team: string;
@@ -30,7 +36,6 @@ export type AskForApikeys = (request: {
   keyringId?: string;
   motivation?: object;
   keyringCustomName?: string;
-  redirect?: boolean;
 }) => Promise<SubscriptionReturn>;
 
 type ApiKeyRequestSideSheetProps = {
@@ -44,11 +49,13 @@ type ApiKeyRequestSideSheetProps = {
   onClose: () => void;
 };
 
-type RequestResult = { plan: IUsagePlanGQL; status: SubscriptionReturn };
+type PlanToRequest = {
+  api: IApi;
+  plan: IUsagePlanGQL;
+};
 
-const keyringIdOf = (subscription: { keyring?: unknown }): string | undefined => {
-  const keyring = subscription.keyring as string | { _id: string } | null | undefined;
-  return typeof keyring === 'string' ? keyring : keyring?._id;
+const NO_KEYRING_CHOICE: KeyringChoice = {
+  newKeyringName: '',
 };
 
 export const ApiKeyRequestSideSheet = (props: ApiKeyRequestSideSheetProps) => {
@@ -57,20 +64,17 @@ export const ApiKeyRequestSideSheet = (props: ApiKeyRequestSideSheetProps) => {
   const { translate, language } = useContext(I18nContext);
   const { tenant, customGraphQLClient } = useContext(GlobalContext);
 
+  const queryClient = useQueryClient();
+
   const teamLabelId = useId();
-  const keyringLabelId = useId();
   const formRef = useRef<FormRef | undefined>(undefined);
 
   const [chosenTeamId, setTeamId] = useState<string | null>();
-  const [attach, setAttach] = useState<'existing' | 'new'>();
-  const [chosenKeyringId, setKeyringId] = useState<string>();
-  const [keyringName, setKeyringName] = useState('');
+  const [keyringChoices, setKeyringChoices] = useState<Record<string, KeyringChoice>>({});
   const [sending, setSending] = useState(false);
-  const [results, setResults] = useState<Array<RequestResult>>();
 
-  const aggregation = canAggregate(tenant, plans);
+  const keyringGroups = groupBatchPlansByKeyring(plans.map((plan) => ({ api, plan })));
   const formStep = plans.flatMap((plan) => plan.subscriptionProcess).find((step) => step.type === 'form');
-  const defaultKeyringName = plans.length === 1 ? `${api.name} - ${plans[0].customName}` : api.name;
 
   const context = {
     api,
@@ -94,100 +98,168 @@ export const ApiKeyRequestSideSheet = (props: ApiKeyRequestSideSheetProps) => {
   const onlyTeamId = selectableTeams.length === 1 ? selectableTeams[0].value : undefined;
   const teamId = chosenTeamId === undefined ? onlyTeamId : (chosenTeamId ?? undefined);
 
-  const keyringsQuery = useQuery({
-    queryKey: ['compatibleKeyrings', teamId, plans.map((p) => p._id)],
+  const teamSubscriptionsQuery = useQuery({
+    queryKey: QUERY_KEYS.teamSubscriptionsWithApis(teamId),
     queryFn: () =>
       Services.getAllTeamSubscriptions(teamId!).then((subscriptions) =>
         customGraphQLClient
           .request<{ apis: Array<KeyringApiGQL> }>(Services.graphql.apisByIdsWithPlans, {
             ids: [...new Set(subscriptions.map((s) => s.api))],
           })
-          .then(({ apis }) => findCompatibleKeyrings({ plans, tenant, subscriptions, apis }))
+          .then(({ apis }) => ({
+            subscriptions,
+            apis,
+          }))
       ),
-    enabled: !!teamId && aggregation,
+    enabled: !!teamId && !!tenant.aggregationApiKeysSecurity,
   });
-  const keyrings = keyringsQuery.data ?? [];
-  const keyringId = chosenKeyringId ?? (keyrings.length === 1 ? keyrings[0].keyringId : undefined);
-  const canJoinKeyring = aggregation && keyrings.length > 0;
-  const joinsKeyring = canJoinKeyring && attach === 'existing';
-  const createsKeyring = !canJoinKeyring || attach === 'new';
-  const attachChosen = joinsKeyring ? !!keyringId : createsKeyring;
+  const teamSubscriptions = teamSubscriptionsQuery.data;
 
-  const hasForm = (plan: IUsagePlanGQL) => plan.subscriptionProcess.some((step) => step.type === 'form');
+  const resolveKeyringChoice = (group: BatchKeyringGroup<PlanToRequest>): ResolvedKeyringChoice => {
+    const groupPlans = group.items.map((item) => item.plan);
+    const choice = keyringChoices[group.key] ?? NO_KEYRING_CHOICE;
+
+    const compatibleKeyrings =
+      teamSubscriptions && canAggregate(tenant, groupPlans)
+        ? findCompatibleKeyrings({ plans: groupPlans, tenant, ...teamSubscriptions })
+        : [];
+    const onlyCompatibleKeyringId = compatibleKeyrings.length === 1 ? compatibleKeyrings[0].keyringId : undefined;
+
+    const canJoinKeyring = compatibleKeyrings.length > 0;
+    const joinsKeyring = canJoinKeyring && choice.attach === 'existing';
+    const createsKeyring = !canJoinKeyring || choice.attach === 'new';
+    const joinedKeyringId = joinsKeyring ? (choice.keyringId ?? onlyCompatibleKeyringId) : undefined;
+
+    return {
+      groupKey: group.key,
+      title:
+        plans.length === 1
+          ? translate('api.editor.key.request.attach.title')
+          : translate({ key: 'subscription.batch.keyring.group.choice', replacements: [group.name] }),
+      choice,
+      compatibleKeyrings,
+      joinsKeyring,
+      createsKeyring,
+      joinedKeyringId,
+      defaultKeyringName: `${api.name} - ${group.name}`,
+      isComplete: joinsKeyring ? !!joinedKeyringId : createsKeyring,
+    };
+  };
+
+  const resolvedKeyringChoices = keyringGroups.map(resolveKeyringChoice);
+  const everyKeyringChosen = resolvedKeyringChoices.every((resolved) => resolved.isComplete);
+
+  const requestSinglePlan = (team: string, motivation?: object) => {
+    const [keyringChoice] = resolvedKeyringChoices;
+    const newKeyringName = keyringChoice.joinsKeyring ? undefined : keyringChoice.choice.newKeyringName || undefined;
+
+    props
+      .askForApikeys({
+        team,
+        plan: toUsagePlan(plans[0]),
+        keyringId: keyringChoice.joinedKeyringId,
+        keyringCustomName: newKeyringName,
+        motivation,
+      })
+      .then((status) => {
+        setSending(false);
+
+        if (!isError(status)) {
+          props.onClose();
+        }
+      });
+  };
+
+  const requestPlansAsBatch = (team: string, motivation?: object) => {
+    const teamName = props.myTeams.find((t) => t._id === team)?.name ?? '';
+    const joinedKeyringIdByGroup = Object.fromEntries(
+      resolvedKeyringChoices
+        .filter((resolved) => !!resolved.joinedKeyringId)
+        .map((resolved) => [resolved.groupKey, resolved.joinedKeyringId!])
+    );
+    const newKeyringNameByGroup = Object.fromEntries(
+      resolvedKeyringChoices.map((resolved) => [
+        resolved.groupKey,
+        resolved.choice.newKeyringName || resolved.defaultKeyringName,
+      ])
+    );
+    const keyringSelection = buildBatchKeyringSelection(
+      keyringGroups,
+      joinedKeyringIdByGroup,
+      newKeyringNameByGroup,
+      teamName
+    );
+
+    Services.submitSubscriptionBatch(team, {
+      ...keyringSelection,
+      team,
+      idempotencyKey: nanoid(),
+      motivation,
+    }).then((receipt) => {
+      setSending(false);
+
+      if (isError(receipt)) {
+        toast.error(receipt.error);
+        return;
+      }
+
+      toast.info(
+        translate({
+          key: 'subscription.batch.submitted',
+          replacements: [String(keyringSelection.items.length), teamName],
+        })
+      );
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.mySubscriptions() });
+      props.onClose();
+    });
+  };
 
   const send = (motivation?: object) => {
     const team = teamId!;
-    const keyringCustomName = joinsKeyring ? undefined : keyringName || undefined;
-    const firstKeyring = joinsKeyring ? keyringId : undefined;
 
     setSending(true);
 
     if (plans.length === 1) {
-      props
-        .askForApikeys({ team, plan: toUsagePlan(plans[0]), keyringId: firstKeyring, keyringCustomName, motivation })
-        .then((status) => {
-          setSending(false);
-          if (!isError(status)) {
-            props.onClose();
-          }
-        });
+      requestSinglePlan(team, motivation);
       return;
     }
 
-    plans
-      .reduce<Promise<{ keyring?: string; done: Array<RequestResult> }>>(
-        (previous, plan) =>
-          previous.then(({ keyring, done }) =>
-            props
-              .askForApikeys({
-                team,
-                plan: toUsagePlan(plan),
-                keyringId: keyring,
-                keyringCustomName: keyring ? undefined : keyringCustomName,
-                motivation: hasForm(plan) ? motivation : undefined,
-                redirect: false,
-              })
-              .then((status) => ({
-                keyring: keyring ?? (Services.isCreationDone(status) ? keyringIdOf(status.subscription) : undefined),
-                done: [...done, { plan, status }],
-              }))
-          ),
-        Promise.resolve({ keyring: firstKeyring, done: [] })
-      )
-      .then(({ done }) => {
-        setSending(false);
-        setResults(done);
-      });
+    requestPlansAsBatch(team, motivation);
   };
 
   const save = () => (formStep ? formRef.current?.handleSubmit() : send());
 
-  if (results) {
-    return (
-      <SideSheet
-        title={translate('api.editor.key.request.title')}
-        onClose={props.onClose}
-        footer={() => (
-          <button type="button" className="btn --primary" onClick={props.onClose}>
-            {translate('Close')}
-          </button>
-        )}
-      >
-        <RequestResults results={results} api={api} teamId={teamId!} myTeams={props.myTeams} />
-      </SideSheet>
+  const changeKeyringChoice = (groupKey: string, choice: KeyringChoice) =>
+    setKeyringChoices((current) => ({
+      ...current,
+      [groupKey]: choice,
+    }));
+
+  const forgetChosenKeyrings = () =>
+    setKeyringChoices((current) =>
+      Object.fromEntries(
+        Object.entries(current).map(([groupKey, choice]) => [
+          groupKey,
+          {
+            ...choice,
+            keyringId: undefined,
+          },
+        ])
+      )
     );
-  }
+
+  const hasTypedKeyringName = Object.values(keyringChoices).some((choice) => !!choice.newKeyringName);
 
   return (
     <SideSheet
       title={translate('api.editor.key.request.title')}
       onClose={props.onClose}
-      isDirty={() => !!chosenTeamId || !!keyringName}
+      isDirty={() => !!chosenTeamId || hasTypedKeyringName}
       footer={(requestClose) => (
         <SideSheetActions
           onCancel={requestClose}
           onSave={save}
-          saveDisabled={sending || !teamId || !attachChosen}
+          saveDisabled={sending || !teamId || !everyKeyringChosen}
         />
       )}
     >
@@ -211,15 +283,6 @@ export const ApiKeyRequestSideSheet = (props: ApiKeyRequestSideSheetProps) => {
         </div>
       )}
 
-      {plans.length > 1 && (
-        <p className="mb-3">
-          {translate({
-            key: 'api.editor.key.request.plans',
-            replacements: [plans.map((plan) => plan.customName).join(', ')],
-          })}
-        </p>
-      )}
-
       <label id={teamLabelId} className="form-label">
         {translate('api.editor.key.request.team.label')}
       </label>
@@ -231,67 +294,20 @@ export const ApiKeyRequestSideSheet = (props: ApiKeyRequestSideSheetProps) => {
         value={teamOptions.find((option) => option.value === teamId) ?? null}
         onChange={(option) => {
           setTeamId(option?.value ?? null);
-          setKeyringId(undefined);
+          forgetChosenKeyrings();
         }}
         isClearable
       />
 
       {teamId && (
         <>
-          <h3>{translate('api.editor.key.request.attach.title')}</h3>
-
-          {canJoinKeyring && (
-            <div className="mb-3">
-              <ChoiceChips
-                label={translate('api.editor.key.request.attach.label')}
-                options={[
-                  { value: 'existing' as const, label: translate('api.editor.key.request.attach.existing') },
-                  { value: 'new' as const, label: translate('api.editor.key.request.attach.new') },
-                ]}
-                value={attach}
-                onChange={setAttach}
-              />
-            </div>
-          )}
-
-          {joinsKeyring && (
-            <label id={keyringLabelId} className="form-label">
-              {translate('api.editor.key.request.keyring.label')}
-            </label>
-          )}
-
-          {joinsKeyring && (
-            <Select
-              aria-labelledby={keyringLabelId}
-              classNamePrefix="reactSelect"
-              placeholder={translate('Select')}
-              options={keyrings.map((keyring) => ({ value: keyring.keyringId, label: keyring.label }))}
-              value={
-                keyrings
-                  .filter((keyring) => keyring.keyringId === keyringId)
-                  .map((keyring) => ({ value: keyring.keyringId, label: keyring.label }))[0] ?? null
-              }
-              onChange={(option) => setKeyringId(option?.value)}
+          {resolvedKeyringChoices.map((resolved) => (
+            <KeyringChoiceFields
+              key={resolved.groupKey}
+              resolved={resolved}
+              onChange={(choice) => changeKeyringChoice(resolved.groupKey, choice)}
             />
-          )}
-
-          {createsKeyring && (
-            <>
-              <label className="form-label" htmlFor="api-key-request-keyring-name">
-                {translate('api.editor.key.request.keyring.name.label')}
-              </label>
-              <input
-                id="api-key-request-keyring-name"
-                className="form-control mb-3"
-                placeholder={translate({ key: 'api.editor.key.request.keyring.name.placeholder', replacements: [defaultKeyringName] })}
-                value={keyringName}
-                onChange={(e) => setKeyringName(e.target.value)}
-              />
-              <InfoCallout>
-                {translate({ key: 'api.editor.key.request.keyring.name.help', replacements: [defaultKeyringName] })}
-              </InfoCallout>
-            </>
-          )}
+          ))}
 
           {formStep && (
             <>
@@ -303,44 +319,5 @@ export const ApiKeyRequestSideSheet = (props: ApiKeyRequestSideSheetProps) => {
         </>
       )}
     </SideSheet>
-  );
-};
-
-type RequestResultsProps = {
-  results: Array<RequestResult>;
-  api: IApi;
-  teamId: string;
-  myTeams: Array<ITeamSimple>;
-};
-
-const RequestResults = ({ results, api, teamId, myTeams }: RequestResultsProps) => {
-  const { translate } = useContext(I18nContext);
-  const team = myTeams.find((t) => t._id === teamId);
-
-  return (
-    <ul className="list-unstyled d-flex flex-column gap-2">
-      {results.map(({ plan, status }) => (
-        <li key={plan._id} className="d-flex align-items-center gap-2">
-          {Services.isCreationDone(status) && <CheckCircle size={16} className="color-success" aria-hidden="true" />}
-          {Services.isCreationWaiting(status) && <Clock size={16} aria-hidden="true" />}
-          {isError(status) && <XOctagon size={16} className="color-danger" aria-hidden="true" />}
-          <span>
-            {Services.isCreationDone(status) &&
-              translate({ key: 'subscription.plan.accepted', replacements: [plan.customName, team?.name ?? ''] })}
-            {Services.isCreationWaiting(status) &&
-              translate({ key: 'subscription.plan.waiting', replacements: [plan.customName, team?.name ?? ''] })}
-            {isError(status) &&
-              translate({ key: 'subscription.plan.failed', replacements: [plan.customName, team?.name ?? ''] })}
-          </span>
-        </li>
-      ))}
-      {results.some(({ status }) => Services.isCreationDone(status)) && team && (
-        <li>
-          <Link to={`/${team._humanReadableId}/${api._humanReadableId}/${api.currentVersion}/apikeys?team=${teamId}`}>
-            {translate('apikeys.view.api')}
-          </Link>
-        </li>
-      )}
-    </ul>
   );
 };

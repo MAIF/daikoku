@@ -12,6 +12,7 @@ import { QUERY_KEYS } from '../../../../constants/queryKeys';
 import { I18nContext, ModalContext } from '../../../../contexts';
 import { GlobalContext } from '../../../../contexts/globalContext';
 import * as Services from '../../../../services';
+import { isPlanSelectableForBatch } from '../../../../services/subscriptions';
 import {
   IApi,
   IPlansWithCount,
@@ -33,10 +34,12 @@ import {
   renderPricing,
 } from '../../../utils';
 import { useExportEntity } from '../../../utils/useExportEntity';
+import { SubscriptionHelp } from '../../api/SubscriptionHelp';
+import { getOtoroshiTargetReason, getSubscriptionHelp, isSubscriptionDisabled } from '../../api/subscriptionHelpReasons';
 import { ApiKeyRequestSideSheet, AskForApikeys } from '../keyRequest/ApiKeyRequestSideSheet';
 import { withoutGeneratedKey } from '../sheets/TestingSideSheet';
 import { EnvironmentSheetTab, EnvironmentSideSheet } from './EnvironmentSideSheet';
-import { fromRestPlan, isPlanSelectable, keyAccess, teamsAllowedFor, toUsagePlan } from './planUtils';
+import { fromRestPlan, hasTeamLeftToSubscribe, teamsAllowedFor, toUsagePlan } from './planUtils';
 
 type EnvironmentsTabProps = {
   api: IApi;
@@ -82,6 +85,33 @@ const PlanName = ({ plan, pendingDemands }: PlanNameProps) => {
       </span>
     </span>
   );
+};
+
+type PlanOtoroshiTargetProps = {
+  api: IApi;
+  plan: IUsagePlanGQL;
+};
+
+const PlanOtoroshiTarget = ({ api, plan }: PlanOtoroshiTargetProps) => {
+  const { translate } = useContext(I18nContext);
+  const { tenant } = useContext(GlobalContext);
+
+  const noTargetLabel = translate('api.pricings.otoroshi.target.value.none');
+  const targetBlocker = getOtoroshiTargetReason(api, plan);
+
+  if (targetBlocker) {
+    return (
+      <SubscriptionHelp help={{ blockers: [targetBlocker] }}>
+        <span className="badge bg-danger cursor-forbidden">{noTargetLabel}</span>
+      </SubscriptionHelp>
+    );
+  }
+
+  const otoroshiInstance = tenant.otoroshiSettings.find(
+    (settings) => settings._id === plan.otoroshiTarget?.otoroshiSettings
+  );
+
+  return <span>{otoroshiInstance?.url ?? noTargetLabel}</span>;
 };
 
 export const EnvironmentsTab = (props: EnvironmentsTabProps) => {
@@ -263,26 +293,30 @@ export const EnvironmentsTab = (props: EnvironmentsTabProps) => {
       );
     }
 
-    const state = keyAccess(plan, accessContext);
+    const subscriptionHelp = getSubscriptionHelp({ api, plan, isGuest: false });
+    const subscriptionBlocked = isSubscriptionDisabled(subscriptionHelp);
+
+    if (subscriptionBlocked && !isOwner) {
+      return null;
+    }
+
+    if (subscriptionBlocked) {
+      return (
+        <span className="d-inline-flex cursor-forbidden">
+          <SubscriptionHelp help={subscriptionHelp}>
+            <button type="button" className="btn --tertiary --small --icon-only" aria-label={label} disabled>
+              <KeyRound size={16} />
+            </button>
+          </SubscriptionHelp>
+        </span>
+      );
+    }
+
     const canAccessKeys =
       api.visibility === 'AdminOnly' ||
       CanIDoActionForOneOfTeams(connectedUser, access, apikey, teamsAllowedFor(plan, accessContext));
 
-    if (state === 'disabled') {
-      return (
-        <button
-          type="button"
-          className="btn --tertiary --small --icon-only"
-          aria-label={label}
-          title={translate('api.editor.key.request.unavailable')}
-          disabled
-        >
-          <KeyRound size={16} />
-        </button>
-      );
-    }
-
-    if (state === 'hidden' || !canAccessKeys) {
+    if (!hasTeamLeftToSubscribe(plan, accessContext) || !canAccessKeys) {
       return null;
     }
 
@@ -437,17 +471,13 @@ export const EnvironmentsTab = (props: EnvironmentsTabProps) => {
     }),
     columnHelper.display({
       id: 'otoroshi-target',
-      meta: { title: translate('api.pricings.otoroshi.target.table.title'), size: 5, hidden: !isOwner },
-      cell: ({ row }) => {
-        const settingsId = row.original.otoroshiTarget?.otoroshiSettings;
-        return (
-          <span>
-            {settingsId
-              ? tenant.otoroshiSettings.find((o) => o._id === settingsId)?.url
-              : translate('api.pricings.otoroshi.target.value.none')}
-          </span>
-        );
+      meta: {
+        title: translate('api.pricings.otoroshi.target.table.title'),
+        size: 5,
+        hidden: !isOwner,
+        className: 'otoroshi-cible-cell',
       },
+      cell: ({ row }) => <PlanOtoroshiTarget api={api} plan={row.original} />,
     }),
     columnHelper.display({
       id: 'process',
@@ -482,11 +512,12 @@ export const EnvironmentsTab = (props: EnvironmentsTabProps) => {
         columns={columns}
         fetchData={fetchPlans}
         getRowId={(plan) => plan._id}
+        persistSelectionAcrossPages
         getRowAriaLabel={(plan) => plan.customName}
         highlightedRowId={hash.slice(1)}
         dataClassName="table-rows"
         countLabelKey="Plan"
-        isRowSelectable={isPlanSelectable}
+        isRowSelectable={isPlanSelectableForBatch}
         enableRowSelection={Object.values(rowSelection).includes(true)}
         rowSelection={rowSelection}
         setRowSelection={setRowSelection}

@@ -360,6 +360,52 @@ test('Demander plusieurs extension d\'apikey jusqu\'aux notifications', async ({
 
 });
 
+test('requests keys for several environments as a single batch', async ({ page }) => {
+  test.setTimeout(90_000);
+
+  await page.goto(ACCUEIL);
+  await loginAs(MICHAEL, page);
+  await page.getByRole('link', { name: 'API papier' }).click();
+  await page.getByRole('tab', { name: 'Environnements' }).click();
+
+  await duplicateToLastAvailableEnvironment(page, 'prod', 'preprod');
+
+  await logout(page);
+  await loginAs(JIM, page);
+
+  await page.getByRole('link', { name: 'API papier' }).click();
+  await page.getByRole('tab', { name: 'Environnements' }).click();
+  await page.getByRole('listitem', { name: 'preprod' }).getByRole('checkbox').check();
+  await page.getByRole('listitem', { name: 'prod', exact: true }).getByRole('checkbox').check();
+  await page.getByRole('button', { name: 'Obtenir les clés' }).click();
+
+  const requestSheet = page.getByRole('dialog', { name: "Demander une clé d'API" });
+  await requestSheet.getByRole('combobox', { name: 'Sélectionnez une équipe' }).click();
+  await page.getByRole('option', { name: 'Vendeurs', exact: true }).click();
+
+  await requestSheet
+    .getByRole('region', { name: 'Trousseau pour prod', exact: true })
+    .getByRole('radio', { name: 'Nouvelle' })
+    .click();
+  await requestSheet
+    .getByRole('region', { name: 'Trousseau pour preprod', exact: true })
+    .getByRole('radio', { name: 'Nouvelle' })
+    .click();
+  await requestSheet.getByRole('textbox', { name: 'motivation' }).fill('please');
+
+  const batchResponse = page.waitForResponse((response) =>
+    response.url().endsWith(`/api/subscription/team/${vendeurs}/batches`) &&
+    response.request().method() === 'POST'
+  );
+  await requestSheet.getByRole('button', { name: 'Enregistrer' }).click();
+  expect((await batchResponse).ok()).toBeTruthy();
+
+  await expect(page.getByRole('region', { name: 'Notifications' })).toContainText(
+    "Votre demande groupée de souscription à 2 plans pour l'équipe Vendeurs a été envoyée"
+  );
+  await expect(requestSheet).toBeHidden();
+});
+
 test('Selection de plans limitée', async ({ page, context }) => {
   test.setTimeout(90_000);
   await context.grantPermissions(["clipboard-read", "clipboard-write"]);

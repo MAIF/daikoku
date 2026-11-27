@@ -8,7 +8,6 @@ import {
   IUsagePlanGQL,
   IValidationStep,
 } from '../../../../types';
-import { isPublish } from '../../../utils';
 
 export const toUsagePlan = (plan: IUsagePlanGQL): IUsagePlan => ({
   ...plan,
@@ -28,20 +27,6 @@ export const fromRestPlan = (plan: IUsagePlan | IUsagePlanGQL): IUsagePlan => {
     ...rest,
     subscriptionProcess: rest.subscriptionProcess.steps,
   };
-};
-
-const hasProcess = (plan: IUsagePlanGQL) => plan.subscriptionProcess.length > 0;
-
-export const isPlanSelectable = (plan: IUsagePlanGQL, selectedPlans: Array<IUsagePlanGQL>) => {
-  if (plan.paymentSettings) {
-    return false;
-  }
-
-  if (selectedPlans.length === 0 || !hasProcess(plan) || selectedPlans.every((p) => !hasProcess(p))) {
-    return true;
-  }
-
-  return selectedPlans.some((p) => p.subscriptionProcessChecksum === plan.subscriptionProcessChecksum);
 };
 
 const planAllowsTeam = (plan: IUsagePlanGQL, team: ITeamSimple, ownerTeam: ITeamSimple) =>
@@ -68,31 +53,18 @@ export const candidateTeams = ({ api, ownerTeam, tenant, myTeams }: AccessContex
 export const teamsAllowedFor = (plan: IUsagePlanGQL, context: AccessContext) =>
   candidateTeams(context).filter((team) => planAllowsTeam(plan, team, context.ownerTeam));
 
-export type KeyAccess = 'request' | 'disabled' | 'hidden';
-
-export const keyAccess = (plan: IUsagePlanGQL, context: AccessContext): KeyAccess => {
+export const hasTeamLeftToSubscribe = (plan: IUsagePlanGQL, context: AccessContext) => {
   const { api, subscriptions } = context;
-  const adminOnly = api.visibility === 'AdminOnly';
 
-  if (api.state === 'blocked') {
-    return 'hidden';
+  if (api.visibility === 'AdminOnly') {
+    return true;
   }
 
-  const target = plan.otoroshiTarget?.authorizedEntities;
-  const targetIsComplete =
-    !!plan.otoroshiTarget?.otoroshiSettings &&
-    !!target &&
-    (!!target.groups.length || !!target.routes.length || !!target.services.length);
-
-  if ((!targetIsComplete && !adminOnly) || !isPublish(api)) {
-    return adminOnly ? 'hidden' : 'disabled';
-  }
-
-  const teamsStillAllowed = teamsAllowedFor(plan, context).filter(
+  const teamsNotSubscribedYet = teamsAllowedFor(plan, context).filter(
     (team) => plan.allowMultipleKeys || !subscriptions.some((s) => s.team === team._id && s.plan === plan._id)
   );
 
-  return adminOnly || teamsStillAllowed.length > 0 ? 'request' : 'hidden';
+  return teamsNotSubscribedYet.length > 0;
 };
 
 export type TeamRestrictionContext = AccessContext & {

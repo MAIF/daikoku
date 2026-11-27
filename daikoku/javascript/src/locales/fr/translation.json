@@ -1905,8 +1905,6 @@
   "api.editor.key.request.title": "Demander une clé d'API",
   "api.editor.key.request.bulk": "Obtenir les clés",
   "api.editor.key.request.failed": "La demande de clé d'API a échoué.",
-  "api.editor.key.request.unavailable": "Cet environnement n'est pas encore prêt à délivrer des clés d'API.",
-  "api.editor.key.request.plans": "Environnements demandés : %s",
   "api.editor.key.request.team.label": "Sélectionnez une équipe",
   "api.editor.key.request.team.not.allowed": "non autorisée",
   "api.editor.key.request.team.already.subscribed": "déjà souscrite",

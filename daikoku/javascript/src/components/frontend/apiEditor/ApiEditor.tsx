@@ -166,7 +166,7 @@ const ApiEditorContent = ({ api, ownerTeam, myTeams, subscriptions, pendingSubsc
       )
   );
 
-  const askForApikeys: AskForApikeys = ({ team, plan, keyringId, motivation, keyringCustomName, redirect }) =>
+  const askForApikeys: AskForApikeys = ({ team, plan, keyringId, motivation, keyringCustomName }) =>
     (keyringId
       ? Services.extendApiKey(api._id, keyringId, team, plan._id, keyringCustomName, motivation)
       : Services.askForApiKey(api._id, team, plan._id, keyringCustomName, motivation)
@@ -179,7 +179,7 @@ const ApiEditorContent = ({ api, ownerTeam, myTeams, subscriptions, pendingSubsc
         } else if (Services.isCreationDone(result)) {
           toast.success(translate('subscription.created.success'));
           const teamHrId = myTeams.find((t) => t._id === team)?._humanReadableId;
-          if (teamHrId && (redirect ?? true)) {
+          if (teamHrId) {
             navigate(`/${teamHrId}/${api._humanReadableId}/${api.currentVersion}/apikeys?team=${team}`);
           }
         } else if (result.creation === 'waiting') {

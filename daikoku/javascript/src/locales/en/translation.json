@@ -1902,8 +1902,6 @@
   "api.editor.key.request.title": "Request an API key",
   "api.editor.key.request.bulk": "Get the keys",
   "api.editor.key.request.failed": "The API key request failed.",
-  "api.editor.key.request.unavailable": "This environment is not ready to deliver API keys yet.",
-  "api.editor.key.request.plans": "Requested environments: %s",
   "api.editor.key.request.team.label": "Select a team",
   "api.editor.key.request.team.not.allowed": "not allowed",
   "api.editor.key.request.team.already.subscribed": "already subscribed",
