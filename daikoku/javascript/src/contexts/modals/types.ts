@@ -59,6 +59,7 @@ export type ConfirmModalProps = {
   title?: string;
   okLabel?: string;
   cancelLabel?: string;
+  defaultCancel?: boolean;
 };
 
 export type ConfirmProps = ConfirmModalProps & {

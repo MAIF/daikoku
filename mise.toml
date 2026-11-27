@@ -187,9 +187,9 @@ run = "process-compose -f ./dev/process-compose-test-stripe.yaml -f ./dev/proces
 
 # --- Consumption pipeline (Otoroshi -> ES -> Daikoku), no Stripe ---
 [tasks."test:consumption:run"]
-dir = "daikoku/javascript"
+dir = "daikoku/javascript/tests"
 tools.node = "22"
-run = "FORCE_COLOR=1 npx playwright test consumption_sync --trace on --workers 1 --reporter=list --config ./tests/playwright.config.js"
+run = "FORCE_COLOR=1 npx playwright test --trace on --workers 1 --reporter=list --config ./playwright.consumption.config.js"
 
 [tasks."test:consumption"]
 description="Run the Otoroshi to Daikoku consumption e2e."

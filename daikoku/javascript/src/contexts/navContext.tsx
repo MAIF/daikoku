@@ -72,7 +72,8 @@ export const useApiFrontOffice = (api?: IApi, team?: ITeamSimple, plans?: IUsage
   const navigate = useNavigate();
   const params = useParams();
 
-  const userCanUpdateApi = connectedUser.isDaikokuAdmin || team?.users.some(u => u.userId === connectedUser._id && u.teamPermission !== teamPermissions.user)
+  const userCanUpdateApi = connectedUser.isDaikokuAdmin ||
+    (team?.users?.some(u => u.userId === connectedUser._id && u.teamPermission !== teamPermissions.user) ?? false)
   const isAdminApi = api?.visibility === 'AdminOnly';
   const isApiGroup = api?.apis
 
@@ -98,7 +99,7 @@ export const useApiFrontOffice = (api?: IApi, team?: ITeamSimple, plans?: IUsage
     )
   )
   const shouldDisplayNews = userCanUpdateApi || (
-    !connectedUser.isGuest && !!api?.posts.length
+    !connectedUser.isGuest && !!api?.posts?.length
   )
 
   const canReadApiKey = CanIDoActionForOneOfTeams(connectedUser, read, apikey, userTeams?.map(t => teamGQLToSimple(t)) ?? [])

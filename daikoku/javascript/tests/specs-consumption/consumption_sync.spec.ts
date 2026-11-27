@@ -1,7 +1,7 @@
 import test, { expect } from '@playwright/test';
 import otoroshi_data from '../config/otoroshi/otoroshi-state-es.json';
-import { generateApi, generatePlan, saveApi, savePlan } from './apis';
-import { JIM, MICHAEL } from './users';
+import { generateApi, generatePlan, saveApi, savePlan } from '../specs/apis';
+import { JIM, MICHAEL } from '../specs/users';
 import {
   ACCUEIL,
   adminApi,
@@ -13,7 +13,7 @@ import {
   otoroshiAdminApikeySecret,
   paperApiCall,
   vendeurs,
-} from './utils';
+} from '../specs/utils';
 
 /**
  * Validates the consumption pipeline (no Stripe): Otoroshi writes gateway events to
@@ -44,7 +44,7 @@ test.describe('Consumption sync via ElasticSearch', () => {
 
     // 1. Seed a free plan + API owned by the producer team.
     const planId = nanoidLike();
-    const plan = generatePlan({ _id: planId, customName: 'free' });
+    const plan = generatePlan({ _id: planId, customName: 'dev' });
     const api = generateApi({
       name: 'Consumption API',
       team: apiDivision,
@@ -63,11 +63,22 @@ test.describe('Consumption sync via ElasticSearch', () => {
     await page.getByText('Environnements').click();
     await page.getByRole('button', { name: "Obtenir une clé d'API" }).click();
     await page.getByText('Vendeurs').click();
-    // Copy the key in clientId:clientSecret format from the tooltip.
-    await page.getByRole('button', { name: 'ClientId:ClientSecret' }).click();
+    await page.getByRole('textbox', { name: 'Nom de la clé d\'API' }).fill('My new APIkey');
+    const subscriptionResponse = page.waitForResponse((response) =>
+      response.url().endsWith(`/${vendeurs}/_subscribe`) &&
+      response.request().method() === 'POST'
+    );
+    await page.getByRole('button', { name: 'Envoyer' }).click();
+    const response = await subscriptionResponse;
+    expect(response.ok()).toBeTruthy();
+    const { subscription } = await response.json();
+    expect(subscription._id).toBeTruthy();
+    await page.getByRole('button', { name: 'Copier le clientId et le clientSecret' }).click();
     const [clientId, clientSecret] = (
       await page.evaluate(() => navigator.clipboard.readText())
     ).split(':', 2);
+    expect(clientId).toBeTruthy();
+    expect(clientSecret).toBeTruthy();
     await expect
       .poll(async () => (await paperApiCall(page, clientId, clientSecret)).status(), {
         timeout: 30_000,
@@ -77,17 +88,19 @@ test.describe('Consumption sync via ElasticSearch', () => {
 
     // 4. Retry the sync until Daikoku captures the hits. The sync reads Otoroshi/ES
     // live and writes to the local store; Otoroshi->ES ingestion is eventually
-    // consistent, so the wait belongs here, not on the read. A targeted team sync is
-    // used (no "already synced today" guard, unlike /api/jobs/stats/_sync).
+    // consistent, so the wait belongs here, not on the read. Sync only the new
+    // subscription, not the seeded team's historical consumption.
     await expect
       .poll(
         async () => {
           const res = await page.request.post(
-            `http://localhost:${exposedPort}/api/teams/${vendeurs}/billing/_sync`
+            `http://localhost:${exposedPort}/api/teams/${vendeurs}/subscription/${subscription._id}/consumption/_sync`,
+            { timeout: 30_000 }
           );
-          if (!res.ok()) return 0;
+          expect(res.ok(), `billing sync failed: ${await res.text()}`).toBeTruthy();
           const arr = await res.json();
-          return Array.isArray(arr) ? arr.reduce((a: number, c: any) => a + (c.hits || 0), 0) : 0;
+          expect(Array.isArray(arr), 'billing sync must return consumption records').toBeTruthy();
+          return arr.reduce((a: number, c: any) => a + (c.hits || 0), 0);
         },
         { timeout: 60_000, intervals: [3_000] }
       )

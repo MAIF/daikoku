@@ -1,0 +1,51 @@
+@use "../variables";
+
+.checkbox {
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+
+  input {
+    appearance: none;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    border: 1px solid variables.$primary-color-400;
+    border-radius: 4px;
+    background: variables.$form-bg-color;
+    cursor: pointer;
+
+    &:checked {
+      border-color: variables.$primary-color;
+    }
+
+    &:focus-visible {
+      outline: 2px solid variables.$primary-color;
+      outline-offset: 3px;
+    }
+
+    &:disabled {
+      border-color: variables.$neutral-color-300;
+      background: variables.$neutral-color-050;
+      cursor: not-allowed;
+    }
+
+    &:checked + svg {
+      visibility: visible;
+    }
+
+    &:disabled + svg {
+      color: variables.$neutral-color-400;
+    }
+  }
+
+  svg {
+    position: absolute;
+    inset: 2px;
+    color: variables.$primary-color;
+    visibility: hidden;
+    pointer-events: none;
+  }
+}

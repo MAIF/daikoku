@@ -36,6 +36,7 @@ test('[ASOAPI-10160] - souscrire à une api', async ({ page, context }) => {
   await page.getByRole('link', { name: 'API papier' }).click();
   await page.getByText('Environnements').click();
 
+  await expect(page.getByRole('listitem', { name: 'prod' }).locator('.tag.--warning')).toHaveCount(0);
   page.getByRole('listitem', { name: 'prod' }).getByRole('button', { name: 'Demander une clé d\'API' }).click()
   await page.getByText('Vendeurs').click();
   await page.getByRole('button', { name: 'Souscrire en créant une clé d\'API' }).click();
@@ -44,6 +45,8 @@ test('[ASOAPI-10160] - souscrire à une api', async ({ page, context }) => {
   await page.getByLabel('motivation').fill('please');
   await page.getByRole('button', { name: 'Envoyer' }).click();
   await expect(page.getByRole('region', { name: 'Notifications' })).toContainText('La demande de clé d\'API au plan prod pour l\'équipe Vendeurs est en attente de validation');
+  await expect(page.getByRole('listitem', { name: 'prod' }).locator('.tag.--warning')).toHaveText('1 demande en cours');
+  await expect(page.getByRole('listitem', { name: 'dev' }).locator('.tag.--warning')).toHaveCount(0);
   await page.getByRole('button', { name: 'Close toast' }).click();
   await page.route('**/api/me/subscriptions/*/1.0.0', async route => {
     const response = await route.fetch();
@@ -335,8 +338,8 @@ test('Demander plusieurs extension d\'apikey jusqu\'aux notifications', async ({
   await page.getByText('Environnements').click();
   await page.getByRole('listitem', { name: 'prod' }).getByRole('checkbox').check();
   await page.getByRole('button', { name: 'Demande de clé d\'API' }).click();
-  await page.getByText('Logistique').click();
-  await page.getByText('Plan(s) prod don\'t allow more subscription from teamLogistique').click();
+  await page.getByText('Logistique').isDisabled();
+  await page.getByText('Plan(s) prod don\'t allow more subscription from teamLogistique').isVisible();
   await page.getByText('Vendeurs').click();
   await page.locator('.react-form-select__input-container').click();
   await page.getByRole('option', { name: 'dev (API papier)' }).click();
@@ -345,9 +348,6 @@ test('Demander plusieurs extension d\'apikey jusqu\'aux notifications', async ({
   await page.getByRole('button', { name: 'Suivant' }).click();
   await page.getByRole('textbox', { name: 'motivation' }).fill('motication de l\'utilisateur');
   await page.getByRole('button', { name: 'Envoyer' }).click();
-
-  await page.getByText('La demande de clé d\'API au').click();
-  await page.getByRole('button', { name: 'Close toast' }).click();
 
   await logout(page);
   await loginAs(MICHAEL, page);
@@ -498,8 +498,9 @@ test('[ASOAPI-10398 ASOAPI-10399] - [producteur] - désactiver/activer une clé 
     .getByRole('button', { name: 'Actions de la souscription' }).click();
   await page.getByRole('listitem', { name: 'api-commande-prod-logistique' })
     .getByRole('button', { name: 'Désactiver la souscription' }).click();
-  expect(page.getByText('Êtes-vous sûr de vouloir dé')).toBeVisible;
-  await page.getByRole('button', { name: 'Ok', exact: true }).click()
+  const confirmation = page.getByRole('dialog', { name: 'Bloquer la souscription', exact: true });
+  await expect(confirmation).toBeVisible();
+  await confirmation.getByRole('button', { name: 'Bloquer', exact: true }).click();
   await expect(page.getByRole('listitem', { name: 'api-commande-prod-logistique' }))
     .toContainText('Bloquée');
 

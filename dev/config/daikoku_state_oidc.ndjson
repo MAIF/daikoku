@@ -25,6 +25,7 @@
 {"type":"evolutions","payload":{"_id":"Uk1JkzTpG8WOWmXcVxTgsmpWPN3Huln8","date":1782379392198,"applied":true,"version":"18.11.0"}}
 {"type":"evolutions","payload":{"_id":"cUEHJCBYL4QWJnzUixWUqaQVgUa0qaVp","date":1782379392202,"applied":true,"version":"18.11.0_b"}}
 {"type":"evolutions","payload":{"_id":"5wRF7N3DBChpkzwDp7OeR4EV33CLREV1","date":1784109906056,"applied":true,"version":"19.0.0"}}
+{"type":"evolutions","payload":{"_id":"5wRF7N3DBChpkzwDp7OeR4EV33CLREVa","date":1784109906056,"applied":true,"version":"19.0.1"}}
 {"type":"evolutions","payload":{"_id":"uFDbBwupyB1ebdTCJYR2bvQxw7udGR3n","date":1790927710909,"applied":true,"version":"19.1.0"}}
 {"type":"evolutions","payload":{"_id":"QFCkdRHkqypLlIn8UOIbxagosvoEkjRR","date":1790927710922,"applied":true,"version":"19.1.0_b"}}
 {"type":"evolutions","payload":{"_id":"j9HpMHzX7GY5sB9QjFQm17FjfWwtn9Yl","date":1790927710926,"applied":true,"version":"19.1.0_c"}}

@@ -195,6 +195,26 @@ class NotificationController(
                     notification.sender
                   )
                 )
+              case action: ApiSubscriptionBatchDemand =>
+                EitherT(
+                  env.dataStore
+                    .resolveBatchApproval(
+                      ctx.tenant.id,
+                      notification.id,
+                      action,
+                      accepted = true,
+                      actor = ctx.user.asNotificationSender,
+                      message = None
+                    )
+                    .flatMap {
+                      case Left(error) => Future.successful(Left(error))
+                      case Right(_) =>
+                        apiService
+                          .advanceSubscriptionBatch(ctx.tenant, action.batch)
+                          .value
+                          .map(_.map(_ => ()))
+                    }
+                )
               case TeamInvitation(_, user) if user != ctx.user.id =>
                 EitherT.leftT[Future, Unit](ForbiddenAction)
               case TeamInvitation(team, user) =>
@@ -496,6 +516,73 @@ class NotificationController(
       }
     }
 
+  private def rejectBatchSubscriptionNotification(
+      teamId: TeamId,
+      notification: Notification,
+      action: ApiSubscriptionBatchDemand,
+      maybeMessage: Option[String]
+  )(implicit
+      ctx: DaikokuActionContext[AnyContent],
+      lang: String,
+      ec: ExecutionContext
+  ): Future[Result] =
+    TeamAdminOnly(
+      AuditTrailEvent(
+        s"@{user.name} has rejected a grouped subscription notification (${notification.id})"
+      )
+    )(teamId.value, ctx) { _ =>
+      import cats.data.EitherT
+      import cats.implicits.*
+
+      val result = for {
+        _ <- EitherT(
+          env.dataStore
+            .resolveBatchApproval(
+              ctx.tenant.id,
+              notification.id,
+              action,
+              accepted = false,
+              actor = ctx.user.asNotificationSender,
+              message = maybeMessage
+            )
+            .map(_.map(_ => ()))
+        )
+        _ <- apiService.advanceSubscriptionBatch(ctx.tenant, action.batch)
+        api <- EitherT.fromOptionF(
+          env.dataStore.apiRepo
+            .forTenant(ctx.tenant.id)
+            .findById(action.api),
+          AppError.ApiNotFound
+        )
+        team <- EitherT.fromOptionF(
+          env.dataStore.teamRepo
+            .forTenant(ctx.tenant.id)
+            .findById(action.team),
+          AppError.TeamNotFound
+        )
+        body <- EitherT.liftF(
+          translator.translate(
+            "mail.api.subscription.rejection.body",
+            ctx.tenant,
+            Map(
+              "user" -> JsString(notification.sender.name),
+              "apiName" -> JsString(api.name),
+              "team" -> JsString(team.name),
+              "message" -> JsString(maybeMessage.getOrElse(""))
+            )
+          )
+        )
+        title <- EitherT.liftF(
+          translator.translate("mail.rejection.title", ctx.tenant)
+        )
+        _ <- EitherT.right[AppError](
+          ctx.tenant.mailer.send(title, Seq(notification.sender.email), body, ctx.tenant)
+        )
+      } yield Ok(Json.obj("done" -> true))
+
+      result.leftMap(AppError.render).value.map(_.merge)
+    }
+
   def rejectNotificationOfMe(
       notification: Notification
   )(implicit ctx: DaikokuActionContext[AnyContent], lang: String) =
@@ -635,6 +722,13 @@ class NotificationController(
                   } yield Ok(Json.obj("done" -> true)))
                     .leftMap(_.render()).merge
                 }
+              case action: ApiSubscriptionBatchDemand =>
+                rejectBatchSubscriptionNotification(
+                  team,
+                  notification,
+                  action,
+                  maybeMessage
+                )
               case _ =>
                 rejectNotificationOfTeam(team, notification, maybeMessage)
             }

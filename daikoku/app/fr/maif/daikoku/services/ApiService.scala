@@ -17,14 +17,7 @@ import fr.maif.daikoku.storage.drivers.postgres.PostgresDataStore
 import fr.maif.daikoku.utils.Cypher.{decrypt, encrypt}
 import fr.maif.daikoku.utils.StringImplicits.BetterString
 import fr.maif.daikoku.utils.future.EnhancedObject
-import fr.maif.daikoku.jobs.{ApiKeyStatsJob, OtoroshiSynchronizerJob}
-import fr.maif.daikoku.utils.{
-  IdGenerator,
-  JsonOperationsHelper,
-  OtoroshiClient,
-  Translator,
-  metadataObjectToMap
-}
+import fr.maif.daikoku.utils.*
 import org.apache.pekko.http.scaladsl.util.FastFuture
 import org.joda.time.DateTime
 import play.api.i18n.MessagesApi
@@ -44,7 +37,9 @@ class ApiService(
     translator: Translator,
     apiKeyStatsJob: ApiKeyStatsJob,
     otoroshiSynchronisator: OtoroshiSynchronizerJob,
-    paymentClient: PaymentClient
+    paymentClient: PaymentClient,
+    keyringService: KeyringService,
+    subscriptionBatchService: SubscriptionBatchService
 ) {
 
   implicit val ec: ExecutionContext = env.defaultExecutionContext
@@ -52,20 +47,1153 @@ class ApiService(
   implicit val me: MessagesApi = messagesApi
   implicit val tr: Translator = translator
 
+  private case class BatchProvisioningAuthorization(reservationToken: String)
+
+  private def validateBatchChildBeforeProvisioning(
+      demand: SubscriptionDemand,
+      tenant: Tenant,
+      api: Api,
+      plan: UsagePlan,
+      team: Team,
+      requester: User
+  ): EitherT[Future, AppError, Option[BatchProvisioningAuthorization]] =
+    demand.batch match {
+      case None => EitherT.pure[Future, AppError](None)
+      case Some(reference) =>
+        EitherT(env.dataStore.withTransaction {
+          env.dataStore.subscriptionBatchDemandRepo
+            .findForUpdate(tenant.id, reference.batch)
+            .flatMap {
+              case None =>
+                Future.successful(
+                  Left(AppError.EntityNotFound("Subscription batch"))
+                )
+              case Some(batch) =>
+                (for {
+                  item <- EitherT.fromOption[Future](
+                    batch.items.find(_.id == reference.item),
+                    AppError.EntityNotFound("Subscription batch item")
+                  )
+                  child <- EitherT.fromOptionF(
+                    env.dataStore.subscriptionDemandRepo
+                      .findByBatchItem(tenant.id, reference),
+                    AppError.SubscriptionDemandNotFound
+                  )
+                  _ <- EitherT.fromEither[Future](
+                    SubscriptionBatchEligibility
+                      .validateLinkedChild(batch, item, child)
+                  )
+                  _ <- EitherT.fromEither[Future](
+                    Either.cond(
+                      child == demand && !child.state.isClosed,
+                      (),
+                      AppError.EntityConflict("Subscription demand progress")
+                    )
+                  )
+                  reservation <- EitherT.fromEither[Future](
+                    item.reservation.toRight(
+                      AppError
+                        .EntityConflict("Subscription batch item reservation")
+                    )
+                  )
+                  _ <- EitherT.fromEither[Future](
+                    Either.cond(
+                      reservation.isActiveAt(DateTime.now),
+                      (),
+                      AppError
+                        .EntityConflict("Subscription batch item reservation")
+                    )
+                  )
+                  currentApi <- EitherT.fromOptionF(
+                    env.dataStore.apiRepo.forTenant(tenant).findById(item.api),
+                    AppError.ApiNotFound
+                  )
+                  currentPlan <- EitherT.fromOptionF(
+                    env.dataStore.usagePlanRepo
+                      .forTenant(tenant)
+                      .findById(item.plan),
+                    AppError.PlanNotFound
+                  )
+                  currentTeam <- EitherT.fromOptionF(
+                    env.dataStore.teamRepo
+                      .forTenant(tenant)
+                      .findById(batch.team),
+                    AppError.TeamNotFound
+                  )
+                  currentRequester <- EitherT.fromOptionF(
+                    env.dataStore.userRepo.findById(batch.from),
+                    AppError.UserNotFound(Some(batch.from))
+                  )
+                  currentTenant <- EitherT.fromOptionF(
+                    env.dataStore.tenantRepo.findById(tenant.id),
+                    AppError.TenantNotFound
+                  )
+                  _ <- EitherT.fromEither[Future](
+                    Either.cond(
+                      currentApi == api && currentPlan == plan &&
+                        currentTeam == team && currentRequester == requester,
+                      (),
+                      AppError
+                        .EntityConflict("Subscription eligibility changed")
+                    )
+                  )
+                  _ <- EitherT.fromEither[Future](
+                    SubscriptionBatchEligibility.validate(
+                      currentApi,
+                      currentPlan,
+                      currentTeam,
+                      currentRequester,
+                      currentTenant.subscriptionSecurity
+                    )
+                  )
+                  selectedKeyringId <- EitherT.fromEither[Future](
+                    item.keyringChoice match {
+                      case SubscriptionBatchKeyringChoice.Existing(keyring) =>
+                        Right(keyring)
+                      case SubscriptionBatchKeyringChoice.New(creationId) =>
+                        batch.newKeyrings
+                          .find(_.id == creationId)
+                          .toRight(
+                            AppError.EntityNotFound(
+                              "Subscription batch keyring creation"
+                            )
+                          )
+                          .flatMap(
+                            _.keyring.toRight(
+                              AppError.EntityConflict(
+                                "Subscription batch keyring is not ready"
+                              )
+                            )
+                          )
+                    }
+                  )
+                  _ <- EitherT.fromEither[Future](
+                    Either.cond(
+                      child.keyring.contains(selectedKeyringId),
+                      (),
+                      AppError.BadRequestError(
+                        "The child keyring no longer matches its batch selection"
+                      )
+                    )
+                  )
+                  keyring <- EitherT.fromOptionF(
+                    env.dataStore.keyringRepo
+                      .forTenant(tenant.id)
+                      .findById(selectedKeyringId.value),
+                    AppError
+                      .EntityNotFound(s"Keyring ${selectedKeyringId.value}")
+                  )
+                  _ <- EitherT.fromEither[Future](
+                    SubscriptionBatchEligibility.validateKeyring(
+                      batch,
+                      item,
+                      currentPlan,
+                      keyring
+                    )
+                  )
+                  _ <- EitherT.fromEither[Future](
+                    Either.cond(
+                      reservation.isActiveAt(DateTime.now),
+                      (),
+                      AppError
+                        .EntityConflict("Subscription batch item reservation")
+                    )
+                  )
+                } yield Some(
+                  BatchProvisioningAuthorization(reservation.token)
+                )).value
+            }
+        })
+    }
+
+  private def allocateBatchKeyring(
+      tenant: Tenant,
+      batchId: SubscriptionBatchDemandId,
+      creationId: SubscriptionBatchKeyringId
+  ): Future[Either[
+    AppError,
+    (SubscriptionBatchDemand, SubscriptionBatchKeyringCreation, Keyring)
+  ]] =
+    env.dataStore.withTransaction {
+      env.dataStore.subscriptionBatchDemandRepo
+        .findForUpdate(tenant.id, batchId)
+        .flatMap {
+          case None =>
+            Future.successful(
+              Left(AppError.EntityNotFound("Subscription batch"))
+            )
+          case Some(batch) =>
+            batch.newKeyrings.find(_.id == creationId) match {
+              case None =>
+                Future.successful(
+                  Left(
+                    AppError.EntityNotFound(
+                      "Subscription batch keyring creation"
+                    )
+                  )
+                )
+              case Some(creation) if creation.keyring.isDefined =>
+                env.dataStore.keyringRepo
+                  .forTenant(tenant.id)
+                  .findById(creation.keyring.get.value)
+                  .map {
+                    case Some(keyring) =>
+                      Right((batch, creation, keyring))
+                    case None =>
+                      Left(
+                        AppError.EntityConflict(
+                          "The reserved subscription batch keyring is missing"
+                        )
+                      )
+                  }
+              case Some(creation) =>
+                val pendingItems = batch.items.collect {
+                  case item
+                      if item.state == SubscriptionBatchItemState.Pending &&
+                        item.demand.isEmpty &&
+                        item.keyringChoice ==
+                        SubscriptionBatchKeyringChoice.New(creationId) =>
+                    SubscriptionBatchReference(batch.id, item.id)
+                }
+                if (pendingItems.isEmpty)
+                  Future.successful(
+                    Left(
+                      AppError.EntityConflict(
+                        "The subscription batch keyring has no pending items"
+                      )
+                    )
+                  )
+                else {
+                  val keyringId = KeyringId(IdGenerator.token(32))
+                  val keyring = Keyring(
+                    id = keyringId,
+                    tenant = tenant.id,
+                    team = batch.team,
+                    customName = creation.customName,
+                    apiKey = OtoroshiApiKey(
+                      clientName =
+                        s"daikoku-batch-${batch.id.value}-${creation.id.value}",
+                      clientId = IdGenerator.token(32),
+                      clientSecret = IdGenerator.token(64)
+                    ),
+                    otoroshiSettings = creation.binding,
+                    createdAt = DateTime.now(),
+                    rotation = None,
+                    integrationToken = IdGenerator.token(64),
+                    enabled = false,
+                    shell = Some(
+                      KeyringShellProvenance(
+                        batch.id,
+                        creation.id,
+                        pendingItems
+                      )
+                    )
+                  )
+                  val readyWithoutExternalKey =
+                    creation.binding == KeyringOtoroshiBinding.Internal
+                  val updatedCreation = creation.copy(
+                    keyring = Some(keyringId),
+                    ready = readyWithoutExternalKey
+                  )
+                  val updatedBatch = batch.copy(newKeyrings =
+                    batch.newKeyrings.map(current =>
+                      if (current.id == creation.id) updatedCreation
+                      else current
+                    )
+                  )
+                  env.dataStore.subscriptionBatchDemandRepo
+                    .updateIfRevisionMatches(updatedBatch)
+                    .flatMap {
+                      case None =>
+                        Future.successful(
+                          Left(
+                            AppError.EntityConflict(
+                              "The subscription batch changed while reserving its keyring"
+                            )
+                          )
+                        )
+                      case Some(savedBatch) =>
+                        env.dataStore.keyringRepo
+                          .forTenant(tenant.id)
+                          .save(keyring)
+                          .map {
+                            case true =>
+                              Right((savedBatch, updatedCreation, keyring))
+                            case false =>
+                              Left(
+                                AppError.EntityConflict(
+                                  "The subscription batch keyring could not be saved"
+                                )
+                              )
+                          }
+                    }
+                }
+            }
+        }
+    }
+
+  private def markBatchKeyringReady(
+      tenant: TenantId,
+      batchId: SubscriptionBatchDemandId,
+      creationId: SubscriptionBatchKeyringId,
+      keyringId: KeyringId
+  ): Future[Either[AppError, Unit]] =
+    env.dataStore.withTransaction {
+      env.dataStore.subscriptionBatchDemandRepo
+        .findForUpdate(tenant, batchId)
+        .flatMap {
+          case None =>
+            Future.successful(
+              Left(AppError.EntityNotFound("Subscription batch"))
+            )
+          case Some(batch) =>
+            batch.newKeyrings.find(_.id == creationId) match {
+              case None =>
+                Future.successful(
+                  Left(
+                    AppError.EntityNotFound(
+                      "Subscription batch keyring creation"
+                    )
+                  )
+                )
+              case Some(creation) if !creation.keyring.contains(keyringId) =>
+                Future.successful(
+                  Left(
+                    AppError.EntityConflict(
+                      "The subscription batch keyring reservation changed"
+                    )
+                  )
+                )
+              case Some(creation) if creation.ready =>
+                Future.successful(Right(()))
+              case Some(creation) =>
+                val updated = batch.copy(newKeyrings =
+                  batch.newKeyrings.map(current =>
+                    if (current.id == creationId)
+                      current.copy(ready = true)
+                    else current
+                  )
+                )
+                env.dataStore.subscriptionBatchDemandRepo
+                  .updateIfRevisionMatches(updated)
+                  .map {
+                    case Some(_) => Right(())
+                    case None =>
+                      Left(
+                        AppError.EntityConflict(
+                          "The subscription batch changed while marking its keyring ready"
+                        )
+                      )
+                  }
+            }
+        }
+    }
+
+  private def persistBatchKeyringLifecycle(
+      tenant: TenantId,
+      batchId: SubscriptionBatchDemandId,
+      creationId: SubscriptionBatchKeyringId,
+      keyring: Keyring,
+      finalized: Boolean
+  ): Future[Either[AppError, Unit]] =
+    env.dataStore.withTransaction {
+      env.dataStore.subscriptionBatchDemandRepo
+        .findForUpdate(tenant, batchId)
+        .flatMap {
+          case None =>
+            Future.successful(
+              Left(AppError.EntityNotFound("Subscription batch"))
+            )
+          case Some(batch) =>
+            batch.newKeyrings.find(_.id == creationId) match {
+              case None =>
+                Future.successful(
+                  Left(
+                    AppError.EntityNotFound(
+                      "Subscription batch keyring creation"
+                    )
+                  )
+                )
+              case Some(creation) if !creation.keyring.contains(keyring.id) =>
+                Future.successful(
+                  Left(
+                    AppError.EntityConflict(
+                      "The subscription batch keyring reservation changed"
+                    )
+                  )
+                )
+              case Some(creation) =>
+                val updatedBatch = batch.copy(newKeyrings =
+                  batch.newKeyrings.map(current =>
+                    if (current.id == creationId)
+                      current.copy(finalized = finalized)
+                    else current
+                  )
+                )
+                env.dataStore.subscriptionBatchDemandRepo
+                  .updateIfRevisionMatches(updatedBatch)
+                  .flatMap {
+                    case None =>
+                      Future.failed(
+                        new IllegalStateException(
+                          "A locked subscription batch changed while saving its keyring lifecycle"
+                        )
+                      )
+                    case Some(_) =>
+                      env.dataStore.keyringRepo
+                        .forTenant(tenant)
+                        .save(keyring)
+                        .map {
+                          case true => Right(())
+                          case false =>
+                            throw new IllegalStateException(
+                              "The subscription batch keyring lifecycle could not be saved"
+                            )
+                        }
+                  }
+            }
+        }
+    }
+
+  private def markBatchKeyringFinalized(
+      tenant: TenantId,
+      batchId: SubscriptionBatchDemandId,
+      creationId: SubscriptionBatchKeyringId
+  ): Future[Either[AppError, Unit]] =
+    env.dataStore.withTransaction {
+      env.dataStore.subscriptionBatchDemandRepo
+        .findForUpdate(tenant, batchId)
+        .flatMap {
+          case None =>
+            Future.successful(
+              Left(AppError.EntityNotFound("Subscription batch"))
+            )
+          case Some(batch) =>
+            batch.newKeyrings.find(_.id == creationId) match {
+              case None =>
+                Future.successful(
+                  Left(
+                    AppError.EntityNotFound(
+                      "Subscription batch keyring creation"
+                    )
+                  )
+                )
+              case Some(creation) if creation.finalized =>
+                Future.successful(Right(()))
+              case Some(_) =>
+                val updated = batch.copy(newKeyrings =
+                  batch.newKeyrings.map(current =>
+                    if (current.id == creationId)
+                      current.copy(finalized = true)
+                    else current
+                  )
+                )
+                env.dataStore.subscriptionBatchDemandRepo
+                  .updateIfRevisionMatches(updated)
+                  .map {
+                    case Some(_) => Right(())
+                    case None =>
+                      throw new IllegalStateException(
+                        "A locked subscription batch changed while finalizing its keyring"
+                      )
+                  }
+            }
+        }
+    }
+
+  private def enableBatchKeyringApiKey(
+      tenant: Tenant,
+      keyring: Keyring
+  ): Future[Either[AppError, Unit]] =
+    keyring.otoroshiSettings match {
+      case KeyringOtoroshiBinding.Internal =>
+        Future.successful(Right(()))
+      case KeyringOtoroshiBinding.Otoroshi(settingsId) =>
+        tenant.otoroshiSettings.find(_.id == settingsId) match {
+          case None =>
+            Future.successful(Left(AppError.OtoroshiSettingsNotFound))
+          case Some(settings) =>
+            otoroshiClient
+              .getApikey(keyring.apiKey.clientId)(using settings)
+              .flatMap {
+                case Left(error) => Future.successful(Left(error))
+                case Right(apiKey) =>
+                  val withoutEmptyGroup = settings.keyringEmptyGroup
+                    .map(group =>
+                      apiKey.copy(
+                        enabled = true,
+                        authorizedEntities = apiKey.authorizedEntities.copy(
+                          groups = apiKey.authorizedEntities.groups -
+                            OtoroshiServiceGroupId(group.id)
+                        )
+                      )
+                    )
+                    .getOrElse(apiKey.copy(enabled = true))
+                  otoroshiClient
+                    .updateApiKey(withoutEmptyGroup)(using settings)
+                    .map(_.map(_ => ()))
+              }
+        }
+    }
+
+  private def reconcileBatchKeyring(
+      tenantId: TenantId,
+      reference: SubscriptionBatchReference
+  ): Future[Either[AppError, Unit]] = {
+    val reconciled = for {
+      tenant <- EitherT.fromOptionF(
+        env.dataStore.tenantRepo.findById(tenantId),
+        AppError.TenantNotFound
+      )
+      batch <- EitherT.fromOptionF(
+        env.dataStore.subscriptionBatchDemandRepo
+          .forTenant(tenantId)
+          .findById(reference.batch),
+        AppError.EntityNotFound("Subscription batch")
+      )
+      item <- EitherT.fromOption[Future](
+        batch.items.find(_.id == reference.item),
+        AppError.EntityNotFound("Subscription batch item")
+      )
+      result <- item.keyringChoice match {
+        case SubscriptionBatchKeyringChoice.Existing(_) =>
+          EitherT.pure[Future, AppError](())
+        case SubscriptionBatchKeyringChoice.New(creationId) =>
+          for {
+            creation <- EitherT.fromOption[Future](
+              batch.newKeyrings.find(_.id == creationId),
+              AppError.EntityNotFound("Subscription batch keyring creation")
+            )
+            keyringId <- EitherT.fromOption[Future](
+              creation.keyring,
+              AppError.EntityConflict("Subscription batch keyring is not ready")
+            )
+            maybeKeyring <- EitherT.liftF(
+              env.dataStore.keyringRepo
+                .forTenant(tenantId)
+                .findById(keyringId)
+            )
+            subscriptions <- EitherT.liftF(
+              keyringService.keyringSubscriptions(tenantId, keyringId)
+            )
+            _ <- EitherT(
+              maybeKeyring match {
+                case None if creation.finalized =>
+                  Future.successful(Right(()))
+                case None
+                    if subscriptions.isEmpty &&
+                      !batch.items.exists(current =>
+                        !current.state.isClosed &&
+                          current.keyringChoice ==
+                          SubscriptionBatchKeyringChoice.New(creationId)
+                      ) =>
+                  markBatchKeyringFinalized(
+                    tenantId,
+                    batch.id,
+                    creationId
+                  )
+                case None =>
+                  Future.successful(
+                    Left(
+                      AppError.EntityConflict(
+                        "The subscription batch keyring is missing"
+                      )
+                    )
+                  )
+                case Some(keyring) =>
+                  val shell = keyring.shell.toRight(
+                    AppError.EntityConflict(
+                      "The subscription batch keyring shell is missing"
+                    )
+                  )
+                  val selectedItems = batch.items.filter(
+                    _.keyringChoice ==
+                      SubscriptionBatchKeyringChoice.New(creationId)
+                  )
+                  val hasAcceptedSubscription =
+                    subscriptions.nonEmpty || selectedItems.exists(item =>
+                      item.state == SubscriptionBatchItemState.Accepted &&
+                        item.subscription.isDefined
+                    )
+                  val pendingItems = selectedItems.collect {
+                    case pending if !pending.state.isClosed =>
+                      SubscriptionBatchReference(batch.id, pending.id)
+                  }
+                  shell match {
+                    case Left(error) => Future.successful(Left(error))
+                    case Right(provenance) if hasAcceptedSubscription =>
+                      val firstActivation =
+                        provenance.activatedAt.isEmpty
+                      val updatedKeyring = keyring.copy(
+                        enabled = keyring.enabled || firstActivation,
+                        shell = Some(
+                          provenance.copy(
+                            pendingItems = pendingItems,
+                            activatedAt = provenance.activatedAt
+                              .orElse(Some(DateTime.now()))
+                          )
+                        )
+                      )
+                      val needsExternalEnable =
+                        keyring.otoroshiSettings.isInstanceOf[
+                          KeyringOtoroshiBinding.Otoroshi
+                        ] && (firstActivation ||
+                          (!creation.finalized && keyring.enabled))
+                      persistBatchKeyringLifecycle(
+                        tenantId,
+                        batch.id,
+                        creationId,
+                        updatedKeyring,
+                        finalized = !needsExternalEnable
+                      ).flatMap {
+                        case Left(error) => Future.successful(Left(error))
+                        case Right(_) if !needsExternalEnable =>
+                          Future.successful(Right(()))
+                        case Right(_) =>
+                          enableBatchKeyringApiKey(tenant, updatedKeyring)
+                            .flatMap {
+                              case Left(error) =>
+                                Future.successful(Left(error))
+                              case Right(_) =>
+                                markBatchKeyringFinalized(
+                                  tenantId,
+                                  batch.id,
+                                  creationId
+                                )
+                            }
+                      }
+                    case Right(provenance) if pendingItems.nonEmpty =>
+                      env.dataStore.keyringRepo
+                        .forTenant(tenantId)
+                        .save(
+                          keyring.copy(
+                            shell = Some(
+                              provenance.copy(pendingItems = pendingItems)
+                            )
+                          )
+                        )
+                        .map {
+                          case true => Right(())
+                          case false =>
+                            Left(
+                              AppError.EntityConflict(
+                                "The subscription batch keyring shell could not be updated"
+                              )
+                            )
+                        }
+                    case Right(_) =>
+                      keyringService
+                        .deleteKeyringIfEmpty(tenant, keyringId)
+                        .value
+                        .flatMap {
+                          case Left(error) =>
+                            Future.successful(Left(error))
+                          case Right(true) =>
+                            markBatchKeyringFinalized(
+                              tenantId,
+                              batch.id,
+                              creationId
+                            )
+                          case Right(false) =>
+                            Future.successful(
+                              Left(
+                                AppError.EntityConflict(
+                                  "An unaccepted subscription batch keyring is not empty"
+                                )
+                              )
+                            )
+                        }
+                  }
+              }
+            )
+          } yield ()
+      }
+    } yield result
+    reconciled.value
+  }
+
+  private def createOrRecoverBatchShellApiKey(
+      batch: SubscriptionBatchDemand,
+      creation: SubscriptionBatchKeyringCreation,
+      keyring: Keyring,
+      settings: OtoroshiSettings,
+      emptyGroup: KeyringEmptyGroup
+  ): Future[Either[AppError, ActualOtoroshiApiKey]] = {
+    val metadata = Map(
+      "daikoku_created_from" -> "subscription-batch-shell",
+      "daikoku_subscription_batch" -> batch.id.value,
+      "daikoku_subscription_batch_keyring" -> creation.id.value
+    )
+    val expectedEntities =
+      AuthorizedEntities(groups = Set(OtoroshiServiceGroupId(emptyGroup.id)))
+
+    def validate(
+        apiKey: ActualOtoroshiApiKey
+    ): Either[AppError, ActualOtoroshiApiKey] =
+      Either.cond(
+        apiKey.clientId == keyring.apiKey.clientId &&
+          apiKey.clientSecret == keyring.apiKey.clientSecret &&
+          apiKey.authorizedEntities == expectedEntities &&
+          !apiKey.enabled &&
+          metadata.forall { case (key, value) =>
+            apiKey.metadata.get(key).contains(value)
+          },
+        apiKey,
+        AppError.EntityConflict(
+          "The Otoroshi key does not match the reserved subscription batch shell"
+        )
+      )
+
+    val shellApiKey = ActualOtoroshiApiKey(
+      clientId = keyring.apiKey.clientId,
+      clientSecret = keyring.apiKey.clientSecret,
+      clientName = keyring.apiKey.clientName,
+      authorizedEntities = expectedEntities,
+      enabled = false,
+      metadata = metadata,
+      restrictions = ApiKeyRestrictions(),
+      rotation = None
+    )
+
+    def recoverCreatedKey(
+        originalError: AppError
+    ): Future[Either[AppError, ActualOtoroshiApiKey]] =
+      otoroshiClient
+        .getApikeyOpt(keyring.apiKey.clientId)(using settings)
+        .value
+        .map {
+          case Right(Some(existing)) => validate(existing)
+          case _                     => Left(originalError)
+        }
+
+    otoroshiClient
+      .getApikeyOpt(keyring.apiKey.clientId)(using settings)
+      .value
+      .flatMap {
+        case Right(Some(existing)) =>
+          Future.successful(validate(existing))
+        case Right(None) =>
+          otoroshiClient.createApiKey(shellApiKey)(using settings).flatMap {
+            case Right(created) => Future.successful(validate(created))
+            case Left(error)    => recoverCreatedKey(error)
+          }
+        case Left(error) =>
+          Future.successful(Left(error))
+      }
+  }
+
+  /** Idempotently reserve and provision the disabled keyring shell before a
+    * batch item can be materialized.
+    */
+  private def ensureBatchKeyringSettings(
+      tenantId: TenantId,
+      settingsId: OtoroshiSettingsId
+  ): Future[Either[AppError, OtoroshiSettings]] =
+    env.dataStore.withTransaction {
+      env.dataStore.tenantRepo.findForUpdate(tenantId).flatMap {
+        case None =>
+          Future.successful(Left(AppError.OtoroshiSettingsNotFound))
+        case Some(currentTenant) =>
+          currentTenant.otoroshiSettings.find(_.id == settingsId) match {
+            case None =>
+              Future.successful(Left(AppError.OtoroshiSettingsNotFound))
+            case Some(settings) if settings.keyringEmptyGroup.isDefined =>
+              Future.successful(Right(settings))
+            case Some(settings) =>
+              val configured = settings.copy(keyringEmptyGroup =
+                Some(
+                  KeyringEmptyGroup(
+                    IdGenerator.token(32),
+                    IdGenerator.token(64)
+                  )
+                )
+              )
+              env.dataStore.tenantRepo
+                .save(
+                  currentTenant.copy(otoroshiSettings =
+                    currentTenant.otoroshiSettings
+                      .filterNot(_.id == settingsId) + configured
+                  )
+                )
+                .map {
+                  case true => Right(configured)
+                  case false =>
+                    Left(
+                      AppError.EntityConflict(
+                        "Could not save the Otoroshi keyring empty group configuration"
+                      )
+                    )
+                }
+          }
+      }
+    }
+
+  def prepareBatchKeyring(
+      tenant: Tenant,
+      batchId: SubscriptionBatchDemandId,
+      creationId: SubscriptionBatchKeyringId
+  ): Future[Either[AppError, KeyringId]] = {
+    def prepareAllocated(): Future[Either[AppError, KeyringId]] =
+      allocateBatchKeyring(tenant, batchId, creationId).flatMap {
+        case Left(error) => Future.successful(Left(error))
+        case Right((batch, creation, keyring))
+            if !batch.items.exists(item =>
+              !item.state.isClosed &&
+                item.keyringChoice ==
+                SubscriptionBatchKeyringChoice.New(creationId)
+            ) =>
+          batch.items
+            .find(
+              _.keyringChoice == SubscriptionBatchKeyringChoice.New(creationId)
+            )
+            .map(item =>
+              reconcileBatchKeyring(
+                tenant.id,
+                SubscriptionBatchReference(batch.id, item.id)
+              ).map(_.map(_ => keyring.id))
+            )
+            .getOrElse(Future.successful(Right(keyring.id)))
+        case Right((batch, creation, keyring)) if creation.ready =>
+          batch.items
+            .find(
+              _.keyringChoice == SubscriptionBatchKeyringChoice.New(creationId)
+            )
+            .map(item =>
+              reconcileBatchKeyring(
+                tenant.id,
+                SubscriptionBatchReference(batch.id, item.id)
+              ).map(_.map(_ => keyring.id))
+            )
+            .getOrElse(Future.successful(Right(keyring.id)))
+        case Right((batch, creation, keyring)) =>
+          creation.binding match {
+            case KeyringOtoroshiBinding.Internal =>
+              markBatchKeyringReady(tenant.id, batchId, creationId, keyring.id)
+                .map(_.map(_ => keyring.id))
+            case KeyringOtoroshiBinding.Otoroshi(settingsId) =>
+              tenant.otoroshiSettings.find(_.id == settingsId) match {
+                case None =>
+                  Future.successful(Left(AppError.OtoroshiSettingsNotFound))
+                case Some(settings) =>
+                  val configuredSettings =
+                    if (settings.keyringEmptyGroup.isDefined)
+                      Future.successful(Right(settings))
+                    else ensureBatchKeyringSettings(tenant.id, settings.id)
+                  configuredSettings.flatMap {
+                    case Left(error) => Future.successful(Left(error))
+                    case Right(configured) =>
+                      otoroshiClient
+                        .ensureKeyringEmptyGroup()(using configured)
+                        .flatMap {
+                          case Left(error) => Future.successful(Left(error))
+                          case Right(group) =>
+                            createOrRecoverBatchShellApiKey(
+                              batch = batch,
+                              creation = creation,
+                              keyring = keyring,
+                              settings = configured,
+                              emptyGroup = group
+                            ).flatMap {
+                              case Left(error) => Future.successful(Left(error))
+                              case Right(_) =>
+                                markBatchKeyringReady(
+                                  tenant.id,
+                                  batchId,
+                                  creationId,
+                                  keyring.id
+                                ).map(_.map(_ => keyring.id))
+                            }
+                        }
+                  }
+              }
+          }
+      }
+
+    env.dataStore.subscriptionBatchDemandRepo
+      .forTenant(tenant.id)
+      .findById(batchId)
+      .flatMap {
+        case Some(batch)
+            if !batch.items.exists(item =>
+              !item.state.isClosed &&
+                item.keyringChoice ==
+                SubscriptionBatchKeyringChoice.New(creationId)
+            ) =>
+          (
+            batch.newKeyrings.find(_.id == creationId).flatMap(_.keyring),
+            batch.items.find(
+              _.keyringChoice ==
+                SubscriptionBatchKeyringChoice.New(creationId)
+            )
+          ) match {
+            case (Some(keyringId), Some(item)) =>
+              reconcileBatchKeyring(
+                tenant.id,
+                SubscriptionBatchReference(batch.id, item.id)
+              ).map(_.map(_ => keyringId))
+            case _ => prepareAllocated()
+          }
+        case _ => prepareAllocated()
+      }
+  }
+
+  private def saveDemandProgress(
+      demand: SubscriptionDemand,
+      previous: SubscriptionDemand
+  ): EitherT[Future, AppError, Boolean] =
+    demand.batch match {
+      case None =>
+        EitherT.liftF(
+          env.dataStore.subscriptionDemandRepo
+            .forTenant(demand.tenant)
+            .save(demand)
+        )
+      case Some(_) =>
+        EitherT(env.dataStore.saveBatchChildProgress(demand, previous)).map(_ =>
+          true
+        )
+    }
+
+  private def saveDemandOutcome(
+      previous: SubscriptionDemand,
+      updated: SubscriptionDemand,
+      notification: Notification,
+      subscription: Option[ApiSubscriptionId] = None,
+      reservationToken: Option[String] = None
+  ): EitherT[Future, AppError, Unit] =
+    previous.batch match {
+      case Some(reference) =>
+        EitherT(
+          env.dataStore
+            .saveBatchChildProgress(
+              updated,
+              previous,
+              subscription,
+              Some(notification),
+              reservationToken
+            )
+            .flatMap {
+              case Left(error) => Future.successful(Left(error))
+              case Right(_) =>
+                reconcileBatchKeyring(
+                  previous.tenant,
+                  reference
+                )
+            }
+        )
+      case None =>
+        EitherT.liftF(env.dataStore.withTransaction {
+          for {
+            _ <- env.dataStore.subscriptionDemandRepo
+              .forTenant(previous.tenant)
+              .save(updated)
+            _ <- env.dataStore.notificationRepo
+              .forTenant(previous.tenant)
+              .save(notification)
+          } yield ()
+        })
+    }
+
+  private def markBatchChildWorkflowStarted(
+      demandId: DemandId,
+      tenant: Tenant
+  ): Future[Either[AppError, Unit]] =
+    env.dataStore.subscriptionDemandRepo
+      .forTenant(tenant)
+      .findById(demandId)
+      .flatMap {
+        case Some(demand)
+            if demand.batch.isDefined &&
+              demand.state == WorkflowState.Waiting =>
+          env.dataStore.saveBatchChildProgress(
+            demand.copy(state = WorkflowState.InProgress),
+            demand
+          )
+        case Some(_) => Future.successful(Right(()))
+        case None =>
+          Future.successful(Left(AppError.SubscriptionDemandNotFound))
+      }
+
+  private def batchPhaseReady(
+      demand: SubscriptionDemand,
+      step: WorkflowStep,
+      tenant: Tenant
+  ): Future[Boolean] =
+    demand.batch match {
+      case None => Future.successful(true)
+      case Some(reference) =>
+        val phaseIndex = demand.steps.indexWhere(_.id == step.id)
+        if (phaseIndex < 0) Future.successful(false)
+        else if (phaseIndex == 0) Future.successful(true)
+        else
+          env.dataStore.subscriptionBatchDemandRepo
+            .forTenant(tenant.id)
+            .findById(reference.batch)
+            .flatMap {
+              case None => Future.successful(false)
+              case Some(batch) =>
+                val participants = batch.items.filter(item =>
+                  item.api == demand.api && item.process.steps.nonEmpty &&
+                    !item.state.isClosed
+                )
+                Future
+                  .sequence(participants.map { item =>
+                    env.dataStore.subscriptionDemandRepo.findByBatchItem(
+                      tenant.id,
+                      SubscriptionBatchReference(batch.id, item.id)
+                    )
+                  })
+                  .map { children =>
+                    children.size == participants.size &&
+                    children.forall {
+                      case None                                => false
+                      case Some(child) if child.state.isClosed => true
+                      case Some(child) =>
+                        child.steps
+                          .lift(phaseIndex - 1)
+                          .forall(_.state.isClosed)
+                    }
+                  }
+            }
+    }
+
+  def canRunBatchChild(
+      demandId: DemandId,
+      tenant: Tenant
+  ): Future[Boolean] =
+    env.dataStore.subscriptionDemandRepo
+      .forTenant(tenant)
+      .findById(demandId)
+      .flatMap {
+        case Some(demand) if demand.batch.isDefined =>
+          demand.steps.find(!_.state.isClosed) match {
+            case Some(step) if step.state == WorkflowState.Waiting =>
+              batchPhaseReady(demand, step, tenant)
+            case None => Future.successful(true)
+            case _    => Future.successful(false)
+          }
+        case Some(_) => Future.successful(false)
+        case None    => Future.successful(false)
+      }
+
+  def advanceSubscriptionBatch(
+      tenant: Tenant,
+      batchId: SubscriptionBatchDemandId
+  ): EitherT[Future, AppError, SubscriptionBatchDemand] = {
+    def runChildren(): EitherT[Future, AppError, Seq[Either[AppError, Unit]]] =
+      for {
+        references <- EitherT(
+          env.dataStore.subscriptionBatchDemandRepo
+            .findRunnableChildren(tenant.id, batchId)
+        )
+        results <- EitherT
+          .liftF[Future, AppError, Vector[Either[AppError, Unit]]](
+            references.foldLeft(
+              Future.successful(Vector.empty[Either[AppError, Unit]])
+            ) { (previous, reference) =>
+              previous.flatMap { results =>
+                env.dataStore.subscriptionDemandRepo
+                  .findByBatchItem(tenant.id, reference)
+                  .flatMap {
+                    case None =>
+                      Future.successful(
+                        results :+ Left(AppError.SubscriptionDemandNotFound)
+                      )
+                    case Some(demand) =>
+                      canRunBatchChild(demand.id, tenant).flatMap {
+                        case false => Future.successful(results)
+                        case true =>
+                          env.dataStore.userRepo.findById(demand.from).flatMap {
+                            case None =>
+                              Future.successful(
+                                results :+ Left(
+                                  AppError.UserNotFound(Some(demand.from))
+                                )
+                              )
+                            case Some(requester) =>
+                              implicit val language: String =
+                                requester.defaultLanguage
+                                  .orElse(tenant.defaultLanguage)
+                                  .getOrElse("en")
+                              runSubscriptionProcessOnce(demand.id, tenant)(
+                                using
+                                language,
+                                requester
+                              ).value
+                                .map(result => results :+ result.map(_ => ()))
+                          }
+                      }
+                  }
+              }
+            }
+          )
+        // A later child can unblock an earlier sibling at the next approval phase.
+        remaining <-
+          if (results.exists(_.isRight)) runChildren()
+          else EitherT.pure[Future, AppError](Seq.empty[Either[AppError, Unit]])
+      } yield results ++ remaining
+
+    def reportFailures(
+        results: Seq[Either[AppError, Unit]]
+    ): Either[AppError, Unit] = {
+      val failures = results.collect { case Left(error) => error }
+      failures.foreach(error =>
+        AppLogger.error(
+          s"Subscription batch ${batchId.value}: ${error.getErrorMessage()}"
+        )
+      )
+      failures.headOption.toLeft(())
+    }
+
+    for {
+      creations <- EitherT(
+        env.dataStore.subscriptionBatchDemandRepo
+          .findPendingKeyringCreations(tenant.id, batchId)
+      )
+      prepared <- EitherT
+        .liftF[Future, AppError, Vector[Either[AppError, Unit]]](
+          creations.foldLeft(
+            Future.successful(Vector.empty[Either[AppError, Unit]])
+          ) { case (previous, (_, creation)) =>
+            previous.flatMap(results =>
+              prepareBatchKeyring(tenant, batchId, creation)
+                .map(result => results :+ result.map(_ => ()))
+            )
+          }
+        )
+      materialized <- subscriptionBatchService.materializePendingItems(
+        tenant.id,
+        batchId
+      )
+      progressed <- runChildren()
+      _ <- EitherT.fromEither[Future](
+        reportFailures(
+          prepared ++ materialized.map(_._2.map(_ => ())) ++ progressed
+        )
+      )
+      batch <- EitherT.fromOptionF[Future, AppError, SubscriptionBatchDemand](
+        env.dataStore.subscriptionBatchDemandRepo
+          .forTenant(tenant.id)
+          .findById(batchId),
+        AppError.EntityNotFound("Subscription batch")
+      )
+    } yield batch
+  }
+
   /** Name given to a keyring when the consumer did not provide one. Kept in
     * sync with the placeholder displayed by the front (see ApiPricing.tsx).
     */
-  def defaultKeyringName(api: Api, plan: UsagePlan): String =
+  private def defaultKeyringName(api: Api, plan: UsagePlan): String =
     s"${api.name} - ${plan.customName}"
 
-  def jsonToOtoroshiMetadata(json: JsObject) = {
+  private def jsonToOtoroshiMetadata(json: JsObject) = {
     json.fieldSet.map {
       case (a, b: JsString) => a -> b.value
       case (a, b)           => a -> Json.stringify(b)
     }.toMap + ("raw_custom_metadata" -> Json.stringify(json))
   }
 
-  def getListFromStringMap(
+  private def getListFromStringMap(
       key: String,
       metadata: Map[String, String]
   ): Set[String] = {
@@ -75,7 +1203,7 @@ class ApiService(
       .getOrElse(Set.empty)
   }
 
-  def mergeStringMapValue(
+  private def mergeStringMapValue(
       key: String,
       meta1: Map[String, String],
       meta2: Map[String, String]
@@ -85,7 +1213,7 @@ class ApiService(
     (list1 ++ list2).mkString(" | ")
   }
 
-  def createOtoroshiApiKey(
+  private def createOtoroshiApiKey(
       user: User,
       api: Api,
       plan: UsagePlan,
@@ -224,8 +1352,8 @@ class ApiService(
   }
 
   /** A priced plan owes its monthly cost from the first day: recording it at
-    * subscription time lets both teams see the estimate without waiting for
-    * the stats job.
+    * subscription time lets both teams see the estimate without waiting for the
+    * stats job.
     */
   private def recordFirstConsumptionOfPricedPlan(
       tenant: Tenant,
@@ -247,7 +1375,7 @@ class ApiService(
     }
   }
 
-  def subscribeToApi(
+  private def subscribeToApi(
       tenant: Tenant,
       user: User,
       api: Api,
@@ -366,50 +1494,81 @@ class ApiService(
         val otoroshiApiKeyActionResult
             : EitherT[Future, AppError, ActualOtoroshiApiKey] =
           maybeKeyring match {
-            case Some(_) =>
+            case Some(existingKeyring) =>
               EitherT(otoroshiClient.getApikey(keyring.apiKey.clientId))
-                .flatMap(otoApiKey =>
-                  EitherT(
-                    otoroshiClient.updateApiKey(
-                      otoApiKey.copy(
-                        authorizedEntities = AuthorizedEntities(
-                          groups =
-                            otoApiKey.authorizedEntities.groups ++ authorizedEntities.groups,
-                          services =
-                            otoApiKey.authorizedEntities.services ++ authorizedEntities.services,
-                          routes =
-                            otoApiKey.authorizedEntities.routes ++ authorizedEntities.routes
-                        ),
-                        tags = tunedApiKey.tags ++ otoApiKey.tags,
-                        restrictions = ApiKeyRestrictions(
-                          enabled =
-                            otoApiKey.restrictions.enabled && tunedApiKey.restrictions.enabled,
-                          allowLast =
-                            otoApiKey.restrictions.allowLast || tunedApiKey.restrictions.allowLast,
-                          allowed =
-                            tunedApiKey.restrictions.allowed ++ otoApiKey.restrictions.allowed,
-                          forbidden =
-                            tunedApiKey.restrictions.forbidden ++ otoApiKey.restrictions.forbidden,
-                          notFound =
-                            tunedApiKey.restrictions.forbidden ++ otoApiKey.restrictions.forbidden
-                        ),
-                        metadata =
-                          tunedApiKey.metadata ++ otoApiKey.metadata ++ Map(
-                            "daikoku__metadata" -> mergeStringMapValue(
-                              "daikoku__metadata",
-                              tunedApiKey.metadata,
-                              otoApiKey.metadata
-                            ),
-                            "daikoku__tags" -> mergeStringMapValue(
-                              "daikoku__tags",
-                              tunedApiKey.metadata,
-                              otoApiKey.metadata
-                            )
+                .flatMap { otoApiKey =>
+                  val shellGroups = existingKeyring.shell match {
+                    case None => Right(Set.empty[OtoroshiServiceGroupId])
+                    case Some(_) =>
+                      otoroshiSettings.keyringEmptyGroup
+                        .map(group => Set(OtoroshiServiceGroupId(group.id)))
+                        .toRight(
+                          AppError.EntityConflict(
+                            "The Otoroshi keyring empty group is not configured"
                           )
-                      )
-                    )
-                  )
-                )
+                        )
+                  }
+                  EitherT.fromEither[Future](shellGroups).flatMap {
+                    groupsToRemove =>
+                      EitherT(
+                        otoroshiClient.updateApiKey(
+                          otoApiKey.copy(
+                            authorizedEntities = AuthorizedEntities(
+                              groups =
+                                (otoApiKey.authorizedEntities.groups ++ authorizedEntities.groups) -- groupsToRemove,
+                              services =
+                                otoApiKey.authorizedEntities.services ++ authorizedEntities.services,
+                              routes =
+                                otoApiKey.authorizedEntities.routes ++ authorizedEntities.routes
+                            ),
+                            tags = tunedApiKey.tags ++ otoApiKey.tags,
+                            restrictions = ApiKeyRestrictions(
+                              enabled =
+                                otoApiKey.restrictions.enabled && tunedApiKey.restrictions.enabled,
+                              allowLast =
+                                otoApiKey.restrictions.allowLast || tunedApiKey.restrictions.allowLast,
+                              allowed =
+                                tunedApiKey.restrictions.allowed ++ otoApiKey.restrictions.allowed,
+                              forbidden =
+                                tunedApiKey.restrictions.forbidden ++ otoApiKey.restrictions.forbidden,
+                              notFound =
+                                tunedApiKey.restrictions.forbidden ++ otoApiKey.restrictions.forbidden
+                            ),
+                            metadata =
+                              tunedApiKey.metadata ++ otoApiKey.metadata ++ Map(
+                                "daikoku__metadata" -> mergeStringMapValue(
+                                  "daikoku__metadata",
+                                  tunedApiKey.metadata,
+                                  otoApiKey.metadata
+                                ),
+                                "daikoku__tags" -> mergeStringMapValue(
+                                  "daikoku__tags",
+                                  tunedApiKey.metadata,
+                                  otoApiKey.metadata
+                                )
+                              )
+                          )
+                        )
+                      ).flatMap { updated =>
+                        if (existingKeyring.shell.isDefined)
+                          EitherT
+                            .liftF[Future, AppError, Boolean](
+                              env.dataStore.keyringRepo
+                                .forTenant(tenant.id)
+                                .save(
+                                  existingKeyring.copy(
+                                    apiKey = updated.asOtoroshiApiKey,
+                                    bearerToken = updated.bearer.orElse(
+                                      existingKeyring.bearerToken
+                                    )
+                                  )
+                                )
+                            )
+                            .map(_ => updated)
+                        else EitherT.pure[Future, AppError](updated)
+                      }
+                  }
+                }
             case None =>
               for {
                 created <- EitherT(otoroshiClient.createApiKey(tunedApiKey))
@@ -457,72 +1616,91 @@ class ApiService(
         api: Api,
         plan: UsagePlan
     ): Future[Either[AppError, ApiSubscription]] = {
-      // TODO: verify if group is in authorized groups (if some)
-
-      val clientId = IdGenerator.token(32)
-      val clientSecret = IdGenerator.token(64)
-      val clientName =
-        s"daikoku-api-key-${api.humanReadableId}-${plan.customName.urlPathSegmentSanitized}-${team.humanReadableId}-${System.currentTimeMillis()}"
-      val adminApiKey = OtoroshiApiKey(clientName, clientId, clientSecret)
-      val keyring = Keyring(
+      val newKeyring = Keyring(
         id = KeyringId(IdGenerator.token(32)),
         tenant = tenant.id,
         team = team.id,
-        apiKey = adminApiKey,
+        apiKey = OtoroshiApiKey(
+          clientName =
+            s"daikoku-api-key-${api.humanReadableId}-${plan.customName.urlPathSegmentSanitized}-${team.humanReadableId}-${System.currentTimeMillis()}",
+          clientId = IdGenerator.token(32),
+          clientSecret = IdGenerator.token(64)
+        ),
         customName = keyringCustomName,
         otoroshiSettings = KeyringOtoroshiBinding.Internal,
         createdAt = DateTime.now(),
         rotation = plan.autoRotation.map(_ => ApiSubscriptionRotation()),
         integrationToken = IdGenerator.token(64)
       )
-      val apiSubscription = ApiSubscription(
-        id = ApiSubscriptionId(IdGenerator.token(32)),
-        tenant = tenant.id,
-        plan = plan.id,
-        createdAt = DateTime.now(),
-        validUntil = None,
-        team = team.id,
-        api = api.id,
-        by = user.id,
-        customName = None,
-        keyring = keyring.id
-      )
+      val keyringF = keyringId match {
+        case None => Future.successful(Right(newKeyring))
+        case Some(id) =>
+          env.dataStore.keyringRepo
+            .forTenant(tenant.id)
+            .findById(id)
+            .map {
+              case Some(existing)
+                  if existing.team == team.id &&
+                    existing.otoroshiSettings == KeyringOtoroshiBinding.Internal =>
+                Right(existing)
+              case Some(_) => Left(AppError.ForbiddenAction)
+              case None =>
+                Left(AppError.EntityNotFound(s"Keyring ${id.value}"))
+            }
+      }
 
-      val r: EitherT[Future, AppError, ApiSubscription] = EitherT.liftF(
-        env.dataStore.withTransaction {
-          for {
-            _ <- env.dataStore.keyringRepo
-              .forTenant(tenant.id)
-              .save(keyring)
-            _ <- env.dataStore.apiSubscriptionRepo
-              .forTenant(tenant.id)
-              .save(apiSubscription)
-            _ <- env.dataStore.tenantRepo.save(
-              tenant.copy(adminSubscriptions =
-                tenant.adminSubscriptions :+ apiSubscription.id
-              )
-            )
-            _ <- env.dataStore.notificationRepo
-              .forTenant(tenant)
-              .save(
-                Notification(
-                  id = NotificationId(IdGenerator.token(32)),
-                  tenant = tenant.id,
-                  team = api.team.some,
-                  sender = user.asNotificationSender,
-                  action = NotificationAction.NewSubscription(
-                    api = api.id,
-                    plan = plan.id,
-                    team = team.id
-                  ),
-                  notificationType = NotificationType.AcceptOnly
+      keyringF.flatMap {
+        case Left(error) => Future.successful(Left(error))
+        case Right(keyring) =>
+          val apiSubscription = ApiSubscription(
+            id = ApiSubscriptionId(IdGenerator.token(32)),
+            tenant = tenant.id,
+            plan = plan.id,
+            createdAt = DateTime.now(),
+            validUntil = None,
+            team = team.id,
+            api = api.id,
+            by = user.id,
+            customName = None,
+            keyring = keyring.id
+          )
+
+          env.dataStore.withTransaction {
+            for {
+              _ <- keyringId match {
+                case None =>
+                  env.dataStore.keyringRepo
+                    .forTenant(tenant.id)
+                    .save(keyring)
+                case Some(_) => Future.successful(true)
+              }
+              _ <- env.dataStore.apiSubscriptionRepo
+                .forTenant(tenant.id)
+                .save(apiSubscription)
+              _ <- env.dataStore.tenantRepo.save(
+                tenant.copy(adminSubscriptions =
+                  tenant.adminSubscriptions :+ apiSubscription.id
                 )
               )
-          } yield apiSubscription
-        }
-      )
-
-      r.value
+              _ <- env.dataStore.notificationRepo
+                .forTenant(tenant)
+                .save(
+                  Notification(
+                    id = NotificationId(IdGenerator.token(32)),
+                    tenant = tenant.id,
+                    team = api.team.some,
+                    sender = user.asNotificationSender,
+                    action = NotificationAction.NewSubscription(
+                      api = api.id,
+                      plan = plan.id,
+                      team = team.id
+                    ),
+                    notificationType = NotificationType.AcceptOnly
+                  )
+                )
+            } yield Right(apiSubscription)
+          }
+      }
     }
 
     plan.otoroshiTarget.map(_.otoroshiSettings).flatMap { id =>
@@ -985,7 +2163,232 @@ class ApiService(
     } yield Json.obj("created" -> true)).value
   }
 
-  def notifyApiSubscription(
+  private def notifyApiSubscription(
+      demand: SubscriptionDemand,
+      tenant: Tenant,
+      step: WorkflowStep,
+      actualStep: ValidationStep.TeamAdmin
+  ): EitherT[Future, AppError, Result] =
+    demand.batch match {
+      case Some(reference) =>
+        notifyBatchApiSubscription(demand, tenant, step, reference)
+      case None =>
+        notifySingleApiSubscription(demand, tenant, step, actualStep)
+    }
+
+  private def notifyBatchApiSubscription(
+      demand: SubscriptionDemand,
+      tenant: Tenant,
+      step: WorkflowStep,
+      reference: SubscriptionBatchReference
+  ): EitherT[Future, AppError, Result] = {
+    import cats.implicits.*
+
+    val phaseIndex = demand.steps.indexWhere(_.id == step.id)
+    if (phaseIndex < 0)
+      EitherT.leftT(
+        AppError.EntityConflict("Subscription batch approval phase")
+      )
+    else
+      for {
+        batch <- EitherT.fromOptionF(
+          env.dataStore.subscriptionBatchDemandRepo
+            .forTenant(tenant.id)
+            .findById(reference.batch),
+          AppError.EntityNotFound("Subscription batch")
+        )
+        api <- EitherT.fromOptionF(
+          env.dataStore.apiRepo.forTenant(tenant).findById(demand.api),
+          AppError.ApiNotFound
+        )
+        user <- EitherT.fromOptionF(
+          env.dataStore.userRepo.findById(demand.from),
+          AppError.UserNotFound()
+        )
+        children <- EitherT.liftF(
+          Future.sequence(
+            batch.items
+              .filter(_.api == demand.api)
+              .map(item =>
+                env.dataStore.subscriptionDemandRepo
+                  .findByBatchItem(
+                    tenant.id,
+                    SubscriptionBatchReference(batch.id, item.id)
+                  )
+                  .map(item -> _)
+              )
+          )
+        )
+        approvalChildren = children.flatMap { case (item, maybeChild) =>
+          maybeChild.toSeq.flatMap { child =>
+            child.steps
+              .lift(phaseIndex)
+              .filter(_.state == WorkflowState.Waiting)
+              .collect {
+                case childStep
+                    if childStep.step.isInstanceOf[ValidationStep.TeamAdmin] =>
+                  (item, child, childStep)
+              }
+          }
+        }
+        _ <- EitherT.cond[Future][AppError, Unit](
+          approvalChildren.exists(_._2.id == demand.id),
+          (),
+          AppError.EntityConflict("Subscription batch approval phase")
+        )
+        existingNotification <- EitherT.liftF(
+          env.dataStore.notificationRepo.findPendingSubscriptionBatchApproval(
+            tenant.id,
+            batch.id,
+            api.id,
+            phaseIndex
+          )
+        )
+        approvalItems = approvalChildren.map { case (item, child, childStep) =>
+          NotificationAction.SubscriptionBatchApprovalItem(
+            item.id,
+            item.plan,
+            child.id,
+            childStep.id
+          )
+        }
+        notification = existingNotification
+          .map { existing =>
+            existing.action match {
+              case action: NotificationAction.ApiSubscriptionBatchDemand =>
+                existing.copy(action =
+                  action.copy(
+                    items = (action.items ++ approvalItems).distinctBy(_.item)
+                  )
+                )
+              case _ => existing
+            }
+          }
+          .getOrElse(
+            Notification(
+              id = NotificationId(IdGenerator.token(32)),
+              tenant = tenant.id,
+              team = Some(api.team),
+              sender = user.asNotificationSender,
+              action = NotificationAction.ApiSubscriptionBatchDemand(
+                batch = batch.id,
+                api = api.id,
+                team = batch.team,
+                phase = phaseIndex,
+                items = approvalItems,
+                motivation = demand.motivation.map(Json.stringify)
+              )
+            )
+          )
+        _ <-
+          if (existingNotification.contains(notification))
+            EitherT.pure[Future, AppError](())
+          else
+            EitherT(
+              env.dataStore.notificationRepo
+                .forTenant(tenant.id)
+                .save(notification)
+                .map(saved =>
+                  Either.cond(
+                    saved,
+                    (),
+                    AppError.InternalServerError(
+                      "The batch approval notification could not be saved"
+                    )
+                  )
+                )
+            )
+        _ <- approvalChildren
+          .filterNot(_._2.id == demand.id)
+          .foldLeft(EitherT.pure[Future, AppError](())) {
+            case (previous, (_, child, childStep)) =>
+              previous.flatMap { _ =>
+                val updatedSteps = child.steps.map(current =>
+                  if (current.id == childStep.id)
+                    current.copy(state = WorkflowState.InProgress)
+                  else current
+                )
+                val updated = child.copy(
+                  steps = updatedSteps,
+                  state = WorkflowState.merge(
+                    updatedSteps.map(_.state)
+                  )
+                )
+                saveDemandProgress(updated, child).map(_ => ())
+              }
+          }
+        apiTeam <- EitherT.fromOptionF(
+          env.dataStore.teamRepo.forTenant(tenant.id).findById(api.team),
+          AppError.TeamNotFound
+        )
+        demandTeam <- EitherT.fromOptionF(
+          env.dataStore.teamRepo
+            .forTenant(tenant.id)
+            .findById(demand.team),
+          AppError.TeamNotFound
+        )
+        plans <- EitherT.liftF(
+          env.dataStore.usagePlanRepo
+            .forTenant(tenant.id)
+            .findByIds(approvalChildren.map(_._2.plan).distinct)
+        )
+        admins <- EitherT.liftF(
+          env.dataStore.userRepo.findByIds(apiTeam.admins().toSeq)
+        )
+        tenantLanguage = tenant.defaultLanguage.getOrElse("en")
+        _ <- existingNotification match {
+          case Some(_) => EitherT.pure[Future, AppError](())
+          case None =>
+            EitherT.right[AppError](
+              Future.sequence(admins.map { admin =>
+                implicit val language: String =
+                  admin.defaultLanguage.getOrElse(tenantLanguage)
+                val notificationUrl =
+                  env.getDaikokuUrl(tenant, "/notifications", admin)
+                for {
+                  title <- translator.translate(
+                    "mail.apikey.demand.title",
+                    tenant
+                  )
+                  body <- translator.translate(
+                    "mail.apikey.demand.body",
+                    tenant,
+                    Map(
+                      "user" -> JsString(user.name),
+                      "apiName" -> JsString(api.name),
+                      "link" -> JsString(notificationUrl),
+                      "team" -> JsString(demandTeam.name),
+                      "consumer_team_data" -> demandTeam.asJson,
+                      "producer_team_data" -> apiTeam.asJson,
+                      "notification_data" -> notification.asJson,
+                      "user_data" -> user.asJson,
+                      "recipient_data" -> admin.asJson,
+                      "api_data" -> api.asJson,
+                      "usagePlan_data" -> plans.headOption
+                        .map(_.asJson)
+                        .getOrElse(Json.obj()),
+                      "subscriptionDemand_data" -> demand.asJson,
+                      "subscriptionDemands_data" -> Json.toJson(
+                        approvalChildren.map(_._2.asJson)
+                      ),
+                      "subscriptionBatchDemand_data" -> batch.asJson,
+                      "tenant_data" -> tenant.asJson
+                    )
+                  )
+                  _ <- tenant.mailer.send(title, Seq(admin.email), body, tenant)
+                } yield ()
+              })
+            )
+        }
+      } yield Ok(
+        Json.obj(
+          "notificationSended" -> true,
+          "creation" -> "waiting"
+        )
+      )
+  }
+
+  private def notifySingleApiSubscription(
       demand: SubscriptionDemand,
       tenant: Tenant,
       step: WorkflowStep,
@@ -1109,7 +2512,8 @@ class ApiService(
       _step: WorkflowStep,
       demand: SubscriptionDemand,
       tenant: Tenant,
-      maybeSessionId: Option[String] = None
+      maybeSessionId: Option[String] = None,
+      batchReservationToken: Option[String] = None
   )(implicit
       language: String,
       currentUser: User
@@ -1144,15 +2548,14 @@ class ApiService(
           customName = customName,
           tags = tags
         )
-        _ <- EitherT.liftF(
-          env.dataStore.subscriptionDemandRepo
-            .forTenant(tenant)
-            .save(updatedDemand)
-        )
-        result <- runSubscriptionProcess(
+        _ <- saveDemandProgress(updatedDemand, demand)
+        result <- runSubscriptionProcessInternal(
           demand.id,
           tenant,
-          maybeSessionId = maybeSessionId
+          maybeSessionId,
+          None,
+          None,
+          batchReservationToken
         )
       } yield result
     }
@@ -1267,7 +2670,8 @@ class ApiService(
               "no-reply@daikoku.io",
               None
             ),
-            (response._2 \ "message").asOpt[String]
+            (response._2 \ "message").asOpt[String],
+            advanceBatch = false
           )
     } yield r
   }
@@ -1309,11 +2713,7 @@ class ApiService(
           else s
         )
       )
-      _ <- EitherT.liftF(
-        env.dataStore.subscriptionDemandRepo
-          .forTenant(tenant)
-          .save(updatedDemand)
-      )
+      _ <- saveDemandProgress(updatedDemand, demand)
       _ <- EitherT.liftF(
         {
           val repo = env.dataStore.notificationRepo.forTenant(tenant)
@@ -1397,6 +2797,130 @@ class ApiService(
   )(implicit
       language: String,
       currentUser: User
+  ): EitherT[Future, AppError, Result] =
+    for {
+      result <- runSubscriptionProcessOnce(
+        demandId,
+        tenant,
+        maybeSessionId,
+        from,
+        host
+      )
+      demand <- EitherT.fromOptionF(
+        env.dataStore.subscriptionDemandRepo
+          .forTenant(tenant.id)
+          .findById(demandId),
+        AppError.SubscriptionDemandNotFound
+      )
+      _ <- demand.batch match {
+        case Some(reference) =>
+          advanceSubscriptionBatch(tenant, reference.batch).map(_ => ())
+        case None => EitherT.pure[Future, AppError](())
+      }
+    } yield result
+
+  private def runSubscriptionProcessOnce(
+      demandId: DemandId,
+      tenant: Tenant,
+      maybeSessionId: Option[String] = None,
+      from: Option[String] = None,
+      host: Option[String] = None
+  )(implicit
+      language: String,
+      currentUser: User
+  ): EitherT[Future, AppError, Result] =
+    EitherT(
+      env.dataStore.subscriptionDemandRepo
+        .forTenant(tenant)
+        .findById(demandId)
+        .flatMap {
+          case None =>
+            Future.successful(Left(AppError.SubscriptionDemandNotFound))
+          case Some(demand) =>
+            demand.batch match {
+              case None =>
+                runSubscriptionProcessInternal(
+                  demandId,
+                  tenant,
+                  maybeSessionId,
+                  from,
+                  host,
+                  None
+                ).value
+              case Some(reference) =>
+                val now = DateTime.now
+                val reservation = SubscriptionBatchItemReservation(
+                  IdGenerator.token(32),
+                  now,
+                  now.plus(
+                    env.config.subscriptionBatchReservationDuration.toMillis
+                  )
+                )
+                env.dataStore
+                  .reserveBatchItem(tenant.id, reference, reservation)
+                  .flatMap {
+                    case Left(error) => Future.successful(Left(error))
+                    case Right(acquired) =>
+                      runSubscriptionProcessInternal(
+                        demandId,
+                        tenant,
+                        maybeSessionId,
+                        from,
+                        host,
+                        Some(acquired.token)
+                      ).value.flatMap {
+                        case Right(result) =>
+                          markBatchChildWorkflowStarted(demandId, tenant)
+                            .flatMap {
+                              case Right(_) =>
+                                env.dataStore
+                                  .releaseBatchItemReservation(
+                                    tenant.id,
+                                    reference,
+                                    acquired.token
+                                  )
+                                  .map(_.map(_ => result))
+                              case Left(error) =>
+                                env.dataStore
+                                  .markBatchItemRetryableError(
+                                    tenant.id,
+                                    reference,
+                                    acquired.token,
+                                    SubscriptionBatchItemError(
+                                      "workflow_execution_failed",
+                                      error.getErrorMessage()
+                                    )
+                                  )
+                                  .map(_.flatMap(_ => Left(error)))
+                            }
+                        case Left(error) =>
+                          env.dataStore
+                            .markBatchItemRetryableError(
+                              tenant.id,
+                              reference,
+                              acquired.token,
+                              SubscriptionBatchItemError(
+                                "workflow_execution_failed",
+                                error.getErrorMessage()
+                              )
+                            )
+                            .map(_.flatMap(_ => Left(error)))
+                      }
+                  }
+            }
+        }
+    )
+
+  private def runSubscriptionProcessInternal(
+      demandId: DemandId,
+      tenant: Tenant,
+      maybeSessionId: Option[String],
+      from: Option[String],
+      host: Option[String],
+      batchReservationToken: Option[String]
+  )(implicit
+      language: String,
+      currentUser: User
   ): EitherT[Future, AppError, Result] = {
     def runRightProcess(
         step: WorkflowStep,
@@ -1407,6 +2931,19 @@ class ApiService(
       val run = step.step match {
         case ValidationStep.Email(_, emails, template, _) =>
           val value: EitherT[Future, AppError, Result] = for {
+            _ <- demand.batch match {
+              case None => EitherT.pure[Future, AppError](true)
+              case Some(_) =>
+                val started = demand.copy(
+                  state = WorkflowState.InProgress,
+                  steps = demand.steps.map(current =>
+                    if (current.id == step.id)
+                      current.copy(state = WorkflowState.InProgress)
+                    else current
+                  )
+                )
+                saveDemandProgress(started, demand)
+            }
             title <- EitherT.liftF(
               translator.translate("mail.subscription.validation.title", tenant)
             )
@@ -1507,7 +3044,13 @@ class ApiService(
             host = host
           )
         case s: ValidationStep.HttpRequest =>
-          callHttpRequestStep(s, step, demand, tenant)
+          callHttpRequestStep(
+            s,
+            step,
+            demand,
+            tenant,
+            batchReservationToken = batchReservationToken
+          )
         case _: ValidationStep.Form =>
           EitherT.pure[Future, AppError](Ok(Json.obj("done" -> true)))
       }
@@ -1522,10 +3065,9 @@ class ApiService(
         result <- run
         _ <-
           if (!step.step.isAutomatic)
-            EitherT.liftF[Future, AppError, Boolean](
-              env.dataStore.subscriptionDemandRepo
-                .forTenant(tenant)
-                .save(demand.copy(steps = steps, state = demandState))
+            saveDemandProgress(
+              demand.copy(steps = steps, state = demandState),
+              demand
             )
           else EitherT.pure[Future, AppError](true)
       } yield result
@@ -1663,7 +3205,23 @@ class ApiService(
           EitherT.pure[Future, AppError](tuple)
       }
       .flatMap {
-        case (Some(step), demand) => runRightProcess(step, demand, tenant)
+        case (Some(step), _)
+            if step.state == WorkflowState.InProgress =>
+          EitherT.pure[Future, AppError](
+            Ok(Json.obj("creation" -> "waiting"))
+          )
+        case (Some(step), demand) =>
+          EitherT
+            .liftF[Future, AppError, Boolean](
+              batchPhaseReady(demand, step, tenant)
+            )
+            .flatMap {
+              case true => runRightProcess(step, demand, tenant)
+              case false =>
+                EitherT.pure[Future, AppError](
+                  Ok(Json.obj("creation" -> "waiting"))
+                )
+            }
         case (None, demand) =>
           for {
             from <- EitherT.fromOptionF(
@@ -1693,6 +3251,14 @@ class ApiService(
                 .forTenant(tenant)
                 .findById(demand.plan),
               AppError.PlanNotFound
+            )
+            provisioningAuthorization <- validateBatchChildBeforeProvisioning(
+              demand,
+              tenant,
+              api,
+              plan,
+              team,
+              from
             )
             maybeSubscriptionInformations <- plan.paymentSettings match {
               case Some(settings) =>
@@ -1729,26 +3295,20 @@ class ApiService(
             administrators <- EitherT.liftF(
               env.dataStore.userRepo.findByIds(team.admins().toSeq)
             )
-            _ <- EitherT.liftF(
-              env.dataStore.withTransaction {
-                val newNotification = Notification(
-                  id = NotificationId(IdGenerator.token(32)),
-                  tenant = tenant.id,
-                  team = Some(team.id),
-                  sender = currentUser.asNotificationSender,
-                  notificationType = NotificationType.AcceptOnly,
-                  action = NotificationAction
-                    .ApiSubscriptionAccept(demand.api, demand.plan, team.id)
-                )
-                for {
-                  _ <- env.dataStore.subscriptionDemandRepo
-                    .forTenant(tenant)
-                    .save(demand.copy(state = WorkflowState.Accepted))
-                  _ <- env.dataStore.notificationRepo
-                    .forTenant(tenant)
-                    .save(newNotification)
-                } yield ()
-              }
+            _ <- saveDemandOutcome(
+              demand,
+              demand.copy(state = WorkflowState.Accepted),
+              Notification(
+                id = NotificationId(IdGenerator.token(32)),
+                tenant = tenant.id,
+                team = Some(team.id),
+                sender = currentUser.asNotificationSender,
+                notificationType = NotificationType.AcceptOnly,
+                action = NotificationAction
+                  .ApiSubscriptionAccept(demand.api, demand.plan, team.id)
+              ),
+              Some(subscription.id),
+              provisioningAuthorization.map(_.reservationToken)
             )
             _ <- EitherT.liftF[Future, AppError, Seq[Unit]](
               Future.sequence(
@@ -1817,7 +3377,7 @@ class ApiService(
       customReadOnly: Option[Boolean],
       keyringCustomName: Option[String],
       adminCustomName: Option[String]
-  )(implicit language: String, currentUser: User) = {
+  )(implicit language: String, currentUser: User): Future[Result] = {
     import cats.implicits.*
 
     def controlApiAndPlan(api: Api): EitherT[Future, AppError, Unit] = {
@@ -2066,57 +3626,35 @@ class ApiService(
                 Json.obj("creation" -> "done", "subscription" -> s.asJson)
               )
             })
-          case steps =>
+          case _ =>
             val demanId = DemandId(IdGenerator.token(32))
-
-            val formKeysToMetadata = steps
-              .collectFirst { case s: ValidationStep.Form => s }
-              .flatMap(_.formKeysToMetadata)
-
-            val metadataFromMotivation: Option[JsObject] = for {
-              motiv <- motivation
-              keys <- formKeysToMetadata
-            } yield {
-              val filtered = motiv.fields.collect {
-                case (k, v) if keys.contains(k) => (k, v)
-              }
-              JsObject(filtered)
-            }
 
             for {
               _ <- EitherT.liftF(
                 env.dataStore.subscriptionDemandRepo
                   .forTenant(tenant)
                   .save(
-                    SubscriptionDemand(
-                      id = demanId,
-                      tenant = tenant.id,
-                      api = api.id,
-                      plan = plan.id,
-                      state = WorkflowState.Waiting,
-                      steps = steps.map(step =>
-                        WorkflowStep(
-                          id = WorkflowStepId(IdGenerator.token),
-                          state = step match {
-                            case _: ValidationStep.Form =>
-                              WorkflowState.Accepted
-                            case _ => WorkflowState.Waiting
-                          },
-                          step = step
-                        )
+                    SubscriptionDemandPreparation.prepare(
+                      SubscriptionDemand(
+                        id = demanId,
+                        tenant = tenant.id,
+                        api = api.id,
+                        plan = plan.id,
+                        state = WorkflowState.Waiting,
+                        steps = Seq.empty,
+                        team = team.id,
+                        from = user.id,
+                        motivation = motivation,
+                        keyring = keyringId,
+                        keyringCustomName = Some(keyringCustomName),
+                        customMetadata = customMetadata,
+                        customMaxPerSecond = customMaxPerSecond,
+                        customMaxPerDay = customMaxPerDay,
+                        customMaxPerMonth = customMaxPerMonth,
+                        customReadOnly = customReadOnly,
+                        adminCustomName = adminCustomName
                       ),
-                      team = team.id,
-                      from = user.id,
-                      motivation = motivation,
-                      keyring = keyringId,
-                      keyringCustomName = Some(keyringCustomName),
-                      customMetadata = JsonOperationsHelper
-                        .mergeOptJson(customMetadata, metadataFromMotivation),
-                      customMaxPerSecond = customMaxPerSecond,
-                      customMaxPerDay = customMaxPerDay,
-                      customMaxPerMonth = customMaxPerMonth,
-                      customReadOnly = customReadOnly,
-                      adminCustomName = adminCustomName
+                      plan.subscriptionProcess
                     )
                   )
               )
@@ -2136,7 +3674,8 @@ class ApiService(
       demandId: DemandId,
       stepId: WorkflowStepId,
       sender: NotificationSender,
-      maybeMessage: Option[String] = None
+      maybeMessage: Option[String] = None,
+      advanceBatch: Boolean = true
   ): EitherT[Future, AppError, Result] = {
 
     for {
@@ -2146,42 +3685,32 @@ class ApiService(
           .findById(demandId),
         AppError.EntityNotFound("Subscription demand")
       )
-      _ <- EitherT.right[AppError](
-        env.dataStore.withTransaction {
-          val newNotification = Notification(
-            id = NotificationId(IdGenerator.token(32)),
-            tenant = tenant.id,
-            team = demand.team.some,
-            sender = sender,
-            notificationType = NotificationType.AcceptOnly,
-            action = NotificationAction.ApiSubscriptionReject(
-              maybeMessage,
-              demand.api,
-              demand.plan,
-              demand.team
-            )
-          )
-          for {
-            _ <- env.dataStore.subscriptionDemandRepo
-              .forTenant(tenant)
-              .save(
-                demand.copy(
-                  state = WorkflowState.Refused,
-                  steps = demand.steps.map(s =>
-                    if (s.id == stepId)
-                      s.copy(
-                        state = WorkflowState.Refused,
-                        metadata = Json.obj("by" -> sender.asJson)
-                      )
-                    else s
-                  )
-                )
+      _ <- saveDemandOutcome(
+        demand,
+        demand.copy(
+          state = WorkflowState.Refused,
+          steps = demand.steps.map(s =>
+            if (s.id == stepId)
+              s.copy(
+                state = WorkflowState.Refused,
+                metadata = Json.obj("by" -> sender.asJson)
               )
-            _ <- env.dataStore.notificationRepo
-              .forTenant(tenant)
-              .save(newNotification)
-          } yield ()
-        }
+            else s
+          )
+        ),
+        Notification(
+          id = NotificationId(IdGenerator.token(32)),
+          tenant = tenant.id,
+          team = demand.team.some,
+          sender = sender,
+          notificationType = NotificationType.AcceptOnly,
+          action = NotificationAction.ApiSubscriptionReject(
+            maybeMessage,
+            demand.api,
+            demand.plan,
+            demand.team
+          )
+        )
       )
       from <- EitherT.fromOptionF(
         env.dataStore.userRepo.findById(demand.from),
@@ -2240,6 +3769,11 @@ class ApiService(
           }).flatten
         }))
       )
+      _ <- demand.batch match {
+        case Some(reference) if advanceBatch =>
+          advanceSubscriptionBatch(tenant, reference.batch).map(_ => ())
+        case _ => EitherT.pure[Future, AppError](())
+      }
     } yield Ok(Json.obj("creation" -> "refused"))
   }
 
