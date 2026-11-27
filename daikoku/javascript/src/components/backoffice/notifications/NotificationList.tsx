@@ -21,6 +21,7 @@ import {
   Issue,
   ISubscription,
   ISubscriptionDemandGQL,
+  ITeamCreationGQL,
   ITeamFullGql,
   ITeamSimple,
   ITenant,
@@ -34,6 +35,9 @@ import { getLanguageFns } from '../../utils';
 import { FeedbackButton } from '../../utils/FeedbackButton';
 import { SimpleApiKeyCard} from "../apikeys";
 import { IApiSubscriptionGql } from '../apis';
+import { OtoroshiEntitiesSelector } from '../../adminbackoffice/teams/TeamList';
+import { teamSchema } from '../teams/TeamEdit';
+import { Checkbox } from '../../inputs';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -47,6 +51,17 @@ type NotificationsGQL = {
   totalByApis: Array<{ api: string, total: number }>,
   totalSelectable: number
 }
+
+type CustomTeamCreationData = {
+  name: string;
+  contact: string;
+  avatar: string;
+  metadata: Record<string, string>;
+  authorizedOtoroshiEntities:
+    | ITeamSimple['authorizedOtoroshiEntities']
+    | null;
+  creationSecurity: boolean;
+};
 
 type NotificationActionGQL =
   | { __typename: 'ApiAccess'; api: IApiGQL; team: ITeamFullGql }
@@ -63,6 +78,19 @@ type NotificationActionGQL =
     };
     motivation: string;
     demand: ISubscriptionDemandGQL;
+  }
+  | {
+    __typename: 'ApiSubscriptionBatch';
+    api: IApiGQL;
+    team: ITeamFullGql;
+    phase: number;
+    motivation: string | null;
+    items: Array<{
+      item: string;
+      demand: string;
+      step: string;
+      plan: Pick<IUsagePlan, '_id' | 'customName'> | null;
+    }>;
   }
   | {
     __typename: 'NewCommentOnIssueV2';
@@ -135,6 +163,7 @@ type NotificationActionGQL =
   | { __typename: 'CheckoutForSubscription'; plan: IUsagePlan; step: IValidationStep & { type: 'payment' }; demand: ISubscriptionDemandGQL; api: IApiGQL }
   | { __typename: 'ApiSubscriptionTransferSuccess'; subscription: ISubscription }
   | { __typename: 'AccountCreationAttempt'; demand?: IAccountCreationGQL; motivation: string }
+  | { __typename: 'TeamCreationAttempt'; demand?: ITeamCreationGQL; motivation: string }
   | {
     __typename: 'SubscriptionPriceChangeScheduled';
     api: IApiGQL; plan: IUsagePlan;
@@ -169,6 +198,22 @@ type NotificationGQL = {
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 const defaultColumnFilters: ColumnFiltersState = [{ id: 'unreadOnly', value: true }];
+
+const formatBatchMotivation = (motivation: string): Array<[string, string]> => {
+  try {
+    const value: unknown = JSON.parse(motivation);
+    if (value && typeof value === 'object' && !Array.isArray(value)) {
+      return Object.entries(value).map(([key, entry]) => [
+        key,
+        typeof entry === 'string' ? entry : JSON.stringify(entry),
+      ]);
+    }
+    return [['', typeof value === 'string' ? value : JSON.stringify(value)]];
+  } catch (error) {
+    if (!(error instanceof SyntaxError)) throw error;
+    return [['', motivation]];
+  }
+};
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
@@ -212,6 +257,7 @@ export const NotificationList = () => {
     { type: "ApiKeyRotationInProgressV2" },
     { type: "NewSubscription" },
     { type: "ApiSubscription" },
+    { type: "ApiSubscriptionBatch" },
     { type: "ApiSubscriptionAccept" },
     { type: "ApiSubscriptionReject" },
     { type: "ApiSubscriptionTransferSuccess" },
@@ -224,6 +270,7 @@ export const NotificationList = () => {
     { type: "NewPostPublishedV2" },
     { type: "OtoroshiSyncApiError" },
     { type: "OtoroshiSyncSubscriptionError" },
+    { type: "TeamCreationAttempt" },
     { type: "SubscriptionCancellationScheduled" },
     { type: "SubscriptionPriceChangeScheduled" },
     { type: "SubscriptionBlockedByOwner" },
@@ -234,8 +281,11 @@ export const NotificationList = () => {
 
   // ─── Actions ─────────────────────────────────────────────────────────────
 
-  const accept = (notification: string, sub?: CustomSubscriptionData) => {
-    return Services.acceptNotificationOfTeam(notification, sub)
+  const accept = (
+    notification: string,
+    values?: CustomSubscriptionData | CustomTeamCreationData
+  ) => {
+    return Services.acceptNotificationOfTeam(notification, values)
       .then(() => queryClient.invalidateQueries({ queryKey: ['notifications'] }))
       .then(reloadUnreadNotificationsCount);
   };
@@ -243,6 +293,121 @@ export const NotificationList = () => {
     return Services.rejectNotificationOfTeam(notification, message)
       .then(() => queryClient.invalidateQueries({ queryKey: ['notifications'] }))
       .then(reloadUnreadNotificationsCount);
+  };
+
+  const openTeamCreationModal = (
+    notificationId: string,
+    demand: ITeamCreationGQL,
+    adminTeamId: string
+  ) => {
+    return Promise.all([
+      Services.team(adminTeamId),
+      Services.allSimpleOtoroshis(tenant._id),
+    ]).then(([adminTeam, otoroshis]) => {
+      if (isError(adminTeam)) {
+        toast.error(adminTeam.error);
+        return;
+      }
+      if (isError(otoroshis)) {
+        toast.error(otoroshis.error);
+        return;
+      }
+
+      const draftTeam: ITeamSimple = {
+        ...adminTeam,
+        type: 'Organization',
+        name: demand.name,
+        contact: demand.email,
+        avatar: demand.avatar,
+      };
+      const baseSchema = teamSchema(draftTeam, translate);
+
+      openFormModal<CustomTeamCreationData & { restrictOtoroshiEntities: boolean }>({
+        title: translate('notifications.page.team.creation.attempt.detail.modal.title'),
+        value: {
+          name: demand.name,
+          contact: demand.email,
+          avatar: demand.avatar,
+          metadata: { ...demand.metadata },
+          authorizedOtoroshiEntities: demand.authorizedOtoroshiEntities ?? [],
+          restrictOtoroshiEntities: demand.authorizedOtoroshiEntities != null,
+          creationSecurity: demand.creationSecurity
+        },
+        schema: {
+          name: baseSchema.name,
+          contact: {
+            ...baseSchema.contact,
+            constraints: [
+              constraints.required(translate('constraints.required.email')),
+              constraints.email(translate('constraints.matches.email')),
+            ],
+          },
+          avatar: baseSchema.avatar,
+          metadata: {
+            type: type.object,
+            label: translate('Metadata'),
+          },
+          restrictOtoroshiEntities: {
+            type: type.bool,
+            label: translate('Enable restrictions'),
+          },
+          authorizedOtoroshiEntities: {
+            type: type.object,
+            array: true,
+            format: format.form,
+            label: translate('Authorized entities'),
+            visible: ({ rawValues }) => rawValues.restrictOtoroshiEntities,
+            schema: {
+              otoroshiSettingsId: {
+                type: type.string,
+                format: format.select,
+                label: translate('Otoroshi instance'),
+                options: otoroshis,
+                transformer: (settings) => ({ label: settings.url, value: settings._id }),
+                constraints: [constraints.required(translate('constraints.required.value'))],
+              },
+              authorizedEntities: {
+                type: type.object,
+                label: translate('Authorized entities'),
+                defaultValue: { groups: [], services: [], routes: [] },
+                visible: ({ rawValues, informations }) => !!rawValues.authorizedOtoroshiEntities
+                  ?.[informations?.parent?.index ?? 0]?.value?.otoroshiSettingsId,
+                deps: ['authorizedOtoroshiEntities.otoroshiSettingsId'],
+                render: (props) => (
+                  <OtoroshiEntitiesSelector {...props} translate={translate} teamId={adminTeamId} />
+                ),
+              },
+            },
+          },
+          creationSecurity: {
+            type: type.bool,
+            label: translate('api.creation.enable.label'),
+          },
+        },
+        onSubmit: (values) => {
+          const { restrictOtoroshiEntities, ...customizations } = values;
+          return Promise.resolve()
+            .then(() => Services.acceptNotificationOfTeam(notificationId, {
+              ...customizations,
+              metadata: customizations.metadata ?? {},
+              authorizedOtoroshiEntities: restrictOtoroshiEntities
+                ? (customizations.authorizedOtoroshiEntities ?? []).map(entry => ({
+                  ...entry,
+                  authorizedEntities: entry.authorizedEntities ?? { groups: [], services: [], routes: [] },
+                }))
+                : null,
+              apisCreationPermission: customizations.creationSecurity
+            }))
+            .then(response => {
+              return queryClient.invalidateQueries({ queryKey: ['notifications'] })
+                .then(() => reloadUnreadNotificationsCount())
+                .then(() => isError(response) ? response.error : undefined);
+            })
+            .catch(error => error instanceof Error ? error.message : translate('oops, something went wrong.'));
+        },
+        actionLabel: translate('Accept'),
+      });
+    });
   };
 
   // ─── Formatters ──────────────────────────────────────────────────────────
@@ -389,6 +554,44 @@ export const NotificationList = () => {
           return <div className="action-container">{statusFormatter(notification.status)}</div>;
         }
       }
+      case 'ApiSubscriptionBatch':
+        if (notification.status.status === 'Pending') {
+          return (
+            <div className="action-container">
+              <div className="d-flex justify-content-end gap-2">
+                <FeedbackButton
+                  className="btn --tertiary --small --icon-only"
+                  title={translate('Accept')}
+                  aria-label={translate('Accept')}
+                  onPress={() => accept(notification._id)}
+                >
+                  <Check />
+                </FeedbackButton>
+                <button
+                  className="btn --tertiary --small --icon-only"
+                  title={translate('Reject')}
+                  aria-label={translate('Reject')}
+                  onClick={() => {
+                    openFormModal<{ message: string }>({
+                      title: translate('Message'),
+                      schema: {
+                        message: {
+                          type: type.string, format: format.text, label: null,
+                          constraints: [constraints.required()],
+                        },
+                      },
+                      onSubmit: ({ message }) => reject(notification._id, message),
+                      actionLabel: translate('Send')
+                    })
+                  }}
+                >
+                  <Ban />
+                </button>
+              </div>
+            </div>
+          );
+        }
+        return <div className="action-container">{statusFormatter(notification.status)}</div>;
       case 'CheckoutForSubscription': {
         const _checkoutDemand = notification.action.demand;
         return (
@@ -554,7 +757,15 @@ export const NotificationList = () => {
                     className="btn --tertiary --small --icon-only"
                     title={translate('Accept')}
                     aria-label={translate('Accept')}
-                    onPress={() => accept(notification._id)}
+                    disabled={notification.action.__typename === 'TeamCreationAttempt' &&
+                      (!notification.action.demand || !notification.team)}
+                    onPress={() => notification.action.__typename === 'TeamCreationAttempt'
+                      ? openTeamCreationModal(
+                        notification._id,
+                        notification.action.demand!,
+                        notification.team!._id
+                      ).catch(error => { toast.error(error instanceof Error ? error.message : String(error)); })
+                      : accept(notification._id)}
                   >
                     <Check />
                   </FeedbackButton>
@@ -670,6 +881,54 @@ export const NotificationList = () => {
                 noClose: true,
               })}>
               <span className='ms-2'>[{translate('notifications.page.subscription.demand.detail.modal.raw.button.label')}]</span>
+            </a>
+          </>
+        );
+      }
+      case 'ApiSubscriptionBatch': {
+        const { api, team, items, motivation } = notification.action;
+        const plans = items.map(item => item.plan?.customName ?? item.item).join(', ');
+        const motivationFields = motivation ? formatBatchMotivation(motivation) : [];
+        const desc = translate({
+          key: 'notif.api.subscription.batch',
+          replacements: [team.name, api.name, plans]
+        });
+        return (
+          <>
+            {desc}
+            <a href="#" className="underline ms-2"
+              aria-label={translate('notifications.page.subscription.demand.detail.button.label')}
+              onClick={(event) => {
+                event.preventDefault();
+                openCustomModal({
+                title: translate('notifications.page.subscription.demand.detail.modal.title'),
+                content: (
+                  <div>
+                    {[
+                      [translate('API'), api.name],
+                      [translate('subscription.workspace.review.plans'), plans],
+                      [translate('Team'), team.name],
+                      [translate('notifications.page.table.header.label.sender'), notification.sender.name],
+                    ].map(([label, value]) => (
+                      <div key={label} className="notification-subscription-demand-summary">
+                        <span className="label">{label}</span>
+                        <span>{value}</span>
+                      </div>
+                    ))}
+                    <div className="notification-subscription-demand-summary">
+                      <span className="label">{translate('notif.api.subscription.batch.motivation')}</span>
+                      {motivationFields.length ? motivationFields.map(([key, value]) => (
+                        <div key={key} style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>
+                          {key && <strong>{key}: </strong>}{value}
+                        </div>
+                      )) : translate('notif.api.subscription.batch.no-motivation')}
+                    </div>
+                  </div>
+                ),
+                actions: close => <button type="button" className="btn --primary" onClick={close}>{translate('Close')}</button>,
+                });
+              }}>
+              [{translate('notifications.page.subscription.demand.detail.modal.raw.button.label')}]
             </a>
           </>
         );
@@ -846,6 +1105,38 @@ export const NotificationList = () => {
           </>
         );
       }
+      case 'TeamCreationAttempt': {
+        const description = translate('notif.team.creation.attempt');
+        const value = notification.action.demand?.value;
+        const formStep = notification.action.demand?.steps.map(s => s.step).find(s => s.type === 'form');
+        const regexp = /\[\[(.+?)\]\]/g;
+        const matches = formStep?.formatter.match(regexp);
+        const formattedValue = matches?.reduce((acc, match) => {
+          const key = match.replace('[[', '').replace(']]', '');
+          return acc.replace(match, value?.[key] || match);
+        }, formStep?.formatter ?? '');
+        return (
+          <>
+            {description}
+            {value && (
+              <a href='#' className='underline'
+                 aria-label={translate('notifications.page.team.creation.attempt.detail.button.label')}
+                 title={translate('notifications.page.team.creation.attempt.detail.button.label')}
+                 onClick={() => alert({
+                   title: translate('notifications.page.team.creation.attempt.detail.modal.title'),
+                   message: (
+                     <div>
+                       {!!formattedValue && <em>{formattedValue}</em>}
+                       <pre>{JSON.stringify(value, null, 2)}</pre>
+                     </div>
+                   ),
+                 })}>
+                <span className='ms-2'>[{translate('notifications.page.team.creation.attempt.detail.button.label')}]</span>
+              </a>
+            )}
+          </>
+        );
+      }
       default:
         return '';
     }
@@ -855,6 +1146,7 @@ export const NotificationList = () => {
     switch (notification.action.__typename) {
       case "ApiAccess":
       case "ApiSubscription":
+      case "ApiSubscriptionBatch":
       case "ApiSubscriptionReject":
       case "ApiSubscriptionAccept":
       case "OtoroshiSyncApiError":
@@ -895,9 +1187,7 @@ export const NotificationList = () => {
         if (row.getCanSelect())
           return (
             <>
-              <input
-                type="checkbox"
-                className={classNames('form-check-input select-input')}
+              <Checkbox
                 checked={row.getIsSelected() || (row.getCanSelect() && selectAll)}
                 disabled={!row.getCanSelect()}
                 onChange={row.getToggleSelectedHandler()}
@@ -1083,12 +1373,14 @@ export const NotificationList = () => {
   const bulkActions: BulkAction<NotificationGQL>[] = [
     {
       label: translate('notifications.page.table.read.bulk.action.label'),
-      onClick: async (rows, selectAll, ctx) => {
+      onClick: (rows, selectAll, ctx) => {
         const ids = rows.map(r => r._id);
-        await Services.acceptNotificationOfTeamByBulk(ids, selectAll);
-        ctx.resetFilters();
-        ctx.refetch();
-        reloadUnreadNotificationsCount();
+        return Services.acceptNotificationOfTeamByBulk(ids, selectAll)
+          .then(() => {
+            ctx.resetFilters();
+            ctx.refetch();
+            reloadUnreadNotificationsCount();
+          });
       },
     },
   ];

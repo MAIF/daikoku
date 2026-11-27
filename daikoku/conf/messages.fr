@@ -132,6 +132,24 @@ mail.account.creation.mail.accepted.body = Bonjour [userName], </br>\
 Merci de vous être inscrit sur [tenant]. </br>\
 Après examen, nous sommes heureux de vous informer que votre demande de création de compte a été approuvée. </br>\
 
+mail.team.creation.mail.validation.title = Nouvelle équipe à valider sur [tenant]
+mail.team.creation.mail.confirmation.title = Confirmez la création de votre équipe sur [tenant]
+mail.team.creation.mail.confirmation.body = Merci de <a href="[urlAccept]">confirmer</a> ou de <a href="[urlDecline]">refuser</a> la création de votre équipe sur [tenant].
+mail.team.creation.error.title = Échec de création d''équipe
+mail.team.creation.error.body = Une erreur technique est survenue pour la demande de création d''équipe [demandId]. Aucune action de relance n''est disponible.
+mail.team.creation.mail.validation.body = Bonjour, </br>\
+Une demande de création d''équipe vient d''être déposée sur [tenant].</br>\
+Informations sur l''équipe :</br>\
+Nom : [userName]</br>\
+Email : [userEmail]</br>\
+Vous pouvez <a href="[urlAccept]" target="_blank">accepter</a> ou <a href="[urlDecline]" target="_blank">refuser</a> la création de l''équipe.
+
+mail.team.creation.mail.rejected.title = La création de votre équipe sur [tenant] a été refusée
+mail.team.creation.mail.rejected.body = Bonjour [userName], votre demande de création d''équipe a été refusée. [message]
+
+mail.team.creation.mail.accepted.title = Votre équipe a été créée sur [tenant]
+mail.team.creation.mail.accepted.body = Bonjour [userName], votre équipe a été créée sur [tenant].
+
 mail.billing.price.change.title=Le tarif d''un de vos plans change
 mail.billing.price.change.body=Le tarif du plan [planName] de l''API [apiName] change le [effectiveAt]. </br>\
 À partir de cette date, les appels de l''équipe [teamName] sont facturés [costPerRequest] [currency] l''unité. </br>\

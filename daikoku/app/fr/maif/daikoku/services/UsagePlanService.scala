@@ -77,8 +77,8 @@ class UsagePlanService(
             tenant.id,
             api.id,
             oldPlan.id,
-            SubscriptionDemandState.InProgress,
-            SubscriptionDemandState.Blocked
+            WorkflowState.InProgress,
+            WorkflowState.Blocked
           )
       )
       checkedPlan <- getPlanAndCheckIt(tenant, oldPlan, newPlan)
@@ -102,8 +102,8 @@ class UsagePlanService(
             tenant.id,
             api.id,
             oldPlan.id,
-            SubscriptionDemandState.Blocked,
-            SubscriptionDemandState.InProgress
+            WorkflowState.Blocked,
+            WorkflowState.InProgress
           )
       )
     } yield updatedPlan
@@ -184,9 +184,9 @@ class UsagePlanService(
             env.dataStore.subscriptionDemandRepo.findByStates(
               tenant.id,
               Seq(
-                SubscriptionDemandState.InProgress,
-                SubscriptionDemandState.Waiting,
-                SubscriptionDemandState.Blocked
+                WorkflowState.InProgress,
+                WorkflowState.Waiting,
+                WorkflowState.Blocked
               ),
               plan = newPlan.id.some
             )
@@ -450,8 +450,8 @@ class UsagePlanService(
           env.dataStore.subscriptionDemandRepo.findByStates(
             tenant.id,
             Seq(
-              SubscriptionDemandState.InProgress,
-              SubscriptionDemandState.Waiting
+              WorkflowState.InProgress,
+              WorkflowState.Waiting
             ),
             apis = Seq(api.id).some,
             plan = updatedPlan.id.some
@@ -465,15 +465,15 @@ class UsagePlanService(
               val demandStep =
                 demand.steps.find(_.step.id == validationStep.id)
 
-              SubscriptionDemandStep(
+              WorkflowStep(
                 id = demandStep
                   .map(_.id)
                   .getOrElse(
-                    SubscriptionDemandStepId(IdGenerator.token(32))
+                    WorkflowStepId(IdGenerator.token(32))
                   ),
                 state = demandStep
                   .map(_.state)
-                  .getOrElse(SubscriptionDemandState.Waiting),
+                  .getOrElse(WorkflowState.Waiting),
                 step = validationStep,
                 metadata = demandStep.map(_.metadata).getOrElse(Json.obj())
               )
@@ -492,8 +492,8 @@ class UsagePlanService(
                   env.dataStore.subscriptionDemandRepo.findByStates(
                     tenant.id,
                     Seq(
-                      SubscriptionDemandState.InProgress,
-                      SubscriptionDemandState.Waiting
+                      WorkflowState.InProgress,
+                      WorkflowState.Waiting
                     ),
                     apis = Seq(api.id).some,
                     plan = updatedPlan.id.some
@@ -520,8 +520,8 @@ class UsagePlanService(
                   env.dataStore.subscriptionDemandRepo.findByStates(
                     tenant.id,
                     Seq(
-                      SubscriptionDemandState.InProgress,
-                      SubscriptionDemandState.Waiting
+                      WorkflowState.InProgress,
+                      WorkflowState.Waiting
                     ),
                     apis = Seq(api.id).some,
                     plan = updatedPlan.id.some
@@ -532,7 +532,7 @@ class UsagePlanService(
                 _ <- Future.sequence(
                   demands
                     .filter(d =>
-                      validators.exists(_.subscriptionDemand == d.id)
+                      validators.exists(_.demandId == d.id)
                     )
                     .map(d => apiService.runSubscriptionProcess(d.id, tenant))
                     .map(_.value)

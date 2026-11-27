@@ -19,13 +19,39 @@ class DeletionService(
     env: Env,
     apiKeyStatsJob: ApiKeyStatsJob,
     otoroshiClient: OtoroshiClient,
-    otoroshiSynchronizerJob: OtoroshiSynchronizerJob
+    otoroshiSynchronizerJob: OtoroshiSynchronizerJob,
+    apiService: ApiService
 ) {
 
   implicit val ec: ExecutionContext = env.defaultExecutionContext
   implicit val ev: Env = env
 
   private val systemUser = User.system
+
+  private def blockBatchItems(
+      tenant: Option[TenantId],
+      apiIds: Set[ApiId] = Set.empty,
+      planIds: Set[UsagePlanId] = Set.empty,
+      teamIds: Set[TeamId] = Set.empty,
+      requesterIds: Set[UserId] = Set.empty
+  ): EitherT[Future, AppError, Unit] =
+    for {
+      affected <- EitherT(
+        env.dataStore
+          .blockBatchItems(tenant, apiIds, planIds, teamIds, requesterIds)
+      )
+      _ <- affected.foldLeft(EitherT.pure[Future, AppError](())) {
+        (previous, batch) =>
+          for {
+            _ <- previous
+            tenantSettings <- EitherT.fromOptionF(
+              env.dataStore.tenantRepo.findById(batch.tenant),
+              AppError.TenantNotFound
+            )
+            _ <- apiService.advanceSubscriptionBatch(tenantSettings, batch.id)
+          } yield ()
+      }
+    } yield ()
 
   /** Physically delete a user and the tenant-local traces the queue used to
     * clean up (team-invitation notifications, and their chat messages unless
@@ -379,7 +405,7 @@ class DeletionService(
       s"[deletion service] :: physically deleting apis[${apis.map(_.name).mkString(",")}] and their closure"
     )
 
-    val planDeletion = Source(apis)
+    def planDeletion: Future[Unit] = Source(apis)
       .mapAsync(5)(api =>
         env.dataStore.usagePlanRepo
           .findByApi(tenant.id, api)
@@ -420,15 +446,18 @@ class DeletionService(
         } yield ()
       }
       .runWith(Sink.ignore)(using env.defaultMaterializer)
+      .map(_ => ())
 
-    val r = for {
-      _ <- planDeletion
-      _ <- Future.sequence(
-        apis.distinct.map(api => deleteApiClosure(api, tenant))
+    for {
+      _ <- blockBatchItems(
+        Some(tenant.id),
+        apiIds = apis.map(_.id).toSet
+      )
+      _ <- EitherT.liftF[Future, AppError, Unit](planDeletion)
+      _ <- EitherT.liftF[Future, AppError, Seq[Unit]](
+        Future.sequence(apis.distinct.map(api => deleteApiClosure(api, tenant)))
       )
     } yield ()
-
-    EitherT.liftF(r)
   }
 
   /** Physically delete an api and everything it owns in DB — posts, issues,
@@ -470,7 +499,7 @@ class DeletionService(
                |  DELETE FROM subscription_demands
                |  WHERE content->>'_tenant' = $$1
                |    AND content->>'api' = $$2
-               |    AND content->>'state' IN ('${SubscriptionDemandState.Waiting.name}', '${SubscriptionDemandState.InProgress.name}')
+               |    AND content->>'state' IN ('${WorkflowState.Waiting.name}', '${WorkflowState.InProgress.name}')
                |  RETURNING _id AS demand_id
                |)
                |DELETE FROM step_validators
@@ -559,6 +588,10 @@ class DeletionService(
     val userParam = "$" + (tenantParams.size + 1)
 
     for {
+      _ <- blockBatchItems(
+        tenant.map(_.id),
+        requesterIds = Set(user.id)
+      )
       notifs <- EitherT.right[AppError](
         env.dataStore.notificationRepo
           .forAllTenant()
@@ -585,7 +618,7 @@ class DeletionService(
              |  DELETE FROM subscription_demands
              |  WHERE $tenantFilter
              |    content->>'from' = $userParam
-             |    AND content->>'state' IN ('${SubscriptionDemandState.Waiting.name}', '${SubscriptionDemandState.InProgress.name}')
+             |    AND content->>'state' IN ('${WorkflowState.Waiting.name}', '${WorkflowState.InProgress.name}')
              |  RETURNING _id AS demand_id
              |)
              |DELETE FROM step_validators
@@ -672,6 +705,10 @@ class DeletionService(
         env.dataStore.teamRepo.forTenant(tenant).findById(id),
         AppError.TeamNotFound
       )
+      _ <- blockBatchItems(
+        Some(tenant.id),
+        teamIds = Set(team.id)
+      )
       apis <- EitherT.liftF(
         env.dataStore.apiRepo.findByTeam(tenant.id, team.id)
       )
@@ -748,6 +785,10 @@ class DeletionService(
           .findById(planId),
         AppError.PlanNotFound
       )
+      _ <- blockBatchItems(
+        Some(tenant.id),
+        planIds = Set(plan.id)
+      )
       subscriptions <- EitherT.right[AppError](
         env.dataStore.apiSubscriptionRepo
           .findByApiAndPlan(tenant.id, api.id, plan.id)
@@ -814,7 +855,7 @@ class DeletionService(
                |  DELETE FROM subscription_demands
                |  WHERE content->>'_tenant' = $$1
                |    AND content->>'plan' = $$2
-               |    AND content->>'state' IN ('${SubscriptionDemandState.Waiting.name}', '${SubscriptionDemandState.InProgress.name}')
+               |    AND content->>'state' IN ('${WorkflowState.Waiting.name}', '${WorkflowState.InProgress.name}')
                |  RETURNING _id AS demand_id
                |)
                |DELETE FROM step_validators
@@ -868,19 +909,28 @@ class DeletionService(
           .findById(demandId),
         AppError.EntityNotFound("Subscription demand")
       )
-      _ <- EitherT.right[AppError](
-        env.dataStore.withTransaction {
-          for {
-            _ <- env.dataStore.subscriptionDemandRepo
-              .forTenant(tenant)
-              .deleteById(demand.id)
-            _ <- env.dataStore.stepValidatorRepo
-              .deleteByDemand(tenant.id, demand.id)
-            _ <- env.dataStore.notificationRepo
-              .deleteByDemand(tenant.id, demand.id)
-          } yield ()
-        }
-      )
+      _ <- demand.batch match {
+        case Some(reference) =>
+          EitherT(env.dataStore.cancelBatchChild(tenant.id, reference))
+            .flatMap(_ =>
+              apiService.advanceSubscriptionBatch(tenant, reference.batch)
+            )
+            .map(_ => ())
+        case None =>
+          EitherT.right[AppError](
+            env.dataStore.withTransaction {
+              for {
+                _ <- env.dataStore.subscriptionDemandRepo
+                  .forTenant(tenant)
+                  .deleteById(demand.id)
+                _ <- env.dataStore.stepValidatorRepo
+                  .deleteByDemand(tenant.id, demand.id)
+                _ <- env.dataStore.notificationRepo
+                  .deleteByDemand(tenant.id, demand.id)
+              } yield ()
+            }
+          )
+      }
     } yield ()
   }
 }

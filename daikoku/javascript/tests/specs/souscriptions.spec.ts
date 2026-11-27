@@ -51,12 +51,15 @@ test('[ASOAPI-10160] - souscrire à une api',async ({ page, context }) => {
   await page.getByRole('link', { name: 'API papier' }).click();
   await page.getByRole('tab', { name: 'Environnements' }).click();
 
+  await expect(page.getByRole('listitem', { name: 'prod' }).locator('.tag.--warning')).toHaveCount(0);
   await requestApiKey(page, page.getByRole('listitem', { name: 'prod' }), {
     team: 'Vendeurs',
     keyAttachment: 'Nouvelle',
     motivation: 'please',
   });
   await expect(page.getByRole('region', { name: 'Notifications' })).toContainText('La demande de clé d\'API au plan prod pour l\'équipe Vendeurs est en attente de validation');
+  await expect(page.getByRole('listitem', { name: 'prod' }).locator('.tag.--warning')).toHaveText('1 demande en cours');
+  await expect(page.getByRole('listitem', { name: 'dev' }).locator('.tag.--warning')).toHaveCount(0);
   await page.getByRole('button', { name: 'Close toast' }).click();
   await page.route('**/api/me/subscriptions/*/1.0.0', async route => {
     const response = await route.fetch();
@@ -348,9 +351,6 @@ test('Demander plusieurs extension d\'apikey jusqu\'aux notifications', async ({
   await page.getByRole('option', { name: 'Vendeurs', exact: true }).click();
   await requestSheet.getByRole('textbox', { name: 'motivation' }).fill('motication de l\'utilisateur');
   await requestSheet.getByRole('button', { name: 'Enregistrer' }).click();
-
-  await page.getByText('La demande de clé d\'API au').click();
-  await page.getByRole('button', { name: 'Close toast' }).click();
 
   await logout(page);
   await loginAs(MICHAEL, page);
@@ -829,8 +829,10 @@ test('[ASOAPI-10603] - [Consommateur] - supprimer une clé avec extension en cas
   await page.waitForResponse(r => r.request().method() === 'DELETE' && r.status() === 200);
   // 2) supprimer la dernière souscription (API papier/dev) -> clé d'API vide -> le
   // backend supprime la clé d'API et sa clé Otoroshi
+  await page.getByRole('button', { name: 'Close toast' }).click();
+
   await page
-    .getByRole('listitem', { name: 'api papier - dev' })
+    .getByRole('listitem', { name: 'API Papier - dev' })
     .getByRole('listitem').filter({ hasText: 'API papier' })
     .getByRole('button', { name: 'Actions de la souscription' })
     .click();
@@ -843,10 +845,10 @@ test('[ASOAPI-10603] - [Consommateur] - supprimer une clé avec extension en cas
   await page.getByRole('button', { name: 'Confirmation' }).
     click();
   await page.waitForResponse(r => r.request().method() === 'DELETE' && r.status() === 200);
-
   //plus aucune carte -> clé d'API supprimée
   await expect(page.locator('.keyring-card')).toBeHidden();
   await expectOtoroshiApiKeyGone(vendeursPapierExtendedDevApiKeyId);
+
 })
 
 

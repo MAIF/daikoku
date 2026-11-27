@@ -116,7 +116,7 @@ export const TenantOtoroshis = () => {
       <div>
         <button
           type="button"
-          className="btn --primary mt-2"
+          className="btn --primary"
           title={translate('otoroshi.list.add.label')}
           onClick={() => createNewSettings()}
         >

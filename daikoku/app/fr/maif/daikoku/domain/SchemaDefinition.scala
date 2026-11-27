@@ -255,6 +255,13 @@ object SchemaDefinition {
           demands: Seq[DemandId]
       ) => ctx._1.accountCreationRepo.findByIds(demands)
     )(using HasId[AccountCreation, DemandId](_.id))
+    lazy val teamCreationsFetcher = Fetcher(
+      config = FetcherConfig.maxBatchSize(MAX_BATCH_SIZE),
+      fetch = (
+          ctx: (DataStore, DaikokuActionContext[JsValue]),
+          demands: Seq[DemandId]
+      ) => ctx._1.teamCreationRepo.findByIds(demands)
+    )(using HasId[TeamCreation, DemandId](_.id))
     lazy val userSessionsFetcher = Fetcher(
       config = FetcherConfig.maxBatchSize(MAX_BATCH_SIZE),
       fetch = (
@@ -493,6 +500,7 @@ object SchemaDefinition {
       ObjectTypeDescription(
         "Settings to communicate with an instance of Otoroshi"
       ),
+      ExcludeFields("keyringEmptyGroup"),
       ReplaceField("id", Field("id", StringType, resolve = _.value.id.value)),
       ReplaceField(
         "elasticConfig",
@@ -904,7 +912,11 @@ object SchemaDefinition {
         ),
         ReplaceField(
           "headers",
-          Field("headers", MapType, resolve = _.value.headers)
+          Field(
+            "headers",
+            JsonType,
+            resolve = ctx => Json.toJson(ctx.value.headers)
+          )
         ),
         AddFields(
           Field(
@@ -1236,6 +1248,11 @@ object SchemaDefinition {
             "subscriptionProcessChecksum",
             OptionType(StringType),
             resolve = _.value.subscriptionProcess.checksum
+          ),
+          Field(
+            "subscriptionBatchProcessChecksum",
+            OptionType(StringType),
+            resolve = _.value.subscriptionProcess.batchChecksum
           ),
           Field(
             "integrationProcess",
@@ -2424,19 +2441,19 @@ object SchemaDefinition {
       )
     )
 
-    lazy val SubscriptionDemandStepType: ObjectType[
+    lazy val WorkflowStepType: ObjectType[
       (DataStore, DaikokuActionContext[JsValue]),
-      SubscriptionDemandStep
+      WorkflowStep
     ] = ObjectType[
       (DataStore, DaikokuActionContext[JsValue]),
-      SubscriptionDemandStep
+      WorkflowStep
     ](
       "SubscriptionDemandStep",
-      "A subscription demand step",
+      "A workflow step shared by subscription, account and team requests",
       () =>
         fields[
           (DataStore, DaikokuActionContext[JsValue]),
-          SubscriptionDemandStep
+          WorkflowStep
         ](
           Field("id", StringType, resolve = _.value.id.value),
           Field("step", ValidationStepInterfaceType, resolve = _.value.step),
@@ -2470,7 +2487,7 @@ object SchemaDefinition {
           ),
           Field(
             "steps",
-            ListType(SubscriptionDemandStepType),
+            ListType(WorkflowStepType),
             resolve = _.value.steps
           ),
           Field("state", StringType, resolve = _.value.state.name),
@@ -2549,6 +2566,66 @@ object SchemaDefinition {
         )
       )
     )
+    lazy val ApiSubscriptionBatchDemandType = new PossibleObject(
+      ObjectType(
+        "ApiSubscriptionBatch",
+        "A grouped API subscription demand notification",
+        interfaces[
+          (DataStore, DaikokuActionContext[JsValue]),
+          ApiSubscriptionBatchDemand
+        ](NotificationActionType),
+        fields[
+          (DataStore, DaikokuActionContext[JsValue]),
+          ApiSubscriptionBatchDemand
+        ](
+          Field("batch", StringType, resolve = _.value.batch.value),
+          Field(
+            "api",
+            OptionType(ApiType),
+            resolve = ctx => apisFetcher.defer(ctx.value.api)
+          ),
+          Field(
+            "team",
+            OptionType(TeamObjectType),
+            resolve = ctx => teamsFetcher.defer(ctx.value.team)
+          ),
+          Field("phase", IntType, resolve = _.value.phase),
+          Field(
+            "items",
+            ListType(SubscriptionBatchApprovalItemType),
+            resolve = _.value.items
+          ),
+          Field(
+            "motivation",
+            OptionType(StringType),
+            resolve = _.value.motivation
+          )
+        )
+      )
+    )
+
+    lazy val SubscriptionBatchApprovalItemType = ObjectType[
+      (DataStore, DaikokuActionContext[JsValue]),
+      SubscriptionBatchApprovalItem
+    ](
+      "SubscriptionBatchApprovalItem",
+      "A child demand and step included in a grouped approval",
+      () =>
+        fields[
+          (DataStore, DaikokuActionContext[JsValue]),
+          SubscriptionBatchApprovalItem
+        ](
+          Field("item", StringType, resolve = _.value.item.value),
+          Field(
+            "plan",
+            OptionType(UsagePlanType),
+            resolve = ctx => usagePlansFetcher.defer(ctx.value.plan)
+          ),
+          Field("demand", StringType, resolve = _.value.demand.value),
+          Field("step", StringType, resolve = _.value.step.value)
+        )
+    )
+
     lazy val TransferApiOwnershipType = new PossibleObject(
       ObjectType(
         "TransferApiOwnership",
@@ -3284,6 +3361,78 @@ object SchemaDefinition {
       )
     )
 
+    lazy val TeamCreationType = deriveObjectType[
+      (DataStore, DaikokuActionContext[JsValue]),
+      TeamCreation
+    ](
+      ExcludeFields("adminReview"),
+      ObjectTypeDescription(
+        "waiting confirmation for a neaw team."
+      ),
+      ReplaceField(
+        "userId",
+        Field("userId", StringType, resolve = _.value.userId.value)
+      ),
+      ReplaceField("id", Field("_id", StringType, resolve = _.value.id.value)),
+      ReplaceField(
+        "creationDate",
+        Field("creationDate", DateTimeUnitype, resolve = _.value.creationDate)
+      ),
+      ReplaceField(
+        "steps",
+        Field(
+          "steps",
+          ListType(WorkflowStepType),
+          resolve = _.value.steps
+        )
+      ),
+      ReplaceField(
+        "state",
+        Field("state", StringType, resolve = _.value.state.name)
+      ),
+      ReplaceField(
+        "fromTenant",
+        Field("fromTenant", StringType, resolve = _.value.fromTenant.value)
+      ),
+      ReplaceField(
+        "value",
+        Field(
+          "value",
+          JsonType,
+          resolve = _.value.value - "password" - "confirmPassword"
+        )
+      ),
+      ReplaceField(
+        "creationSecurity",
+        Field(
+          "creationSecurity",
+          OptionType(BooleanType),
+          resolve = ctx => ctx.value.adminReview
+            .flatMap(_.creationSecurity)
+            .orElse(ctx.value.creationSecurity)
+        )
+      ),
+      ReplaceField(
+        "metadata",
+        Field(
+          "metadata",
+          JsonType,
+          resolve =
+            ctx => Json.toJson(ctx.value.effectiveMetadata(ctx.ctx._2.tenant))
+        )
+      ),
+      AddFields(
+        Field(
+          "authorizedOtoroshiEntities",
+          OptionType(ListType(TeamAuthorizedEntitiesType)),
+          resolve = ctx =>
+            ctx.value.adminReview.fold(
+              ctx.ctx._2.tenant.defaultAuthorizedOtoroshiEntities
+            )(_.authorizedOtoroshiEntities)
+        )
+      )
+    )
+
     lazy val AccountCreationType = deriveObjectType[
       (DataStore, DaikokuActionContext[JsValue]),
       AccountCreation
@@ -3308,7 +3457,7 @@ object SchemaDefinition {
         "steps",
         Field(
           "steps",
-          ListType(SubscriptionDemandStepType),
+          ListType(WorkflowStepType),
           resolve = _.value.steps
         )
       ),
@@ -3352,7 +3501,7 @@ object SchemaDefinition {
           ),
           Field(
             "step",
-            OptionType(SubscriptionDemandStepType),
+            OptionType(WorkflowStepType),
             resolve = ctx =>
               ctx.ctx._1.accountCreationRepo // FIXME: use defer ?
                 .findById(ctx.value.demand)
@@ -3365,6 +3514,38 @@ object SchemaDefinition {
             "motivation",
             OptionType(StringType),
             resolve = _.value.motivation.some
+          )
+        )
+      )
+    )
+
+    lazy val TeamCreationAttemptType = new PossibleObject(
+      ObjectType(
+        "TeamCreationAttempt",
+        "A notification triggered during a new team creation",
+        interfaces[
+          (DataStore, DaikokuActionContext[JsValue]),
+          TeamCreationAttempt
+        ](NotificationActionType),
+        fields[
+          (DataStore, DaikokuActionContext[JsValue]),
+          TeamCreationAttempt
+        ](
+          Field(
+            "demand",
+            OptionType(TeamCreationType),
+            resolve = ctx => teamCreationsFetcher.defer(ctx.value.demand)
+          ),
+          Field(
+            "step",
+            OptionType(WorkflowStepType),
+            resolve = ctx =>
+              ctx.ctx._1.teamCreationRepo // FIXME: use defer ?
+                .findById(ctx.value.demand)
+                .map {
+                  case Some(d) => d.steps.find(_.id == ctx.value.step)
+                  case None    => None
+                }
           )
         )
       )
@@ -3465,6 +3646,7 @@ object SchemaDefinition {
             ApiAccessType,
             TeamInvitationType,
             ApiSubscriptionDemandType,
+            ApiSubscriptionBatchDemandType,
             OtoroshiSyncSubscriptionErrorType,
             OtoroshiSyncApiErrorType,
             ApiKeyDeletionInformationType,
@@ -3489,6 +3671,7 @@ object SchemaDefinition {
             CheckoutForSubscriptionType,
             ApiSubscriptionTransferSuccessType,
             AccountCreationAttemptType,
+            TeamCreationAttemptType,
             SubscriptionPriceChangeScheduledType,
             SubscriptionCancellationScheduledType,
             SubscriptionBlockedByOwnerType,
@@ -4986,8 +5169,8 @@ object SchemaDefinition {
                       .findByStatesPaginated(
                         tenant.id,
                         Seq(
-                          SubscriptionDemandState.InProgress,
-                          SubscriptionDemandState.Waiting
+                          WorkflowState.InProgress,
+                          WorkflowState.Waiting
                         ),
                         apis = apis.map(_.id).some,
                         page = ctx.arg(OFFSET),
@@ -5027,8 +5210,8 @@ object SchemaDefinition {
                 .findByStatesPaginated(
                   tenant.id,
                   Seq(
-                    SubscriptionDemandState.InProgress,
-                    SubscriptionDemandState.Waiting
+                    WorkflowState.InProgress,
+                    WorkflowState.Waiting
                   ),
                   teams = Seq(team.id).some,
                   page = ctx.arg(OFFSET),
@@ -5310,7 +5493,8 @@ object SchemaDefinition {
         usagePlansFetcher,
         accountCreationsFetcher,
         userSessionsFetcher,
-        cmsPagesFetcher
+        cmsPagesFetcher,
+        teamCreationsFetcher
       )
     )
   }

@@ -61,7 +61,7 @@ export const ModalProvider = ({ children }: { children: ReactNode }) => {
         resolve(false);
         close();
       }}
-    />)
+    />, props.defaultCancel ? () => resolve(false) : undefined)
   })
 
   const prompt = (props: PromptModalProps) => new Promise<string | undefined>((success) => {
@@ -162,9 +162,12 @@ const useModal = () => {
   const [modalContent, setModalContent] = useState<JSX.Element>();
   const [rightPanelContent, setRightPanelContent] = useState<IRightPanelProps>();
 
-  const open = (content: JSX.Element) => {
+  const open = (content: JSX.Element, onDismiss?: () => void) => {
     setModal(true)
-    setModalContent(<ModalWrapper closeModal={close}>{content}</ModalWrapper>)
+    setModalContent(<ModalWrapper closeModal={() => {
+      onDismiss?.();
+      close();
+    }}>{content}</ModalWrapper>)
   };
   const close = () => {
     setModal(false)
@@ -176,6 +179,10 @@ const useModal = () => {
   }
 
   const openRightPanel = (p: IRightPanelProps) => {
+    if (p.defaultSize !== undefined &&
+      (!Number.isFinite(p.defaultSize) || p.defaultSize < 35 || p.defaultSize > 100)) {
+      throw new RangeError('Right panel defaultSize must be a percentage between 35 and 100');
+    }
     setRightPanelContent(p)
   }
 

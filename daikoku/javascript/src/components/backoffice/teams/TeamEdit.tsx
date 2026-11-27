@@ -234,7 +234,6 @@ export const TeamEdit = () => {
           navigate(`/${updatedTeam._humanReadableId}/settings/edition`);
         }
         if (contact !== updatedTeam.contact) {
-          toast.info(translate("mailValidation.sent.body"))
           setAlreadyClicked(false)
         }
       })

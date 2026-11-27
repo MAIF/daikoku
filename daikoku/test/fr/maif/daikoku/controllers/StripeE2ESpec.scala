@@ -138,7 +138,7 @@ class StripeE2ESpec()
       val stripeTenant = setupTenant(stripeSettings)
 
       val settings = daikokuComponents.paymentClient
-        .createStripeProduct(defaultApi.api, meteredPlan)(stripeSettings)
+        .createStripeProduct(defaultApi.api, meteredPlan)(using stripeSettings)
         .value
         .futureValue
       settings.isRight mustBe true
@@ -167,7 +167,7 @@ class StripeE2ESpec()
       val stripeTenant = setupTenant(stripeSettings)
 
       val settings = daikokuComponents.paymentClient
-        .createStripeProduct(defaultApi.api, meteredPlan)(stripeSettings)
+        .createStripeProduct(defaultApi.api, meteredPlan)(using stripeSettings)
         .value
         .futureValue
         .toOption
@@ -213,7 +213,7 @@ class StripeE2ESpec()
       val stripeTenant = setupTenant(stripeSettings)
 
       val settings = daikokuComponents.paymentClient
-        .createStripeProduct(defaultApi.api, meteredPlan)(stripeSettings)
+        .createStripeProduct(defaultApi.api, meteredPlan)(using stripeSettings)
         .value
         .futureValue
         .toOption
@@ -306,7 +306,7 @@ class StripeE2ESpec()
       val stripeTenant = setupTenant(stripeSettings)
 
       val settings = daikokuComponents.paymentClient
-        .createStripeProduct(defaultApi.api, meteredPlan)(stripeSettings)
+        .createStripeProduct(defaultApi.api, meteredPlan)(using stripeSettings)
         .value
         .futureValue
         .toOption
@@ -354,7 +354,7 @@ class StripeE2ESpec()
       )
 
       val settings = daikokuComponents.paymentClient
-        .createStripeProduct(defaultApi.api, yenPlan)(stripeSettings)
+        .createStripeProduct(defaultApi.api, yenPlan)(using stripeSettings)
         .value
         .futureValue
         .toOption

@@ -1383,9 +1383,9 @@
         "targets": [
           {
             "id": "target_1",
-            "hostname": "request.otoroshi.io",
-            "port": 443,
-            "tls": true,
+            "hostname": "faker",
+            "port": 1080,
+            "tls": false,
             "weight": 1,
             "predicate": {
               "type": "AlwaysMatch"
@@ -1401,7 +1401,7 @@
             }
           }
         ],
-        "root": "/",
+        "root": "/types",
         "rewrite": false,
         "load_balancing": {
           "type": "RoundRobin"

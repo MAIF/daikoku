@@ -1206,7 +1206,7 @@ class ApiController(
         demand <- EitherT.fromOptionF(
           env.dataStore.subscriptionDemandRepo
             .forTenant(ctx.tenant)
-            .findById(validator.subscriptionDemand),
+            .findById(validator.demandId),
           AppError.SubscriptionDemandNotFound
         )
         // a payment step is only ever validated by the signed Stripe webhook
@@ -1257,7 +1257,7 @@ class ApiController(
           demand <- EitherT.fromOptionF(
             env.dataStore.subscriptionDemandRepo
               .forTenant(ctx.tenant)
-              .findById(validator.subscriptionDemand),
+              .findById(validator.demandId),
             AppError.EntityNotFound("Subscription demand")
           )
         } yield Redirect(
@@ -1389,18 +1389,9 @@ class ApiController(
             (),
             AppError.ForbiddenAction
           )
-          _ <- EitherT.right[AppError](
-            env.dataStore.subscriptionDemandRepo
-              .forTenant(ctx.tenant)
-              .deleteById(demand.id)
-          )
-          _ <- EitherT.right[AppError](
-            env.dataStore.stepValidatorRepo
-              .deleteByDemand(ctx.tenant.id, demand.id)
-          )
-          _ <- EitherT.right[AppError](
-            env.dataStore.notificationRepo
-              .deleteByDemand(ctx.tenant.id, demand.id)
+          _ <- deletionService.cancelSubscriptionDemand(
+            demand.id,
+            ctx.tenant
           )
         } yield Ok(Json.obj("done" -> true)))
           .leftMap(_.render())
@@ -1424,7 +1415,7 @@ class ApiController(
               env.dataStore.subscriptionDemandRepo
                 .findByStates(
                   ctx.tenant.id,
-                  Seq(SubscriptionDemandState.Waiting, SubscriptionDemandState.InProgress),
+                  Seq(WorkflowState.Waiting, WorkflowState.InProgress),
                   apis = Seq(api.id).some,
                   teams = teams.map(_.id).some
                 )

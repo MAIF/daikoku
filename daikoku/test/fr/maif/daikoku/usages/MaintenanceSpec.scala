@@ -29,7 +29,7 @@ class MaintenanceSpec()
 
   val pwd: String = System.getProperty("user.dir")
   override val container: GenericContainer = GenericContainer(
-    "osixia/openldap:latest",
+    "osixia/openldap:1.5.0",
     exposedPorts = Seq(389),
     env = Map(
       "LDAP_BASE_DN" -> "dc=dundermifflin,dc=com",

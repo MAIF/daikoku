@@ -60,6 +60,7 @@ const initContext: TGlobalContext = {
     thirdPartyPaymentSettings: [],
     otoroshiSettings: [],
     accountCreationProcess: [],
+    teamCreationProcess: [],
     isPrivate: false
   },
   session: {

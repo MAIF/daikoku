@@ -20,6 +20,9 @@ import org.scalatestplus.play.PlaySpec
 import org.testcontainers.containers.BindMode
 import play.api.libs.json._
 
+import com.sun.net.httpserver.HttpServer
+import java.net.InetSocketAddress
+import java.nio.charset.StandardCharsets
 import scala.concurrent.Await
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.DurationInt
@@ -36,6 +39,64 @@ class TeamControllerSpec()
   implicit val ecc: ExecutionContext =
     daikokuComponents.env.defaultExecutionContext
   implicit val ev: Env = daikokuComponents.env
+
+  private def pendingTeamCreation(
+      step: ValidationStep,
+      name: String
+  ): TeamCreation =
+    TeamCreation(
+      id = DemandId(s"team-workflow-${step.id}"),
+      randomId = s"token-${step.id}",
+      email = user.email,
+      name = name,
+      avatar = "/assets/images/daikoku.svg",
+      creationDate = DateTime.now(),
+      userId = user.id,
+      steps = Seq(
+        WorkflowStep(
+          WorkflowStepId(step.id),
+          WorkflowState.Waiting,
+          step
+        )
+      ),
+      value = Json.obj("name" -> name, "contact" -> user.email),
+      fromTenant = tenant.id,
+      creationSecurity = None
+    )
+
+  private def submitTeamCreation(workflowTenant: Tenant, name: String) = {
+    val session = loginWithBlocking(user, workflowTenant)
+    httpJsonCallBlocking(
+      path = "/api/teams",
+      method = "POST",
+      body = Some(
+        Json.obj(
+          "name" -> name,
+          "contact" -> user.email,
+          "avatar" -> "/assets/images/team-avatar.png"
+        )
+      )
+    )(using workflowTenant, session)
+  }
+
+  private def withValidationResponse(
+      responseBody: String
+  )(test: String => Unit): Unit = {
+    val server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0)
+    server.createContext(
+      "/validation",
+      exchange => {
+        val bytes = responseBody.getBytes(StandardCharsets.UTF_8)
+        exchange.getResponseHeaders.set("Content-Type", "application/json")
+        exchange.sendResponseHeaders(200, bytes.length)
+        try exchange.getResponseBody.write(bytes)
+        finally exchange.close()
+      }
+    )
+    server.start()
+    try test(s"http://127.0.0.1:${server.getAddress.getPort}/validation")
+    finally server.stop(0)
+  }
 
   private def getMyOwnTeam(
       user: User,
@@ -70,6 +131,250 @@ class TeamControllerSpec()
 
   before {
     Await.result(cleanOtoroshiServer(container.mappedPort(8080)), 5.seconds)
+  }
+
+  "team creation workflow" should {
+    "create an organization immediately without using the account creation process" in {
+      val defaultEntities = Seq(
+        TeamAuthorizedEntities(
+          OtoroshiSettingsId("default"),
+          AuthorizedEntities(routes =
+            Set(OtoroshiRouteId("team-default-route"))
+          )
+        )
+      )
+      val workflowTenant = tenant.copy(
+        teamCreationProcess = Seq.empty,
+        accountCreationProcess = Seq(
+          ValidationStep.Email(
+            id = "account-email",
+            emails = Seq("account-validator@foo.test"),
+            message = None,
+            title = "Account validation"
+          )
+        ),
+        defaultAuthorizedOtoroshiEntities = Some(defaultEntities)
+      )
+      setupEnvBlocking(
+        tenants = Seq(workflowTenant),
+        users = Seq(user),
+        teams = Seq(defaultAdminTeam)
+      )
+      val session = loginWithBlocking(user, workflowTenant)
+      val response = httpJsonCallBlocking(
+        path = "/api/teams",
+        method = "POST",
+        body = Some(
+          Json.obj(
+            "name" -> "Immediate workflow team",
+            "contact" -> "team-contact@foo.test",
+            "avatar" -> "/assets/images/team-avatar.png"
+          )
+        )
+      )(using workflowTenant, session)
+      response.status mustBe 200
+      (response.json \ "message").as[String] mustBe "team.validated.success"
+
+      val teams =
+        httpJsonCallBlocking("/api/me/teams")(using workflowTenant, session)
+      teams.status mustBe 200
+      val created = teams.json
+        .as[JsArray]
+        .value
+        .filter(team => (team \ "name").as[String] == "Immediate workflow team")
+      created.size mustBe 1
+      val team = created.head.as(using json.TeamFormat)
+      team.`type` mustBe TeamType.Organization
+      team.tenant mustBe workflowTenant.id
+      team.contact mustBe "team-contact@foo.test"
+      team.avatar mustBe Some("/assets/images/team-avatar.png")
+      team.users mustBe Set(UserWithPermission(user.id, Administrator))
+      team.authorizedOtoroshiEntities mustBe Some(defaultEntities)
+    }
+
+    "leave the demand pending when an unauthorized user accepts its notification" in {
+      val step = ValidationStep.TeamAdmin(
+        id = "team-workflow-admin",
+        team = defaultAdminTeam.id,
+        title = "Team approval"
+      )
+      val demand = pendingTeamCreation(step, "Unauthorized workflow team")
+      val notification = Notification(
+        id = NotificationId("team-workflow-notification"),
+        tenant = tenant.id,
+        team = Some(defaultAdminTeam.id),
+        sender = user.asNotificationSender,
+        action = NotificationAction.TeamCreationAttempt(
+          demand.id,
+          demand.steps.head.id
+        )
+      )
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(user, tenantAdmin),
+        teams = Seq(defaultAdminTeam),
+        notifications = Seq(notification)
+      )
+      Await.result(ev.dataStore.teamCreationRepo.save(demand), 5.seconds)
+      try {
+        val session = loginWithBlocking(user, tenant)
+        val response = httpJsonCallBlocking(
+          s"/api/notifications/${notification.id.value}/accept",
+          method = "PUT",
+          body = Some(Json.obj())
+        )(using tenant, session)
+        response.status mustBe 403
+
+        val adminSession = loginWithBlocking(tenantAdmin, tenant)
+        val notifications = httpJsonCallBlocking(
+          "/api/search",
+          method = "POST",
+          body = Some(Json.obj("query" -> """
+            { myNotifications(limit: 10, offset: 0) {
+              notifications {
+                _id
+                status { ... on NotificationStatusPending { status } }
+                action { ... on TeamCreationAttempt {
+                  demand { _id state steps { state } }
+                } }
+              }
+            } }
+          """))
+        )(using tenant, adminSession)
+        notifications.status mustBe 200
+        (notifications.json \ "errors").toOption mustBe None
+        val pending =
+          (notifications.json \ "data" \ "myNotifications" \ "notifications")
+            .as[JsArray]
+            .value
+            .find(item => (item \ "_id").as[String] == notification.id.value)
+            .get
+        (pending \ "status" \ "status").as[String] mustBe "Pending"
+        (pending \ "action" \ "demand" \ "state").as[String] mustBe "waiting"
+        (pending \ "action" \ "demand" \ "steps")
+          .as[JsArray]
+          .value
+          .map(item => (item \ "state").as[String]) mustBe Seq("waiting")
+        val teams = httpJsonCallBlocking("/api/me/teams")(using tenant, session)
+        teams.json
+          .as[JsArray]
+          .value
+          .exists(team =>
+            (team \ "name").as[String] == demand.name
+          ) mustBe false
+      } finally {
+        Await.result(
+          ev.dataStore.teamCreationRepo.deleteById(demand.id),
+          5.seconds
+        )
+      }
+    }
+
+    "consume the email validation link once without creating a duplicate team" in {
+      val step = ValidationStep.Email(
+        id = "team-workflow-email",
+        emails = Seq(user.email),
+        message = None,
+        title = "Team validation"
+      )
+      val demand = pendingTeamCreation(step, "Single use workflow team")
+      val validator = StepValidator(
+        id = DatastoreId("team-workflow-validator"),
+        tenant = tenant.id,
+        token = "team-workflow-validation-token",
+        step = demand.steps.head.id,
+        demandId = demand.id
+      )
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(user),
+        teams = Seq(defaultAdminTeam)
+      )
+      Await.result(ev.dataStore.teamCreationRepo.save(demand), 5.seconds)
+      Await.result(
+        ev.dataStore.stepValidatorRepo.forTenant(tenant).save(validator),
+        5.seconds
+      )
+      try {
+        val token = fr.maif.daikoku.utils.Cypher
+          .encrypt(ev.config.cypherSecret, validator.token, tenant)
+        val encoded = java.net.URLEncoder
+          .encode(token, java.nio.charset.StandardCharsets.UTF_8)
+        val link = s"/api/team/_validate?token=$encoded"
+        val response = httpJsonCallWithoutSessionBlocking(link)(using tenant)
+        response.status mustBe 303
+        response.header("Location").get must include(
+          "message=team-creation-accept"
+        )
+
+        val replay = httpJsonCallWithoutSessionBlocking(link)(using tenant)
+        replay.status mustBe 303
+        replay.header("Location").get must include("error=")
+        val session = loginWithBlocking(user, tenant)
+        val teams = httpJsonCallBlocking("/api/me/teams")(using tenant, session)
+        teams.status mustBe 200
+        teams.json
+          .as[JsArray]
+          .value
+          .count(team => (team \ "name").as[String] == demand.name) mustBe 1
+      } finally {
+        Await.result(
+          ev.dataStore.teamCreationRepo.deleteById(demand.id),
+          5.seconds
+        )
+      }
+    }
+
+    "return a client error when an HTTP validation response has no accept field" in {
+      withValidationResponse(
+        """{"Otoroshi-Error":"upstream rejected request"}"""
+      ) { url =>
+        val workflowTenant = tenant.copy(
+          teamCreationProcess = Seq(
+            ValidationStep.HttpRequest(
+              id = "team-workflow-http-without-accept",
+              title = "HTTP validation",
+              url = url
+            )
+          )
+        )
+        setupEnvBlocking(
+          tenants = Seq(workflowTenant),
+          users = Seq(user, tenantAdmin),
+          teams = Seq(defaultAdminTeam)
+        )
+
+        val response =
+          submitTeamCreation(workflowTenant, "Team with invalid HTTP response")
+
+        response.status mustBe 400
+        (response.json \ "error").as[String] mustBe
+          "HTTP validation response must contain a boolean 'accept' field."
+      }
+    }
+
+    "notify the admin team when an admin step has no form step" in {
+      val workflowTenant = tenant.copy(
+        teamCreationProcess = Seq(
+          ValidationStep.TeamAdmin(
+            id = "team-workflow-admin-without-form",
+            team = defaultAdminTeam.id,
+            title = "Team approval"
+          )
+        )
+      )
+      setupEnvBlocking(
+        tenants = Seq(workflowTenant),
+        users = Seq(user, tenantAdmin),
+        teams = Seq(defaultAdminTeam)
+      )
+
+      val response =
+        submitTeamCreation(workflowTenant, "Team admin step without form")
+
+      response.status mustBe 200
+      (response.json \ "notificationSended").as[Boolean] mustBe true
+    }
   }
 
   "a daikoku admin" can {

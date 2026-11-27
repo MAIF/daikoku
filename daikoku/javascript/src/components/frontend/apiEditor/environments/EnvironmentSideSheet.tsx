@@ -11,7 +11,7 @@ import { I18nContext, ModalContext } from '../../../../contexts';
 import { GlobalContext } from '../../../../contexts/globalContext';
 import * as Services from '../../../../services';
 import { IApi, isError, ITeamSimple, IUsagePlan, IValidationStep } from '../../../../types';
-import { SubscriptionProcessEditor } from '../../../backoffice/apis/SubscriptionProcessEditor';
+import { ValidationWorkflowEditor } from '../../../backoffice/apis/ValidationWorkflowEditor';
 import { ChoiceChips } from '../../../inputs';
 import { InfoCallout, SideSheet, SideSheetActions, Spinner, tabPanelId, Tabs } from '../../../utils';
 import { billingSchema, generalSchema, otoroshiSchema, quotasSchema } from './planSchemas';
@@ -366,7 +366,7 @@ export const EnvironmentSideSheet = ({ api, ownerTeam, plan, creation, initialTa
       </div>
 
       <div role="tabpanel" id={tabPanelId('environment-sheet', 'process')} hidden={tab !== 'process'}>
-        <SubscriptionProcessEditor process={process} onChange={setProcess} team={ownerTeam._id} tenant={tenant} />
+        <ValidationWorkflowEditor process={process} onChange={setProcess} team={ownerTeam._id} tenant={tenant} />
       </div>
     </SideSheet>
   );

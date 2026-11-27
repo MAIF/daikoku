@@ -1,6 +1,8 @@
 import { useState } from "react";
 import Pagination from "../utils/Pagination";
 import Select from "react-select";
+import { Callout } from "../inputs/Callout";
+import { Checkbox } from "../inputs/Checkbox";
 
 export const AtomicDesign = () => {
   const [page, setPage] = useState(0);
@@ -160,10 +162,33 @@ export const AtomicDesign = () => {
               <span className="badge --inactive --state">inactive state badge</span>
             </div>
 
+            <h1 className="mt-3">Callout</h1>
+            <Callout level="primary" title="Primary callout" body="test" />
+            <Callout level="info" title="Info callout" body="test" />
+            <Callout level="warning" title="Warning callout" body="test" />
+            <Callout level="danger" title="Danger callout" body="test" />
+            <Callout level="success" title="Success callout" body="test" />
+            <Callout level="neutral" title="Neutral callout" body="test" />
+
             <h1 className="mt-3">Number indicator</h1>
             <div className="d-flex gap-2">
               <span className="number-indicator">42</span>
               <span className="number-indicator --inactive">42</span>
+            </div>
+
+            <h1 className="mt-3">Checkboxes</h1>
+            <div className="d-flex gap-4 flex-wrap">
+              {[
+                { label: "Unchecked", checked: false, disabled: false },
+                { label: "Checked", checked: true, disabled: false },
+                { label: "Disabled unchecked", checked: false, disabled: true },
+                { label: "Disabled checked", checked: true, disabled: true },
+              ].map(({ label, checked, disabled }) => (
+                <label key={label} className="d-flex gap-2 align-items-center">
+                  <Checkbox defaultChecked={checked} disabled={disabled} />
+                  {label}
+                </label>
+              ))}
             </div>
 
 

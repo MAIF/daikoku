@@ -36,6 +36,7 @@ export const vendeurs = "c9NB4pklW4QxJ3mLcxQAwqu4RvquHYv4"
 export const logistique = "jGVkVifJgKFdOq4PeoMU2XKWzEjejUfI"
 export const teamJim = "4Z9ss4YZDFCxBuLwMX4RkXi3W1JOw7kj"
 
+export const papierProdPlan = "D5gZYeWoq18w5GRdKFLwrbtARZ7c9I2o";
 export const commandeDevPlan = "AQuzATL1d2MBujVRsjzpQWaGuoD0uiDK";
 
 
@@ -172,7 +173,7 @@ export const triggerTeamBillingSync = async (page: Page, teamId: string) => {
 // Deleting a subscription or a keyring removes the Daikoku rows in the request
 // transaction and hands the Otoroshi cleanup to the deletion queue, so the
 // apikey survives the response by up to a queue tick. Poll rather than read
-// once.
+// once. Allow for the default 30-second queue interval outside the CI stack.
 export const fetchOtoroshiApiKey = async (clientId: string) => {
   const resp = await fetch(
     `http://otoroshi-api.oto.tools:8080/api/apikeys/${clientId}`,
@@ -192,7 +193,7 @@ export const fetchOtoroshiApiKey = async (clientId: string) => {
 
 export const expectOtoroshiApiKeyGone = async (
   clientId: string,
-  timeout = 20_000,
+  timeout = 45_000,
 ) =>
   expect
     .poll(async () => (await fetchOtoroshiApiKey(clientId)).status, {
@@ -204,7 +205,7 @@ export const expectOtoroshiApiKeyGone = async (
 export const expectOtoroshiApiKeyEntities = async (
   clientId: string,
   entityCount: number,
-  timeout = 20_000,
+  timeout = 45_000,
 ) =>
   expect
     .poll(

@@ -64,14 +64,14 @@ class GraphQLControllerSpec()
         api = api.id,
         plan = requestedPlan.id,
         steps = Seq.empty,
-        state = SubscriptionDemandState.Waiting,
+        state = WorkflowState.Waiting,
         team = teamConsumerId,
         from = userAdmin.id,
         keyringCustomName = Some("C initial keyring")
       )
       val extension = initial.copy(
         id = DemandId("extension-request"),
-        state = SubscriptionDemandState.InProgress,
+        state = WorkflowState.InProgress,
         keyring = Some(keyring.id)
       )
       val secondInitial = initial.copy(
@@ -86,10 +86,10 @@ class GraphQLControllerSpec()
         domain = "another.tenant"
       )
       val closed = Seq(
-        SubscriptionDemandState.Accepted,
-        SubscriptionDemandState.Refused,
-        SubscriptionDemandState.Canceled,
-        SubscriptionDemandState.Blocked
+        WorkflowState.Accepted,
+        WorkflowState.Refused,
+        WorkflowState.Canceled,
+        WorkflowState.Blocked
       ).map(state =>
         initial.copy(id = DemandId(s"closed-${state.name}"), state = state)
       )
@@ -235,7 +235,7 @@ class GraphQLControllerSpec()
       Await.result(
         daikokuComponents.env.dataStore.subscriptionDemandRepo
           .forTenant(tenant)
-          .save(initial.copy(state = SubscriptionDemandState.Accepted)),
+          .save(initial.copy(state = WorkflowState.Accepted)),
         5.seconds
       )
       (entries(0) \ "total").as[Int] mustBe 3
@@ -2038,16 +2038,16 @@ class GraphQLControllerSpec()
           api = api.id,
           plan = plan.id,
           steps = Seq(
-            SubscriptionDemandStep(
-              id = SubscriptionDemandStepId(s"$id-payment"),
-              state = SubscriptionDemandState.InProgress,
+            WorkflowStep(
+              id = WorkflowStepId(s"$id-payment"),
+              state = WorkflowState.InProgress,
               step = ValidationStep.Payment(
                 id = "payment",
                 thirdPartyPaymentSettingsId = ThirdPartyPaymentSettingsId("stripe")
               )
             )
           ),
-          state = SubscriptionDemandState.InProgress,
+          state = WorkflowState.InProgress,
           team = teamConsumerId,
           from = userAdmin.id
         )

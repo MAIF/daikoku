@@ -27,7 +27,7 @@ class UserControllerSpec()
 
   val pwd: String = System.getProperty("user.dir")
   override val container: GenericContainer = GenericContainer(
-    "osixia/openldap:latest",
+    "osixia/openldap:1.5.0",
     exposedPorts = Seq(389),
     env = Map(
       "LDAP_BASE_DN" -> "dc=dundermifflin,dc=com",
@@ -168,16 +168,16 @@ class UserControllerSpec()
         api = defaultApi.api.id,
         plan = subscribedPlan,
         steps = Seq(
-          SubscriptionDemandStep(
-            id = SubscriptionDemandStepId("admin"),
-            state = SubscriptionDemandState.Waiting,
+          WorkflowStep(
+            id = WorkflowStepId("admin"),
+            state = WorkflowState.Waiting,
             step = ValidationStep.TeamAdmin(
               id = IdGenerator.token(10),
               team = teamOwner.id
             )
           )
         ),
-        state = SubscriptionDemandState.InProgress,
+        state = WorkflowState.InProgress,
         team = teamConsumerId,
         from = user.id,
         motivation = None
@@ -193,7 +193,7 @@ class UserControllerSpec()
           plan = defaultApi.plans.reverse.head.id,
           team = teamConsumerId,
           demand = DemandId("test"),
-          step = SubscriptionDemandStepId("admin"),
+          step = WorkflowStepId("admin"),
           motivation = None
         )
       )
@@ -510,16 +510,16 @@ class UserControllerSpec()
         api = defaultApi.api.id,
         plan = subscribedPlan,
         steps = Seq(
-          SubscriptionDemandStep(
-            id = SubscriptionDemandStepId("admin"),
-            state = SubscriptionDemandState.Waiting,
+          WorkflowStep(
+            id = WorkflowStepId("admin"),
+            state = WorkflowState.Waiting,
             step = ValidationStep.TeamAdmin(
               id = IdGenerator.token(10),
               team = teamOwner.id
             )
           )
         ),
-        state = SubscriptionDemandState.InProgress,
+        state = WorkflowState.InProgress,
         team = teamConsumerId,
         from = randomUser.id,
         motivation = None
@@ -535,7 +535,7 @@ class UserControllerSpec()
           plan = defaultApi.plans.reverse.head.id,
           team = teamConsumerId,
           demand = DemandId("test"),
-          step = SubscriptionDemandStepId("admin"),
+          step = WorkflowStepId("admin"),
           motivation = None
         )
       )

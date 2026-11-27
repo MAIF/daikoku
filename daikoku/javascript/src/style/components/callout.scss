@@ -1,4 +1,6 @@
 @use "../variables";
+@use "sass:color";
+@use "sass:map";
 
 .info-callout {
   display: flex;
@@ -40,4 +42,76 @@
       color: variables.$warning-color;
     }
   }
+}
+
+$theme-colors: (
+    primary: (color: variables.$primary-color, bg: variables.$primary-color-bg),
+    success: (color: variables.$success-color, bg: variables.$success-color-bg),
+    info: (color: variables.$info-color, bg: variables.$info-color-bg),
+    warning: (color: variables.$warning-color, bg: variables.$warning-color-bg),
+    danger: (color: variables.$danger-color, bg: variables.$danger-color-bg),
+    neutral: (color: variables.$neutral-color, bg: variables.$neutral-color-bg),
+);
+
+
+.callout {
+    border-left: .25rem solid;
+    padding: 1.25rem;
+    margin: 1.25rem 0;
+    width: 100%;
+
+    .callout-title {
+        font-weight: bold;
+        display: block;
+    }
+
+    &__visibility-toggle {
+        padding: 4px;
+        font-size: 12px;
+        line-height: 16px;
+        width: 28px;
+        height: 28px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 8px;
+        cursor: pointer;
+
+        &:focus-within {
+            outline: 2px solid currentColor;
+            outline-offset: 2px;
+        }
+
+        input:checked~.callout__visibility-off,
+        input:not(:checked)~.callout__visibility-on {
+            display: none;
+            outline: none;
+        }
+    }
+
+    &:has(.callout__visibility-toggle > input:not(:checked))>.callout-text {
+        display: none;
+    }
+}
+
+@each $name, $colors in $theme-colors {
+
+    .callout {
+        &.--#{$name} {
+            background-color: map.get($colors, bg);
+            color: map.get($colors, color);
+
+            .callout__visibility-toggle {
+                background-color: map.get($colors, color);
+                border-color: map.get($colors, color);
+                color: map.get($colors, bg);
+            }
+
+            &.--ghost {
+                background-color: transparent;
+                border: 1px solid variables.$neutral-color-200;
+            }
+
+        }
+    }
 }

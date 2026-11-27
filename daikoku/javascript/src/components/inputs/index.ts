@@ -6,3 +6,4 @@ export * from './LinkDisplay';
 export * from './ScopeSelect';
 export * from './TableFilters';
 export * from './Switch';
+export * from './Checkbox';

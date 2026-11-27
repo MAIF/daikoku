@@ -1,5 +1,5 @@
 import { test, expect, Locator } from '@playwright/test';
-import { ACCUEIL, adminApikeyId, adminApikeySecret, chooseApiSettingsAction, createApi, dwightPaperApiKeyId, exposedPort, loginAs, logout, otoroshiAdminApikeyId, otoroshiAdminApikeySecret, otoroshiDevCommandRouteId, otoroshiDevPaperRouteId, vendeursPapierExtendedDevApiKeyId } from './utils';
+import { ACCUEIL, adminApikeyId, adminApikeySecret, chooseApiSettingsAction, createApi, dwightPaperApiKeyId, exposedPort, loginAs, logout, otoroshiAdminApikeyId, otoroshiAdminApikeySecret, otoroshiDevCommandRouteId, vendeursPapierExtendedDevApiKeyId } from './utils';
 import { JIM, MICHAEL } from './users';
 import otoroshi_data from '../config/otoroshi/otoroshi-state.json' with { type: "json" };
 
@@ -192,7 +192,7 @@ test('[ASOAPI-10599] - supprimer une API', async ({ page }) => {
     if (res.status !== 200) return null;
     vendeurApiKey = await res.json();
     return vendeurApiKey.authorizedEntities as string[];
-  }, { timeout: 10000 }).toEqual(expect.not.arrayContaining([otoroshiDevPaperRouteId]));
+  }, { timeout: 45000 }).toEqual([otoroshiDevCommandRouteId]);
 
   await expect(vendeurApiKey.enabled).toBe(true)
   await expect(vendeurApiKey.authorizedEntities.length).toBe(1)
@@ -211,7 +211,7 @@ test('[ASOAPI-10599] - supprimer une API', async ({ page }) => {
       },
     });
     return res.status;
-  }, { timeout: 10000 }).toBe(404);
+  }, { timeout: 45000 }).toBe(404);
 });
 
 test('sécuriser la création d\'API à l\'aide de la securité de tenant associé', async ({ page }) => {
@@ -313,10 +313,8 @@ test('configurer un environnement', async ({ page }) => {
   //process config
   await expect(dev.getByText('Aucun')).toBeVisible();
   await chooseEnvironmentAction(dev, 'Modifier le process');
-  await environmentSheet.getByRole('button', { name: 'Ajouter une première étape de validation' }).click();
-  const stepCreationModal = page.getByRole('dialog', { name: "Création d'une étape de validation" });
-  await stepCreationModal.getByRole('button', { name: 'Admin. équipe' }).click();
-  await stepCreationModal.getByRole('button', { name: 'Créer', exact: true }).click();
+  await environmentSheet.getByRole('button', { name: 'Admin. équipe' }).click();
+  await environmentSheet.getByRole('button', { name: 'Insérer en position 1' }).click();
   await environmentSheet.getByRole('button', { name: 'Enregistrer' }).click();
   await expect(dev.getByText('2 étapes')).toBeVisible();
 })

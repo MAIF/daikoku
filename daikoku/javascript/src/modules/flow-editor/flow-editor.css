@@ -1,0 +1,173 @@
+.flow-editor {
+  min-width: 0;
+  color: #1f2937;
+  font:
+    1rem/1.5 system-ui,
+    sans-serif;
+}
+
+.flow-editor .flow-editor__viewport {
+  box-sizing: border-box;
+}
+
+.flow-editor .flow-editor__palette {
+  padding: 0.75rem;
+  border: 1px dashed #94a3b8;
+  background: #fff;
+}
+
+.flow-editor .flow-editor__palette-type {
+  padding-inline: 0.75rem;
+  overflow-wrap: anywhere;
+}
+
+.flow-editor .flow-editor__palette-type[aria-pressed='true'] {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+
+.flow-editor .flow-editor__palette-type:not(:disabled) {
+  cursor: grab;
+}
+
+.flow-editor .flow-editor__palette-type:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.flow-editor .flow-editor__sequence {
+  width: max-content;
+  min-width: 100%;
+}
+
+.flow-editor .flow-editor__card {
+  flex: 0 0 22rem;
+  width: 22rem;
+  border: 1px solid #94a3b8;
+  border-radius: 0.75rem;
+  background: #fff;
+  overflow-wrap: anywhere;
+}
+
+.flow-editor .flow-editor__card-header {
+  padding: 0.75rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.flow-editor .flow-editor__type-icon {
+  place-items: center;
+  flex: 0 0 35px;
+  height: 35px;
+  border: 1px solid #29438d;
+  border-radius: 3px;
+  background: #f4f5f9;
+  color: #29438d;
+}
+
+.flow-editor .flow-editor__card-subtitle {
+  font-size: 14.5px;
+  line-height: 20px;
+}
+
+.flow-editor .flow-editor__card-heading {
+  min-width: 0;
+}
+
+.flow-editor .flow-editor__card-type {
+  font-family: inherit;
+  font-size: 12px;
+  line-height: 15px;
+}
+
+.flow-editor .flow-editor__actions {
+  border-top: 1px solid #9b9b9b;
+}
+
+.flow-editor .flow-editor__content,
+.flow-editor .flow-editor__card > [role='alert'] {
+  padding: 0.75rem;
+}
+
+.flow-editor .flow-editor__slot {
+  flex: 0 0 5rem;
+  place-items: center;
+  min-height: 5rem;
+}
+
+.flow-editor .flow-editor__connector {
+  height: 2px;
+  background: #29438d;
+}
+
+.flow-editor .flow-editor__connector::after {
+  position: absolute;
+  right: 1px;
+  top: -4px;
+  width: 9px;
+  height: 9px;
+  border-top: 2px solid #29438d;
+  border-right: 2px solid #29438d;
+  transform: rotate(45deg);
+  content: '';
+}
+
+.flow-editor .flow-editor__slot > button {
+  width: 2rem;
+  height: 2rem;
+}
+
+.flow-editor .flow-editor__handle {
+  cursor: grab;
+}
+
+.flow-editor .flow-editor__handle:active {
+  cursor: grabbing;
+}
+
+.flow-editor--inserting .flow-editor__slot {
+  outline: 2px dashed #94a3b8;
+  outline-offset: -4px;
+  border-radius: 0.5rem;
+}
+
+.flow-editor .flow-editor__slot--over {
+  background: #dcfce7;
+  outline-color: #15803d;
+}
+
+.flow-editor .flow-editor__handle[aria-disabled='true'] {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.flow-editor .flow-editor__actions > button,
+.flow-editor .flow-editor__slot > button,
+.flow-editor .flow-editor__palette button {
+  border: 1px solid #94a3b8;
+  background: #f8fafc;
+  color: #1f2937;
+  font: inherit;
+  cursor: pointer;
+}
+
+.flow-editor .flow-editor__actions > button:disabled,
+.flow-editor .flow-editor__slot > button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.flow-editor .flow-editor__actions > button {
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 8px;
+  border-color: #6c757d;
+  background: transparent;
+  font-size: 12px;
+  color: #29438d;
+}
+
+.flow-editor .flow-editor__actions > button:hover:not(:disabled) {
+  background: #6c757d;
+  color: #fff;
+}

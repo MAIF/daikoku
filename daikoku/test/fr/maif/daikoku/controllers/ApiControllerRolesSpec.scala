@@ -1050,8 +1050,8 @@ class ApiControllerRolesSpec() extends ApiControllerSpecBase {
           .findByStates(
             tenant.id,
             Seq(
-              SubscriptionDemandState.InProgress,
-              SubscriptionDemandState.Waiting
+              WorkflowState.InProgress,
+              WorkflowState.Waiting
             ),
             apis = Some(versions.map(_.id))
           ),
@@ -1061,7 +1061,7 @@ class ApiControllerRolesSpec() extends ApiControllerSpecBase {
 
       demandsForAllversion.count(d =>
         d.steps.exists {
-          case SubscriptionDemandStep(
+          case WorkflowStep(
                 _,
                 _,
                 step: ValidationStep.TeamAdmin,
@@ -1159,8 +1159,8 @@ class ApiControllerRolesSpec() extends ApiControllerSpecBase {
           .findByStates(
             tenant.id,
             Seq(
-              SubscriptionDemandState.InProgress,
-              SubscriptionDemandState.Waiting
+              WorkflowState.InProgress,
+              WorkflowState.Waiting
             ),
             apis = Some(versions.map(_.id))
           ),
@@ -1169,7 +1169,7 @@ class ApiControllerRolesSpec() extends ApiControllerSpecBase {
       demandsForAllversion2.length mustBe 2
       demandsForAllversion2.count(d =>
         d.steps.exists {
-          case SubscriptionDemandStep(
+          case WorkflowStep(
                 _,
                 _,
                 step: ValidationStep.TeamAdmin,
@@ -1407,7 +1407,7 @@ class ApiControllerRolesSpec() extends ApiControllerSpecBase {
               teamConsumerId,
               motivation = Some("motivation"),
               demand = DemandId(IdGenerator.token),
-              step = SubscriptionDemandStepId(IdGenerator.token)
+              step = WorkflowStepId(IdGenerator.token)
             )
           )
         )
@@ -1488,7 +1488,7 @@ class ApiControllerRolesSpec() extends ApiControllerSpecBase {
               teamConsumerId,
               motivation = Some("motivation"),
               demand = DemandId(IdGenerator.token),
-              step = SubscriptionDemandStepId(IdGenerator.token)
+              step = WorkflowStepId(IdGenerator.token)
             )
           )
         )
@@ -1551,7 +1551,7 @@ class ApiControllerRolesSpec() extends ApiControllerSpecBase {
               teamConsumerId,
               motivation = Some("motivation"),
               demand = DemandId(IdGenerator.token),
-              step = SubscriptionDemandStepId(IdGenerator.token)
+              step = WorkflowStepId(IdGenerator.token)
             )
           )
         )

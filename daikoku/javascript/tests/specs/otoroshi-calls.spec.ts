@@ -146,7 +146,7 @@ test("Disabling one key from keyring should prevent keyring to call associated r
         .getByRole('listitem', { name: 'api commande - dev' })
         .getByRole('button', { name: 'Contenu de la clé d\'API' })
         .click()
-  
+
   await page
         .getByRole('listitem', { name: 'api commande - dev' })
         .getByRole('listitem').filter({ hasText: 'API Commande' })
@@ -338,8 +338,8 @@ test("Removing a key from keyring should prevent calling associated route with k
     .getByRole('listitem', { name: 'api commande - dev' })
     .getByRole('listitem').filter({ hasText: 'API Commande' })
     .getByRole('button', { name: 'Extraire de la clé d\'API' })
-  .click();  
-  
+  .click();
+
   await page
     .getByRole("textbox", { name: "Pour confirmer l'extraction" })
     .fill("API Commande/dev");
@@ -395,8 +395,8 @@ test("Deleting a key from keyring should prevent calling associated route with k
         .click()
   await page
         .getByRole('listitem', { name: 'api commande - dev' }).getByRole('listitem').filter({ hasText: 'API Commande' }).getByLabel('Actions de la souscription').click();
-  await page.getByRole('button', { name: 'Supprimer' }).click();  
-  
+  await page.getByRole('button', { name: 'Supprimer' }).click();
+
 
   await page
     .getByRole("textbox", { name: "Pour confirmer la suppression" })

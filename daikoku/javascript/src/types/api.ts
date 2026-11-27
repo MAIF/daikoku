@@ -1,5 +1,6 @@
 import { constraints, Schema } from '@maif/react-forms';
 import { IApiGQL, ISubscriptionDemandGQL, ITeamFullGql } from './gql';
+import type { IWorkflowState, WorkflowStep } from './workflow';
 import { IFastTeam, ITeamSimple, IUserSimple } from './team';
 import { ThirdPartyPaymentType } from './tenant';
 import { INotification } from './types';
@@ -433,6 +434,30 @@ export interface ISubscription extends Omit<IBaseSubscription, 'keyring'> {
   keyring: IKeyring | null;
 }
 
+export type ISubscriptionBatchKeyringChoice =
+  | { type: 'existing'; keyring: string }
+  | { type: 'new'; creation: string };
+
+export interface ISubscriptionBatchItemSelection {
+  api: string;
+  plan: string;
+  keyringChoice: ISubscriptionBatchKeyringChoice;
+}
+
+export interface ISubscriptionBatchSubmission {
+  team: string;
+  idempotencyKey: string;
+  items: ISubscriptionBatchItemSelection[];
+  newKeyrings: Array<{ _id: string; customName: string }>;
+  motivation?: object;
+}
+
+export interface ISubscriptionBatchSubmissionReceipt {
+  batch: string;
+  state: 'pending' | 'inProgress' | 'accepted' | 'partiallyAccepted' | 'failed' | 'canceled';
+  replayed: boolean;
+}
+
 export interface ISubscriptionCustomization {
   customMetadata?: object;
   customMaxPerSecond?: number;
@@ -528,23 +553,13 @@ export interface IApiPost {
   content: string;
 }
 
-export type ISubscriptionDemandState =
-  'accepted' | 'refused' | 'canceled' | 'inProgress' | 'waiting' | 'blocked';
-
-export interface SubscriptionDemandStep {
-  id: string;
-  state: ISubscriptionDemandState;
-  step: IValidationStep;
-  metadata: object;
-}
-
 export interface ISubscriptionDemand {
   _id: string;
   _tenant: string;
   api: string;
   plan: string;
-  steps: Array<SubscriptionDemandStep>;
-  state: ISubscriptionDemandState;
+  steps: Array<WorkflowStep>;
+  state: IWorkflowState;
   team: string;
   from: string;
   date: string;
@@ -659,5 +674,6 @@ export interface IUsagePlanGQL
   rotation: boolean;
   subscriptionProcess: Array<IValidationStep>;
   subscriptionProcessChecksum: string;
+  subscriptionBatchProcessChecksum?: string | null;
   visibility: UsagePlanVisibility;
 }

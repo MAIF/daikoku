@@ -53,6 +53,37 @@ type TabSheet =
 
 const columnHelper = createColumnHelper<DynamicTableFeatures, IUsagePlanGQL>();
 
+type PlanNameProps = {
+  plan: IUsagePlanGQL;
+  pendingDemands: Array<ISubscriptionDemand>;
+};
+
+const PlanName = ({ plan, pendingDemands }: PlanNameProps) => {
+  const { translate } = useContext(I18nContext);
+
+  const pendingDemandsOfPlan = pendingDemands.filter(
+    (demand) => demand.plan === plan._id && (demand.state === 'waiting' || demand.state === 'inProgress')
+  );
+  const pendingCount = pendingDemandsOfPlan.length;
+
+  if (pendingCount === 0) {
+    return <span>{plan.customName}</span>;
+  }
+
+  return (
+    <span className="d-flex align-items-center gap-1">
+      {plan.customName}
+      <span className="tag --warning">
+        {translate({
+          key: 'keyring.requests.count',
+          plural: pendingCount > 1,
+          replacements: [String(pendingCount)],
+        })}
+      </span>
+    </span>
+  );
+};
+
 export const EnvironmentsTab = (props: EnvironmentsTabProps) => {
   const { api, ownerTeam } = props;
 
@@ -387,7 +418,7 @@ export const EnvironmentsTab = (props: EnvironmentsTabProps) => {
         title: translate(byEnvironment ? 'api.pricings.name.table.env' : 'api.pricings.name.table.title'),
         size: 5,
       },
-      cell: ({ row }) => <span>{row.original.customName}</span>,
+      cell: ({ row }) => <PlanName plan={row.original} pendingDemands={props.pendingDemands} />,
     }),
     columnHelper.display({
       id: 'description',

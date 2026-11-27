@@ -882,17 +882,17 @@ class LoginController(
               creationDate = DateTime.now(),
               validUntil = DateTime.now().plusMinutes(15),
               steps = ctx.tenant.accountCreationProcess.map(step =>
-                SubscriptionDemandStep(
-                  id = SubscriptionDemandStepId(IdGenerator.token),
+                WorkflowStep(
+                  id = WorkflowStepId(IdGenerator.token),
                   state = step match {
                     case _: ValidationStep.Form =>
-                      SubscriptionDemandState.Accepted
-                    case _ => SubscriptionDemandState.Waiting
+                      WorkflowState.Accepted
+                    case _ => WorkflowState.Waiting
                   },
                   step = step
                 )
               ),
-              state = SubscriptionDemandState.Waiting,
+              state = WorkflowState.Waiting,
               value = body - "confirmPassword" - "password",
               fromTenant = ctx.tenant.id,
               preferredDomains = Map(
@@ -934,10 +934,10 @@ class LoginController(
         accountCreation <-
           EitherT.fromOptionF[Future, AppError, AccountCreation](
             env.dataStore.accountCreationRepo
-              .findById(validator.subscriptionDemand),
+              .findById(validator.demandId),
             AppError.EntityNotFound("Account creation")
           )
-        step <- EitherT.fromOption[Future][AppError, SubscriptionDemandStep](
+        step <- EitherT.fromOption[Future][AppError, WorkflowStep](
           accountCreation.steps.find(_.id == validator.step),
           AppError.EntityNotFound("Account creation step")
         )
@@ -950,7 +950,7 @@ class LoginController(
         }
 
         val messageId = (isEmailConfirm, accountCreation.state) match {
-          case (true, SubscriptionDemandState.Accepted) =>
+          case (true, WorkflowState.Accepted) =>
             "account-creation-validation-email"
           case (true, _) => "account-creation-validation-email-waiting"
           case _         => "account-creation-accept"

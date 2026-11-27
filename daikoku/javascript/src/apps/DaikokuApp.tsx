@@ -39,6 +39,7 @@ import { AnonymousReporting } from "../components/adminbackoffice/anonymousrepor
 import { TenantAssets } from '../components/adminbackoffice/tenants/TenantAssets';
 import { Signup } from '../components/frontend/account/signup';
 import { Dashboard } from '../components/frontend/dashboard/Dashboard';
+import { SubscriptionKeyringWorkspace } from '../components/frontend/dashboard/SubscriptionKeyringWorkspace';
 import { Error, Informations } from '../components/utils';
 import { RightPanel } from '../components/utils/sidebar/RightPanel';
 import { ColorThemeMigrationAlert } from '../components/utils/ColorThemeMigrationAlert';
@@ -227,6 +228,9 @@ export const DaikokuApp = () => {
                   <Route path="/apis" element={<FrontOfficeRoute title={`${tenant.title} - ${translate('dashboard.page.title')}`}>
                     <Dashboard />
                   </FrontOfficeRoute>} />
+                  <Route path="/apis/subscriptions/keyrings" element={<FrontOfficeRoute title={translate('subscription.workspace.title')}>
+                    <SubscriptionKeyringWorkspace />
+                  </FrontOfficeRoute>} />
                   <Route path="/notifications*" element={<RouteWithTitle title={`${tenant.title} - ${translate('Notifications')}`}>
                     <NotificationList />
                   </RouteWithTitle>} />
@@ -263,7 +267,7 @@ export const DaikokuApp = () => {
                   path="/settings/messages"
                   element={
                     <RouteWithTitle title={`${tenant.title} - ${translate({ key: 'Message', plural: true })}`}>
-                      <AdminMessages />
+                      <TenantSettingsPage><AdminMessages /></TenantSettingsPage>
                     </RouteWithTitle>
                   }
                 />
@@ -271,7 +275,7 @@ export const DaikokuApp = () => {
                   path="/settings/otoroshis/:otoroshiId"
                   element={
                     <RouteWithTitle title={`${tenant.title} - ${translate('Otoroshi')}`}>
-                      <TenantOtoroshi />
+                      <TenantSettingsPage><TenantOtoroshi /></TenantSettingsPage>
                     </RouteWithTitle>
                   }
                 />
@@ -281,7 +285,7 @@ export const DaikokuApp = () => {
                     <RouteWithTitle
                       title={`${tenant.title} - ${translate({ key: 'Otoroshis', plural: true })}`}
                     >
-                      <TenantOtoroshis />
+                      <TenantSettingsPage><TenantOtoroshis /></TenantSettingsPage>
                     </RouteWithTitle>
                   }
                 />
@@ -291,7 +295,7 @@ export const DaikokuApp = () => {
                     <RouteWithTitle
                       title={`${tenant.title} - ${translate({ key: 'Tenant edit', plural: true })}`}
                     >
-                      <TenantEdit />
+                      <TenantSettingsPage><TenantEdit /></TenantSettingsPage>
                     </RouteWithTitle>
                   }
                 />
@@ -331,7 +335,7 @@ export const DaikokuApp = () => {
                   path="/settings/audit"
                   element={
                     <RouteWithTitle title={`${tenant.title} - ${translate('Audit trail')}`}>
-                      <AuditTrailList />
+                      <TenantSettingsPage><AuditTrailList /></TenantSettingsPage>
                     </RouteWithTitle>
                   }
                 />
@@ -383,16 +387,16 @@ export const DaikokuApp = () => {
                   path="/settings/teams"
                   element={
                     <RouteWithTitle title={`${tenant.title} - ${translate('Teams')}`}>
-                      <TeamList />
+                      <TenantSettingsPage><TeamList /></TenantSettingsPage>
                     </RouteWithTitle>
                   }
                 />
-                <Route path="/settings/assets" element={<TenantAssets />} />
+                <Route path="/settings/assets" element={<TenantSettingsPage><TenantAssets /></TenantSettingsPage>} />
                 <Route
                   path="/settings/admins"
                   element={
                     <RouteWithTitle title={`${tenant.title} - ${translate('Admins')}`}>
-                      <TenantAdminList />
+                      <TenantSettingsPage><TenantAdminList /></TenantSettingsPage>
                     </RouteWithTitle>
                   }
                 />
@@ -402,7 +406,7 @@ export const DaikokuApp = () => {
                     <RouteWithTitle
                       title={`${tenant.title} - ${translate('daikokuapp.pages_title')}`}
                     >
-                      <CMSOffice />
+                      <TenantSettingsPage><CMSOffice /></TenantSettingsPage>
                     </RouteWithTitle>
                   }
                 />
@@ -415,7 +419,7 @@ export const DaikokuApp = () => {
                         <RouteWithTitle
                           title={`${tenant.title} - ${translate('Internalization')}`}
                         >
-                          <MailingInternalization />
+                          <TenantSettingsPage><MailingInternalization /></TenantSettingsPage>
                         </RouteWithTitle>
                       }
                     />
@@ -463,6 +467,10 @@ const RouteWithTitle = (props: PropsWithChildren<{ title?: string }>) => {
 
   return props.children;
 };
+
+const TenantSettingsPage = (props: PropsWithChildren) => (
+  <div className="p-3">{props.children}</div>
+);
 
 const UnauthenticatedRoute = (props: PropsWithChildren<{ title: string, header: string }>) => {
   const { connectedUser, tenant } = useContext(GlobalContext)

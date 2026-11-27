@@ -1480,6 +1480,10 @@ components:
           type: object
           additionalProperties:
             type: string
+        shell:
+          anyOf:
+            - $ref: "#/components/schemas/KeyringShellProvenance"
+            - type: "null"
       required:
         - _id
         - _tenant
@@ -1488,6 +1492,36 @@ components:
         - otoroshiSettings
         - createdAt
         - integrationToken
+    KeyringShellProvenance:
+      description: Batch provenance retained after keyring activation.
+      type: object
+      properties:
+        batch:
+          type: string
+        creation:
+          type: string
+        pendingItems:
+          type: array
+          uniqueItems: true
+          items:
+            type: object
+            properties:
+              batch:
+                type: string
+              item:
+                type: string
+            required:
+              - batch
+              - item
+        activatedAt:
+          type:
+            - integer
+            - "null"
+          format: timestamp
+      required:
+        - batch
+        - creation
+        - pendingItems
     OtoroshiApiKey:
       description: OtoroshiApiKey
       properties:

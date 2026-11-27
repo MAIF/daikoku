@@ -1,5 +1,12 @@
 # Front office tests
 
+## Dependencies
+
+Install dependencies in both `daikoku/javascript` and `daikoku/javascript/tests`
+with `npm ci`, as the CI test job does. Specs importing frontend source modules
+need dependencies resolved from `daikoku/javascript/node_modules`; installing
+them only in `tests/node_modules` is not sufficient.
+
 ## ReDoc internal links
 
 From `daikoku/javascript/tests`, run `../node_modules/.bin/playwright test --config playwright.redoc.config.js`.
@@ -15,3 +22,27 @@ There are two ways to perform them:
 ## why the env variable EXPOSED_PORT ? 
 
 with viteJS, the front is exposed as an HTML page at the url `http://localhost:5173` but, when in prod mode, it is the backend which renders the front then the url is `http:/ /localhost:9000 `. So all tests have a variable to configure the exposed port to connect to Daikoku.
+
+## Team creation workflow
+
+The two Local browser scenarios require explicitly selected, isolated test services seeded with
+`dev/config/daikoku_state_local.ndjson`. They change the test tenant's workflow, SMTP settings and
+the seeded Jim and Michael accounts; never point them at a shared development or production instance.
+They do not reset Daikoku, Otoroshi or the SMTP inbox. The SMTP port is reachable from the backend.
+
+From `daikoku/javascript`, run with a visible browser:
+
+```sh
+TEAM_WORKFLOW_E2E_URL=http://localhost:15173 \
+TEAM_WORKFLOW_SMTP_URL=http://localhost:11080 \
+TEAM_WORKFLOW_SMTP_PORT=11025 \
+./node_modules/.bin/playwright test --config tests/playwright.local.config.js team-creation.spec.ts --headed --workers=1
+```
+
+Without both service URLs, these scenarios are skipped. Add `--ui` to use Playwright's interactive runner.
+The refusal scenario intentionally checks for a reason-entry dialog; the current frontend rejects
+immediately instead, so that scenario exposes the missing interaction rather than bypassing it by API.
+
+The three backend scenarios are grouped under `team creation workflow` in `TeamControllerSpec`.
+On the existing backend test stack, select them with
+`testOnly fr.maif.daikoku.controllers.TeamControllerSpec -- -z workflow`.
