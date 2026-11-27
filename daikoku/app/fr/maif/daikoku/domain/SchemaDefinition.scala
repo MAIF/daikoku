@@ -493,6 +493,7 @@ object SchemaDefinition {
       ObjectTypeDescription(
         "Settings to communicate with an instance of Otoroshi"
       ),
+      ExcludeFields("keyringEmptyGroup"),
       ReplaceField("id", Field("id", StringType, resolve = _.value.id.value)),
       ReplaceField(
         "elasticConfig",
@@ -1236,6 +1237,11 @@ object SchemaDefinition {
             "subscriptionProcessChecksum",
             OptionType(StringType),
             resolve = _.value.subscriptionProcess.checksum
+          ),
+          Field(
+            "subscriptionBatchProcessChecksum",
+            OptionType(StringType),
+            resolve = _.value.subscriptionProcess.batchChecksum
           ),
           Field(
             "integrationProcess",
@@ -2602,6 +2608,66 @@ object SchemaDefinition {
         )
       )
     )
+    lazy val ApiSubscriptionBatchDemandType = new PossibleObject(
+      ObjectType(
+        "ApiSubscriptionBatch",
+        "A grouped API subscription demand notification",
+        interfaces[
+          (DataStore, DaikokuActionContext[JsValue]),
+          ApiSubscriptionBatchDemand
+        ](NotificationActionType),
+        fields[
+          (DataStore, DaikokuActionContext[JsValue]),
+          ApiSubscriptionBatchDemand
+        ](
+          Field("batch", StringType, resolve = _.value.batch.value),
+          Field(
+            "api",
+            OptionType(ApiType),
+            resolve = ctx => apisFetcher.defer(ctx.value.api)
+          ),
+          Field(
+            "team",
+            OptionType(TeamObjectType),
+            resolve = ctx => teamsFetcher.defer(ctx.value.team)
+          ),
+          Field("phase", IntType, resolve = _.value.phase),
+          Field(
+            "items",
+            ListType(SubscriptionBatchApprovalItemType),
+            resolve = _.value.items
+          ),
+          Field(
+            "motivation",
+            OptionType(StringType),
+            resolve = _.value.motivation
+          )
+        )
+      )
+    )
+
+    lazy val SubscriptionBatchApprovalItemType = ObjectType[
+      (DataStore, DaikokuActionContext[JsValue]),
+      SubscriptionBatchApprovalItem
+    ](
+      "SubscriptionBatchApprovalItem",
+      "A child demand and step included in a grouped approval",
+      () =>
+        fields[
+          (DataStore, DaikokuActionContext[JsValue]),
+          SubscriptionBatchApprovalItem
+        ](
+          Field("item", StringType, resolve = _.value.item.value),
+          Field(
+            "plan",
+            OptionType(UsagePlanType),
+            resolve = ctx => usagePlansFetcher.defer(ctx.value.plan)
+          ),
+          Field("demand", StringType, resolve = _.value.demand.value),
+          Field("step", StringType, resolve = _.value.step.value)
+        )
+    )
+
     lazy val TransferApiOwnershipType = new PossibleObject(
       ObjectType(
         "TransferApiOwnership",
@@ -3518,6 +3584,7 @@ object SchemaDefinition {
             ApiAccessType,
             TeamInvitationType,
             ApiSubscriptionDemandType,
+            ApiSubscriptionBatchDemandType,
             OtoroshiSyncSubscriptionErrorType,
             OtoroshiSyncApiErrorType,
             ApiKeyDeletionInformationType,

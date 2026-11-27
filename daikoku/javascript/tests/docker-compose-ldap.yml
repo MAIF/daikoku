@@ -14,7 +14,7 @@ services:
       MOCKSERVER_INITIALIZATION_JSON_PATH: /config/initializer.json
 
   openldap:
-    image: osixia/openldap:latest
+    image: osixia/openldap:1.5.0
     environment:
       LDAP_BASE_DN: "dc=dundermifflin,dc=com"
       LDAP_ORGANISATION: "Dunder Mifflin Organization"

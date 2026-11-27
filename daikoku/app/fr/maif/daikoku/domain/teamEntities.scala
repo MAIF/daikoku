@@ -223,6 +223,22 @@ object NotificationAction {
       motivation: Option[String]
   ) extends NotificationAction
 
+  case class SubscriptionBatchApprovalItem(
+      item: SubscriptionBatchItemId,
+      plan: UsagePlanId,
+      demand: DemandId,
+      step: SubscriptionDemandStepId
+  )
+
+  case class ApiSubscriptionBatchDemand(
+      batch: SubscriptionBatchDemandId,
+      api: ApiId,
+      team: TeamId,
+      phase: Int,
+      items: Seq[SubscriptionBatchApprovalItem],
+      motivation: Option[String]
+  ) extends NotificationAction
+
   case class NewSubscription(
       api: ApiId,
       plan: UsagePlanId,

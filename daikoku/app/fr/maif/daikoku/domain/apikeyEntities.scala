@@ -155,7 +155,8 @@ case class Keyring(
       ThirdPartySubscriptionInformations
     ] = None,
     enabled: Boolean = true,
-    metadata: Map[String, String] = Map.empty
+    metadata: Map[String, String] = Map.empty,
+    shell: Option[KeyringShellProvenance] = None
 ) extends CanJson[Keyring] {
   override def asJson: JsValue = json.KeyringFormat.writes(this)
 
@@ -344,6 +345,7 @@ object SubscriptionDemandState {
       case "canceled"   => Canceled.some
       case "inProgress" => InProgress.some
       case "waiting"    => Waiting.some
+      case "blocked"    => Blocked.some
       case _            => None
     }
 }
@@ -368,7 +370,8 @@ case class SubscriptionDemand(
     customMaxPerMonth: Option[Long] = None,
     adminCustomName: Option[String] = None,
     customName: Option[String] = None,
-    tags: Option[Set[String]] = None
+    tags: Option[Set[String]] = None,
+    batch: Option[SubscriptionBatchReference] = None
 ) extends CanJson[SubscriptionDemand] {
   override def asJson: JsValue = json.SubscriptionDemandFormat.writes(this)
 }

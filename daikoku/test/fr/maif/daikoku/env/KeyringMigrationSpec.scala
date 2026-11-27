@@ -251,7 +251,10 @@ class KeyringMigrationSpec extends PlaySpec with BeforeAndAfterAll {
     }
 
     "register the 19.1.0 evolutions after the 19.0.1 repair" in {
-      evolutions.list.map(_.version).dropWhile(_ != "19.0.1") mustBe List(
+      evolutions.list
+        .map(_.version)
+        .dropWhile(_ != "19.0.1")
+        .take(5) mustBe List(
         "19.0.1",
         "19.1.0",
         "19.1.0_b",

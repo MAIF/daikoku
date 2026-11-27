@@ -84,6 +84,86 @@ Daikoku then computes a *merged* value from all of them. This is exactly what th
 The workflow for requesting a subscription, made of `ValidationStep`s (Form / Email / TeamAdmin /
 Payment / HttpRequest) and tracked by a `SubscriptionDemandState`.
 
+### SubscriptionBatchDemand
+A durable parent for a multi-plan request by one consumer team. Each item snapshots its API, plan,
+process and existing/shared-new-keyring choice. Classic `SubscriptionDemand` children are created
+at submission, with a unique `(tenant, batch, item)` identity; creating a child and linking its parent
+is transactional. The parent summary is derived from independent item outcomes, so a refusal does
+not close other unfinished items.
+
+The multi-API consumer flow first reuses the team-selection modal, then opens the API key
+preparation workspace at `/apis/subscriptions/keyrings`. Catalog selection is retained across
+cancellation and return navigation until successful submission, within the current application
+session (not across page reloads). The UI presents keyrings as API keys, with a destination list
+and a detail panel. Consumers can prepare multiple named new keys or search and import several
+existing team keys. Existing access is shown separately from requested
+additions and cannot be removed from this workspace. Individual or selected plans can be dragged
+onto a destination; checkboxes and Enter on a destination provide a non-drag alternative.
+Removing a key from the draft returns its requested plans to the unassigned list without deleting
+the existing keyring or subscriptions.
+
+The catalog excludes admin-only APIs and APIs without an eligible authorized team from batch
+selection. The team selector shows only teams authorized for every selected API; a selection
+without a common team remains possible but cannot proceed.
+
+In environment mode, unassigned plans are grouped by environment. "Arrange by environment"
+preserves existing assignments and reuses compatible draft destinations, preferring imported keys,
+or prepares new keys. Ambiguous destinations and incompatible process sets require consumer
+choices; excluded plans remain unassigned. The arrangement can be undone until a subsequent
+change to the keys or assignments.
+
+The review screen lists keys and their requested plans together, marks new keys, shows unassigned
+plans separately, and warns about deprecated APIs. Consumers can return to editing before submission.
+Only assigned plans are submitted; keys without additions are ignored. No server-side creation
+occurs before the final submission and any required motivation form.
+
+The preparation remains a local, unsaved draft. Navigation is guarded once a key is in the draft,
+and reload/close uses a browser warning. Confirming departure discards the draft. Reloading retains
+the initial APIs and team from navigation history but resets keys and assignments. Opening the URL
+without a selection displays a catalog link rather than creating a request.
+
+The plan picker excludes existing subscriptions when multiple keys are forbidden, pending unit
+requests and open batch items (even before child materialization), unauthorized plans and plans
+unsupported by the batch workflow. Environment shortcuts operate on remaining eligible plans only.
+Different Otoroshi bindings or read-only modes require separate keys. Plans that disallow
+aggregation keep an individual keyring. A shared creation is sent once in `newKeyrings`, with every
+item in its group referencing the same creation ID. Manual assignments allow grouping and splitting
+within the compatibility rules. Assignments enforce compatible
+subscription processes, tenant/plan aggregation permissions, Otoroshi bindings and read-only modes;
+environment names must also match when environment aggregation security is enabled. Imports check
+all existing keyring members. Invalid moves are rejected atomically with an explanation.
+
+Submission idempotency is scoped to tenant, consumer team and requester. Parent mutations use a
+revision guard and row locks for operations spanning children. Item reservations retain an operation
+token and expiration; expiration does not authorize replaying an external effect. An expired
+reservation is retained with an explicit error until its outcome can be reconciled.
+
+Progression is part of the action that changes the workflow: submission, grouped approval or
+refusal, form/email validation, cancellation, resource deletion, explicit failure reconciliation or
+resume. Each action prepares the selected batch's shared keyrings, creates all eligible children and advances every
+executable child until it needs human input or a callback, or reaches a terminal state. HTTP steps
+remain individual and are executed sequentially. Phase barriers are reconsidered within the same
+action when another child unblocks them. There is no batch scheduler, periodic scan or slice size.
+After a server interruption, the explicit resume action continues persisted work; uncertain external
+effects require reconciliation before they can be retried.
+
+The persistence layer includes batch import/export, optional keyring-shell provenance (source batch,
+shared creation, pending items and activation date), and managed-empty-group identity in each
+tenant's Otoroshi configuration. Batch preparation allocates and saves this managed-empty-group
+identity if missing, then creates or verifies the Otoroshi group before provisioning the disabled
+shell key.
+
+Evolution `19.0.0_f` provisions the managed empty groups required by batch keyring shells for every
+existing tenant's Otoroshi configuration. Like other registered evolutions, it runs automatically
+at startup when not already applied; administrators should plan the deployment before using batch
+requests with new Otoroshi keyrings. It persists missing group identities before contacting Otoroshi,
+preserves existing identities, and verifies ownership and emptiness. An unavailable instance or
+invalid group fails the evolution; after correcting the configuration, rerun it to reuse the
+reserved identities and verify previously provisioned groups. Pending batches can then be resumed
+explicitly. Run the evolution during a maintenance window without concurrent tenant
+configuration changes, and ensure every configured Otoroshi instance is reachable with valid
+administrative credentials.
+
 ### Notification
 Domain events with a Pending / Accepted / Rejected status: API access requests, team invitations,
 subscription accept/reject, Otoroshi sync errors, API key rotation, new posts/issues, etc.

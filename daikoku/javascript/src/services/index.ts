@@ -19,6 +19,8 @@ import {
   ISimpleOtoroshiSettings,
   IStateContext,
   ISubscriptionInformation,
+  ISubscriptionBatchSubmission,
+  ISubscriptionBatchSubmissionReceipt,
   ITeamFull,
   ITeamSimple,
   ITenant,
@@ -214,6 +216,20 @@ export const askForApiKey = (
     body: JSON.stringify({ motivation, keyringCustomName }),
   });
 };
+
+export const submitSubscriptionBatch = (
+  teamId: string,
+  submission: ISubscriptionBatchSubmission
+): PromiseWithError<ISubscriptionBatchSubmissionReceipt> =>
+  customFetch(`/api/subscription/team/${teamId}/batches`, {
+    method: 'POST',
+    body: JSON.stringify(submission),
+  });
+
+export const getPendingSubscriptionPlans = (
+  teamId: string
+): PromiseWithError<Array<{ api: string; plan: string }>> =>
+  customFetch(`/api/subscription/team/${teamId}/pending-plans`);
 
 export const initApiKey = (api: any, team: any, plan: string, apikey: any) =>
   customFetch(`/api/apis/${api}/subscriptions/_init`, {
@@ -1681,6 +1697,7 @@ export const graphql = {
             }
           }
           subscriptionProcessChecksum
+          subscriptionBatchProcessChecksum
           visibility
         }
         total
@@ -2120,6 +2137,30 @@ export const graphql = {
               demand {
                 _id
                 motivation
+              }
+            }
+            ... on ApiSubscriptionBatch {
+              __typename
+              api {
+                _id
+                _humanReadableId
+                name
+                currentVersion
+              }
+              team {
+                _id
+                name
+              }
+              phase
+              motivation
+              items {
+                item
+                demand
+                step
+                plan {
+                  _id
+                  customName
+                }
               }
             }
             ... on NewCommentOnIssue {
