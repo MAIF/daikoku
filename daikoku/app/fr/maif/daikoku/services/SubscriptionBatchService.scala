@@ -54,8 +54,8 @@ class SubscriptionBatchService(dataStore: DataStore) {
           .findByStates(
             tenant,
             Seq(
-              SubscriptionDemandState.Waiting,
-              SubscriptionDemandState.InProgress
+              WorkflowState.Waiting,
+              WorkflowState.InProgress
             ),
             Some(Seq(api.id)),
             Some(Seq(team.id)),

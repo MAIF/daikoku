@@ -649,16 +649,16 @@ class ApiControllerTeamAdminSpec() extends ApiControllerSpecBase {
         api = defaultApi.api.id,
         plan = subscribedPlan,
         steps = Seq(
-          SubscriptionDemandStep(
-            id = SubscriptionDemandStepId("admin"),
-            state = SubscriptionDemandState.Waiting,
+          WorkflowStep(
+            id = WorkflowStepId("admin"),
+            state = WorkflowState.Waiting,
             step = ValidationStep.TeamAdmin(
               id = IdGenerator.token(10),
               team = teamOwner.id
             )
           )
         ),
-        state = SubscriptionDemandState.InProgress,
+        state = WorkflowState.InProgress,
         team = teamConsumerId,
         from = user.id,
         motivation = None
@@ -674,7 +674,7 @@ class ApiControllerTeamAdminSpec() extends ApiControllerSpecBase {
           plan = defaultApi.plans.reverse.head.id,
           team = teamConsumerId,
           demand = DemandId("test"),
-          step = SubscriptionDemandStepId("admin"),
+          step = WorkflowStepId("admin"),
           motivation = None
         )
       )
@@ -1340,9 +1340,9 @@ class ApiControllerTeamAdminSpec() extends ApiControllerSpecBase {
         api = defaultApi.api.id,
         plan = UsagePlanId("3"),
         steps = Seq(
-          SubscriptionDemandStep(
-            id = SubscriptionDemandStepId("demandStep_1"),
-            state = SubscriptionDemandState.InProgress,
+          WorkflowStep(
+            id = WorkflowStepId("demandStep_1"),
+            state = WorkflowState.InProgress,
             step = ValidationStep.TeamAdmin(
               id = "step_1",
               team = defaultApi.api.team,
@@ -1351,7 +1351,7 @@ class ApiControllerTeamAdminSpec() extends ApiControllerSpecBase {
             metadata = Json.obj()
           )
         ),
-        state = SubscriptionDemandState.InProgress,
+        state = WorkflowState.InProgress,
         team = teamConsumerId,
         from = userAdmin.id,
         date = DateTime.now().minusDays(1),
@@ -3101,16 +3101,16 @@ class ApiControllerTeamAdminSpec() extends ApiControllerSpecBase {
         api = defaultApi.api.id,
         plan = subscribedPlan,
         steps = Seq(
-          SubscriptionDemandStep(
-            id = SubscriptionDemandStepId("admin"),
-            state = SubscriptionDemandState.Waiting,
+          WorkflowStep(
+            id = WorkflowStepId("admin"),
+            state = WorkflowState.Waiting,
             step = ValidationStep.TeamAdmin(
               id = IdGenerator.token(10),
               team = teamOwner.id
             )
           )
         ),
-        state = SubscriptionDemandState.InProgress,
+        state = WorkflowState.InProgress,
         team = teamConsumerId,
         from = user.id,
         motivation = None
@@ -3126,7 +3126,7 @@ class ApiControllerTeamAdminSpec() extends ApiControllerSpecBase {
           plan = defaultApi.plans.reverse.head.id,
           team = teamConsumerId,
           demand = DemandId("test"),
-          step = SubscriptionDemandStepId("admin"),
+          step = WorkflowStepId("admin"),
           motivation = None
         )
       )
@@ -3213,16 +3213,16 @@ class ApiControllerTeamAdminSpec() extends ApiControllerSpecBase {
         api = defaultApi.api.id,
         plan = defaultApi.plans.reverse.head.id,
         steps = Seq(
-          SubscriptionDemandStep(
-            id = SubscriptionDemandStepId("admin"),
-            state = SubscriptionDemandState.Waiting,
+          WorkflowStep(
+            id = WorkflowStepId("admin"),
+            state = WorkflowState.Waiting,
             step = ValidationStep.TeamAdmin(
               id = IdGenerator.token(10),
               team = teamOwner.id
             )
           )
         ),
-        state = SubscriptionDemandState.InProgress,
+        state = WorkflowState.InProgress,
         team = teamConsumerId,
         from = user.id,
         motivation = None
@@ -3264,16 +3264,16 @@ class ApiControllerTeamAdminSpec() extends ApiControllerSpecBase {
         api = defaultApi.api.id,
         plan = defaultApi.plans.reverse.head.id,
         steps = Seq(
-          SubscriptionDemandStep(
-            id = SubscriptionDemandStepId("admin"),
-            state = SubscriptionDemandState.Waiting,
+          WorkflowStep(
+            id = WorkflowStepId("admin"),
+            state = WorkflowState.Waiting,
             step = ValidationStep.TeamAdmin(
               id = IdGenerator.token(10),
               team = teamOwner.id
             )
           )
         ),
-        state = SubscriptionDemandState.InProgress,
+        state = WorkflowState.InProgress,
         team = teamConsumerId,
         from = user.id,
         motivation = None
@@ -3314,16 +3314,16 @@ class ApiControllerTeamAdminSpec() extends ApiControllerSpecBase {
         api = defaultApi.api.id,
         plan = defaultApi.plans.reverse.head.id,
         steps = Seq(
-          SubscriptionDemandStep(
-            id = SubscriptionDemandStepId("admin"),
-            state = SubscriptionDemandState.Waiting,
+          WorkflowStep(
+            id = WorkflowStepId("admin"),
+            state = WorkflowState.Waiting,
             step = ValidationStep.TeamAdmin(
               id = IdGenerator.token(10),
               team = teamOwner.id
             )
           )
         ),
-        state = SubscriptionDemandState.InProgress,
+        state = WorkflowState.InProgress,
         team = teamConsumerId,
         from = user.id,
         motivation = None

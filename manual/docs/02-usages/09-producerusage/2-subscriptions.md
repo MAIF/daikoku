@@ -2,6 +2,16 @@
 
 Team administrator can access to all API subscriptions by clicking on the `key` action on the table in team APIs page of your team back office.
 
+## Subscription process editor
+
+The cards show the validation steps currently configured for the plan: email, HTTP request, form, team administrator approval, and payment. Drag an available type to an allowed insertion point, or select it and click its destination.
+
+Adding, editing, reordering, or deleting a card updates the draft. Save the process to persist your changes. Unavailable types remain visible but disabled, with an explanation on hover.
+
+The editor allows at most one form step and one team administrator approval step. Payment steps are managed through the plan’s billing configuration and cannot be added from the palette. Email, HTTP request, and form cards have dedicated editors. Form cards cannot be moved or deleted and, when allowed, always remain first in the workflow. Other steps cannot be inserted before them.
+
+If a team administrator approval step is added to a workflow that requires a form but has none, the editor adds a form at the beginning and places the administrator step at the selected insertion point relative to the existing steps.
+
 ## Enable or Disable Apikeys
 By clicking on the switch button of the `enabled` column, the subscription can be toggled and enabled/disable Otoroshi apikey.
 

@@ -1,15 +1,10 @@
 package fr.maif.daikoku.domain
 
-import cats.data.EitherT
 import cats.implicits._
-import fr.maif.daikoku.controllers.AppError
 import fr.maif.daikoku.domain.TeamPermission.Administrator
 import fr.maif.daikoku.utils.IdGenerator
 import org.joda.time.DateTime
 import play.api.libs.json._
-
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
 
 case class CustomMetadata(key: String, possibleValues: Set[String] = Set.empty)
     extends CanJson[CustomMetadata] {
@@ -288,75 +283,13 @@ object ThirdPartySubscriptionInformations {
   ) extends ThirdPartySubscriptionInformations {}
 }
 
-sealed trait SubscriptionDemandState {
-  def name: String
-  def isClosed: Boolean
-}
-
-object SubscriptionDemandState {
-  case object Accepted extends SubscriptionDemandState {
-    def name: String = "accepted"
-    def isClosed: Boolean = true
-  }
-  case object Refused extends SubscriptionDemandState {
-    def name: String = "refused"
-    def isClosed: Boolean = true
-  }
-  case object Canceled extends SubscriptionDemandState {
-    def name: String = "canceled"
-    def isClosed: Boolean = true
-  }
-  case object InProgress extends SubscriptionDemandState {
-    def name: String = "inProgress"
-    def isClosed: Boolean = false
-  }
-  case object Waiting extends SubscriptionDemandState {
-    def name: String = "waiting"
-    def isClosed: Boolean = false
-  }
-  case object Blocked extends SubscriptionDemandState {
-    def name: String = "blocked"
-    def isClosed: Boolean = true
-  }
-
-  val values: Seq[SubscriptionDemandState] =
-    Seq(Accepted, Refused, Canceled, InProgress)
-
-  def merge(states: Seq[SubscriptionDemandState]): SubscriptionDemandState = {
-    if (states.exists(_.name === InProgress.name)) {
-      InProgress
-    } else if (states.forall(_.name === Accepted.name)) {
-      Accepted
-    } else if (states.exists(_.name === Refused.name)) {
-      Refused
-    } else if (states.exists(_.name === Canceled.name)) {
-      Canceled
-    } else if (states.exists(_.name === Blocked.name)) {
-      Blocked
-    } else {
-      Waiting
-    }
-  }
-
-  def apply(name: String): Option[SubscriptionDemandState] =
-    name match {
-      case "accepted"   => Accepted.some
-      case "refused"    => Refused.some
-      case "canceled"   => Canceled.some
-      case "inProgress" => InProgress.some
-      case "waiting"    => Waiting.some
-      case "blocked"    => Blocked.some
-      case _            => None
-    }
-}
-
 case class SubscriptionDemand(
     id: DemandId,
     tenant: TenantId,
     api: ApiId,
     plan: UsagePlanId,
-    steps: Seq[SubscriptionDemandStep],
-    state: SubscriptionDemandState = SubscriptionDemandState.Waiting,
+    steps: Seq[WorkflowStep],
+    state: WorkflowState = WorkflowState.Waiting,
     team: TeamId,
     from: UserId,
     date: DateTime = DateTime.now,
@@ -374,37 +307,6 @@ case class SubscriptionDemand(
     batch: Option[SubscriptionBatchReference] = None
 ) extends CanJson[SubscriptionDemand] {
   override def asJson: JsValue = json.SubscriptionDemandFormat.writes(this)
-}
-
-case class SubscriptionDemandStep(
-    id: SubscriptionDemandStepId,
-    state: SubscriptionDemandState,
-    step: ValidationStep,
-    metadata: JsObject = Json.obj()
-) extends CanJson[SubscriptionDemandStep] {
-  override def asJson: JsValue = json.SubscriptionDemandStepFormat.writes(this)
-  def check(): EitherT[Future, AppError, Unit] = {
-    state match {
-      case SubscriptionDemandState.InProgress |
-          SubscriptionDemandState.Waiting =>
-        EitherT.pure[Future, AppError](())
-      case _ =>
-        EitherT.leftT[Future, Unit](
-          AppError.EntityConflict("Subscription demand state")
-        )
-    }
-  }
-}
-
-case class StepValidator(
-    id: DatastoreId,
-    tenant: TenantId,
-    token: String,
-    step: SubscriptionDemandStepId,
-    subscriptionDemand: DemandId,
-    metadata: JsObject = Json.obj()
-) extends CanJson[StepValidator] {
-  override def asJson: JsValue = json.StepValidatorFormat.writes(this)
 }
 
 case class ApiSubscriptionTransfer(

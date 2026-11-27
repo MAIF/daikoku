@@ -171,17 +171,17 @@ case class SubscriptionBatchDemand(
         )
       )
       target <- child.state match {
-        case SubscriptionDemandState.Waiting =>
+        case WorkflowState.Waiting =>
           Right(SubscriptionBatchItemState.Waiting)
-        case SubscriptionDemandState.InProgress =>
+        case WorkflowState.InProgress =>
           Right(SubscriptionBatchItemState.InProgress)
-        case SubscriptionDemandState.Refused =>
+        case WorkflowState.Refused =>
           Right(SubscriptionBatchItemState.Refused)
-        case SubscriptionDemandState.Canceled =>
+        case WorkflowState.Canceled =>
           Right(SubscriptionBatchItemState.Canceled)
-        case SubscriptionDemandState.Blocked =>
+        case WorkflowState.Blocked =>
           Right(SubscriptionBatchItemState.Blocked)
-        case SubscriptionDemandState.Accepted =>
+        case WorkflowState.Accepted =>
           subscription
             .toRight(
               AppError.EntityConflict("The accepted child has no subscription")
@@ -189,7 +189,7 @@ case class SubscriptionBatchDemand(
             .map(_ => SubscriptionBatchItemState.Accepted)
       }
       _ <- Either.cond(
-        subscription.isEmpty || child.state == SubscriptionDemandState.Accepted,
+        subscription.isEmpty || child.state == WorkflowState.Accepted,
         (),
         AppError.EntityConflict(
           "Only an accepted child can record a subscription"

@@ -1,5 +1,6 @@
 import { constraints, Schema } from '@maif/react-forms';
 import { IApiGQL, ISubscriptionDemandGQL, ITeamFullGql } from './gql';
+import type { IWorkflowState, WorkflowStep } from './workflow';
 import { IFastTeam, ITeamSimple, IUserSimple } from './team';
 import { ITenant, ThirdPartyPaymentType } from './tenant';
 import { INotification } from './types';
@@ -550,23 +551,13 @@ export interface IApiPost {
   content: string;
 }
 
-export type ISubscriptionDemandState =
-  'accepted' | 'refused' | 'canceled' | 'inProgress' | 'waiting' | 'blocked';
-
-export interface SubscriptionDemandStep {
-  id: string;
-  state: ISubscriptionDemandState;
-  step: IValidationStep;
-  metadata: object;
-}
-
 export interface ISubscriptionDemand {
   _id: string;
   _tenant: string;
   api: string;
   plan: string;
-  steps: Array<SubscriptionDemandStep>;
-  state: ISubscriptionDemandState;
+  steps: Array<WorkflowStep>;
+  state: IWorkflowState;
   team: string;
   from: string;
   date: string;

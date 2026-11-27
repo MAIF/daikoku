@@ -499,7 +499,7 @@ class DeletionService(
                |  DELETE FROM subscription_demands
                |  WHERE content->>'_tenant' = $$1
                |    AND content->>'api' = $$2
-               |    AND content->>'state' IN ('${SubscriptionDemandState.Waiting.name}', '${SubscriptionDemandState.InProgress.name}')
+               |    AND content->>'state' IN ('${WorkflowState.Waiting.name}', '${WorkflowState.InProgress.name}')
                |  RETURNING _id AS demand_id
                |)
                |DELETE FROM step_validators
@@ -618,7 +618,7 @@ class DeletionService(
              |  DELETE FROM subscription_demands
              |  WHERE $tenantFilter
              |    content->>'from' = $userParam
-             |    AND content->>'state' IN ('${SubscriptionDemandState.Waiting.name}', '${SubscriptionDemandState.InProgress.name}')
+             |    AND content->>'state' IN ('${WorkflowState.Waiting.name}', '${WorkflowState.InProgress.name}')
              |  RETURNING _id AS demand_id
              |)
              |DELETE FROM step_validators
@@ -855,7 +855,7 @@ class DeletionService(
                |  DELETE FROM subscription_demands
                |  WHERE content->>'_tenant' = $$1
                |    AND content->>'plan' = $$2
-               |    AND content->>'state' IN ('${SubscriptionDemandState.Waiting.name}', '${SubscriptionDemandState.InProgress.name}')
+               |    AND content->>'state' IN ('${WorkflowState.Waiting.name}', '${WorkflowState.InProgress.name}')
                |  RETURNING _id AS demand_id
                |)
                |DELETE FROM step_validators

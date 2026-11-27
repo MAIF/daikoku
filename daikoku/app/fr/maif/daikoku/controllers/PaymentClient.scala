@@ -275,7 +275,7 @@ class PaymentClient(
   def checkoutSubscription(
       tenant: Tenant,
       subscriptionDemand: SubscriptionDemand,
-      step: SubscriptionDemandStep,
+      step: WorkflowStep,
       from: Option[String],
       host: Option[String]
   ): EitherT[Future, AppError, Result] = {
@@ -340,7 +340,7 @@ class PaymentClient(
       demand: SubscriptionDemand,
       settings: PaymentSettings,
       user: User,
-      step: SubscriptionDemandStep,
+      step: WorkflowStep,
       from: Option[String] = None,
       host: Option[String] = None
   ) = {
@@ -600,7 +600,7 @@ class PaymentClient(
       subscriptionDemand: SubscriptionDemand,
       settings: PaymentSettings.Stripe,
       user: User,
-      step: SubscriptionDemandStep,
+      step: WorkflowStep,
       from: Option[String] = None,
       host: Option[String] = None
   )(implicit
@@ -612,7 +612,7 @@ class PaymentClient(
       tenant = tenant.id,
       token = IdGenerator.token,
       step = step.id,
-      subscriptionDemand = subscriptionDemand.id
+      demandId = subscriptionDemand.id
     )
 
     val cipheredValidationToken =

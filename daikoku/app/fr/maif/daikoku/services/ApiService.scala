@@ -1004,9 +1004,9 @@ class ApiService(
       .flatMap {
         case Some(demand)
             if demand.batch.isDefined &&
-              demand.state == SubscriptionDemandState.Waiting =>
+              demand.state == WorkflowState.Waiting =>
           env.dataStore.saveBatchChildProgress(
-            demand.copy(state = SubscriptionDemandState.InProgress),
+            demand.copy(state = WorkflowState.InProgress),
             demand
           )
         case Some(_) => Future.successful(Right(()))
@@ -1016,7 +1016,7 @@ class ApiService(
 
   private def batchPhaseReady(
       demand: SubscriptionDemand,
-      step: SubscriptionDemandStep,
+      step: WorkflowStep,
       tenant: Tenant
   ): Future[Boolean] =
     demand.batch match {
@@ -1067,7 +1067,7 @@ class ApiService(
       .flatMap {
         case Some(demand) if demand.batch.isDefined =>
           demand.steps.find(!_.state.isClosed) match {
-            case Some(step) if step.state == SubscriptionDemandState.Waiting =>
+            case Some(step) if step.state == WorkflowState.Waiting =>
               batchPhaseReady(demand, step, tenant)
             case None => Future.successful(true)
             case _    => Future.successful(false)
@@ -2166,7 +2166,7 @@ class ApiService(
   private def notifyApiSubscription(
       demand: SubscriptionDemand,
       tenant: Tenant,
-      step: SubscriptionDemandStep,
+      step: WorkflowStep,
       actualStep: ValidationStep.TeamAdmin
   ): EitherT[Future, AppError, Result] =
     demand.batch match {
@@ -2179,7 +2179,7 @@ class ApiService(
   private def notifyBatchApiSubscription(
       demand: SubscriptionDemand,
       tenant: Tenant,
-      step: SubscriptionDemandStep,
+      step: WorkflowStep,
       reference: SubscriptionBatchReference
   ): EitherT[Future, AppError, Result] = {
     import cats.implicits.*
@@ -2223,7 +2223,7 @@ class ApiService(
           maybeChild.toSeq.flatMap { child =>
             child.steps
               .lift(phaseIndex)
-              .filter(_.state == SubscriptionDemandState.Waiting)
+              .filter(_.state == WorkflowState.Waiting)
               .collect {
                 case childStep
                     if childStep.step.isInstanceOf[ValidationStep.TeamAdmin] =>
@@ -2305,12 +2305,12 @@ class ApiService(
               previous.flatMap { _ =>
                 val updatedSteps = child.steps.map(current =>
                   if (current.id == childStep.id)
-                    current.copy(state = SubscriptionDemandState.InProgress)
+                    current.copy(state = WorkflowState.InProgress)
                   else current
                 )
                 val updated = child.copy(
                   steps = updatedSteps,
-                  state = SubscriptionDemandState.merge(
+                  state = WorkflowState.merge(
                     updatedSteps.map(_.state)
                   )
                 )
@@ -2391,7 +2391,7 @@ class ApiService(
   private def notifySingleApiSubscription(
       demand: SubscriptionDemand,
       tenant: Tenant,
-      step: SubscriptionDemandStep,
+      step: WorkflowStep,
       actualStep: ValidationStep.TeamAdmin
   ): EitherT[Future, AppError, Result] = {
     import cats.implicits.*
@@ -2509,7 +2509,7 @@ class ApiService(
 
   def callHttpRequestStep(
       step: ValidationStep.HttpRequest,
-      _step: SubscriptionDemandStep,
+      _step: WorkflowStep,
       demand: SubscriptionDemand,
       tenant: Tenant,
       maybeSessionId: Option[String] = None,
@@ -2534,7 +2534,7 @@ class ApiService(
         updatedDemand = demand.copy(
           steps = demand.steps.map(s =>
             if (s.id == _step.id)
-              s.copy(state = SubscriptionDemandState.Accepted)
+              s.copy(state = WorkflowState.Accepted)
             else s
           ),
           adminCustomName = adminCustomName,
@@ -2689,7 +2689,7 @@ class ApiService(
       demand <- EitherT.fromOptionF(
         env.dataStore.subscriptionDemandRepo
           .forTenant(tenant)
-          .findById(validator.subscriptionDemand),
+          .findById(validator.demandId),
         AppError.EntityNotFound("Subscription demand Validator")
       )
       _ <- EitherT.fromOptionF(
@@ -2709,7 +2709,7 @@ class ApiService(
       _ <- step.check()
       updatedDemand = demand.copy(steps =
         demand.steps.map(s =>
-          if (s.id == step.id) s.copy(state = SubscriptionDemandState.Accepted)
+          if (s.id == step.id) s.copy(state = WorkflowState.Accepted)
           else s
         )
       )
@@ -2758,7 +2758,7 @@ class ApiService(
       demand <- EitherT.fromOptionF(
         env.dataStore.subscriptionDemandRepo
           .forTenant(tenant)
-          .findById(validator.subscriptionDemand),
+          .findById(validator.demandId),
         AppError.EntityNotFound("Subscription demand Validator")
       )
       _ <- EitherT.fromOptionF(
@@ -2923,7 +2923,7 @@ class ApiService(
       currentUser: User
   ): EitherT[Future, AppError, Result] = {
     def runRightProcess(
-        step: SubscriptionDemandStep,
+        step: WorkflowStep,
         demand: SubscriptionDemand,
         tenant: Tenant
     ): EitherT[Future, AppError, Result] = {
@@ -2935,10 +2935,10 @@ class ApiService(
               case None => EitherT.pure[Future, AppError](true)
               case Some(_) =>
                 val started = demand.copy(
-                  state = SubscriptionDemandState.InProgress,
+                  state = WorkflowState.InProgress,
                   steps = demand.steps.map(current =>
                     if (current.id == step.id)
-                      current.copy(state = SubscriptionDemandState.InProgress)
+                      current.copy(state = WorkflowState.InProgress)
                     else current
                   )
                 )
@@ -2981,7 +2981,7 @@ class ApiService(
                 tenant = tenant.id,
                 token = IdGenerator.token,
                 step = step.id,
-                subscriptionDemand = demand.id,
+                demandId = demand.id,
                 metadata = Json.obj("email" -> email)
               )
 
@@ -3057,9 +3057,9 @@ class ApiService(
 
       val steps = demand.steps.map(s =>
         if (s.id != step.id) s
-        else s.copy(state = SubscriptionDemandState.InProgress)
+        else s.copy(state = WorkflowState.InProgress)
       )
-      val demandState = SubscriptionDemandState.merge(steps.map(_.state))
+      val demandState = WorkflowState.merge(steps.map(_.state))
 
       for {
         result <- run
@@ -3076,7 +3076,7 @@ class ApiService(
     val value: EitherT[
       Future,
       AppError,
-      (Option[SubscriptionDemandStep], SubscriptionDemand)
+      (Option[WorkflowStep], SubscriptionDemand)
     ] = for {
       demand <- EitherT.fromOptionF(
         env.dataStore.subscriptionDemandRepo
@@ -3206,7 +3206,7 @@ class ApiService(
       }
       .flatMap {
         case (Some(step), _)
-            if step.state == SubscriptionDemandState.InProgress =>
+            if step.state == WorkflowState.InProgress =>
           EitherT.pure[Future, AppError](
             Ok(Json.obj("creation" -> "waiting"))
           )
@@ -3297,7 +3297,7 @@ class ApiService(
             )
             _ <- saveDemandOutcome(
               demand,
-              demand.copy(state = SubscriptionDemandState.Accepted),
+              demand.copy(state = WorkflowState.Accepted),
               Notification(
                 id = NotificationId(IdGenerator.token(32)),
                 tenant = tenant.id,
@@ -3640,7 +3640,7 @@ class ApiService(
                         tenant = tenant.id,
                         api = api.id,
                         plan = plan.id,
-                        state = SubscriptionDemandState.Waiting,
+                        state = WorkflowState.Waiting,
                         steps = Seq.empty,
                         team = team.id,
                         from = user.id,
@@ -3672,7 +3672,7 @@ class ApiService(
   def declineSubscriptionDemand(
       tenant: Tenant,
       demandId: DemandId,
-      stepId: SubscriptionDemandStepId,
+      stepId: WorkflowStepId,
       sender: NotificationSender,
       maybeMessage: Option[String] = None,
       advanceBatch: Boolean = true
@@ -3688,11 +3688,11 @@ class ApiService(
       _ <- saveDemandOutcome(
         demand,
         demand.copy(
-          state = SubscriptionDemandState.Refused,
+          state = WorkflowState.Refused,
           steps = demand.steps.map(s =>
             if (s.id == stepId)
               s.copy(
-                state = SubscriptionDemandState.Refused,
+                state = WorkflowState.Refused,
                 metadata = Json.obj("by" -> sender.asJson)
               )
             else s

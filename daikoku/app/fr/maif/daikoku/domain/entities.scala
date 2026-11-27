@@ -148,9 +148,9 @@ case class SubscriptionBatchKeyringId(value: String)
   def asJson: JsValue = JsString(value)
 }
 
-case class SubscriptionDemandStepId(value: String)
+case class WorkflowStepId(value: String)
     extends ValueType
-    with CanJson[SubscriptionDemandStepId] {
+    with CanJson[WorkflowStepId] {
   def asJson: JsValue = JsString(value)
 }
 

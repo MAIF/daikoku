@@ -82,7 +82,18 @@ Daikoku then computes a *merged* value from all of them. This is exactly what th
 
 ### SubscriptionDemand
 The workflow for requesting a subscription, made of `ValidationStep`s (Form / Email / TeamAdmin /
-Payment / HttpRequest) and tracked by a `SubscriptionDemandState`.
+Payment / HttpRequest) and tracked by a `WorkflowState`.
+
+### Shared workflow model
+Subscription requests, account creation and team creation share `WorkflowState`,
+`WorkflowStep` and `WorkflowStepId`. A `ValidationStep` describes the configured action;
+a `WorkflowStep` tracks one occurrence of that action in a request, including its state
+and metadata. `StepValidator` links an email or payment validation token to a step and
+its `demandId`. The three request models and their execution logic remain distinct.
+
+The shared model lives in `daikoku/app/fr/maif/daikoku/domain/workflowEntities.scala`.
+For compatibility, the persisted validator field is still named `subscriptionDemand`
+and the GraphQL step type is still named `SubscriptionDemandStep`.
 
 ### SubscriptionBatchDemand
 A durable parent for a multi-plan request by one consumer team. Each item snapshots its API, plan,

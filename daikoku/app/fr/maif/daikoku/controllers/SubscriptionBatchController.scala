@@ -83,8 +83,8 @@ class SubscriptionBatchController(
           demands <- env.dataStore.subscriptionDemandRepo.findByStates(
             ctx.tenant.id,
             Seq(
-              SubscriptionDemandState.Waiting,
-              SubscriptionDemandState.InProgress
+              WorkflowState.Waiting,
+              WorkflowState.InProgress
             ),
             teams = Some(Seq(team.id))
           )

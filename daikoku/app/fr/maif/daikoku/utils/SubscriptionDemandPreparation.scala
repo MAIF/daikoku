@@ -64,11 +64,11 @@ object SubscriptionDemandPreparation {
 
     demand.copy(
       steps = process.steps.map { step =>
-        SubscriptionDemandStep(
-          id = SubscriptionDemandStepId(IdGenerator.token),
+        WorkflowStep(
+          id = WorkflowStepId(IdGenerator.token),
           state = step match {
-            case _: ValidationStep.Form => SubscriptionDemandState.Accepted
-            case _                     => SubscriptionDemandState.Waiting
+            case _: ValidationStep.Form => WorkflowState.Accepted
+            case _                     => WorkflowState.Waiting
           },
           step = step
         )

@@ -525,6 +525,38 @@ trait AccountCreationRepo extends Repo[AccountCreation, DemandId] {
     )
 }
 
+trait TeamCreationRepo extends Repo[TeamCreation, DemandId] {
+  def saveIfCurrent(previous: TeamCreation, updated: TeamCreation)(implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Boolean] =
+    queryTyped(
+      s"""UPDATE $tableName SET content = $$1::text::jsonb
+         |WHERE _id = $$2 AND content->>'fromTenant' = $$3
+         |AND content->'steps' = $$4::text::jsonb AND content->>'state' = $$5
+         |RETURNING content""".stripMargin,
+      Seq(
+        Json.stringify(updated.asJson),
+        previous.id.value,
+        previous.fromTenant.value,
+        Json.stringify((previous.asJson \ "steps").get),
+        previous.state.name
+      )
+    ).map(_.nonEmpty)
+
+  def findByRandomId(
+      randomId: String
+  )(implicit
+      dbConn: DbConn,
+      ec: ExecutionContext
+  ): Future[Option[TeamCreation]] =
+    queryOne(
+      s"SELECT content FROM $tableName " +
+        "WHERE content->>'randomId' = $1 LIMIT 1",
+      Seq(randomId)
+    )
+}
+
 trait TenantRepo extends Repo[Tenant, TenantId] {
 
   def findForUpdate(
@@ -2727,7 +2759,7 @@ trait SubscriptionDemandRepo
     */
   private def byStatesWhere(
       tenant: TenantId,
-      states: Seq[SubscriptionDemandState],
+      states: Seq[WorkflowState],
       apis: Option[Seq[ApiId]],
       teams: Option[Seq[TeamId]],
       plan: Option[UsagePlanId]
@@ -2759,7 +2791,7 @@ trait SubscriptionDemandRepo
 
   def findByStates(
       tenant: TenantId,
-      states: Seq[SubscriptionDemandState],
+      states: Seq[WorkflowState],
       apis: Option[Seq[ApiId]] = None,
       teams: Option[Seq[TeamId]] = None,
       plan: Option[UsagePlanId] = None
@@ -2802,8 +2834,8 @@ trait SubscriptionDemandRepo
       tenant: TenantId,
       api: ApiId,
       plan: UsagePlanId,
-      from: SubscriptionDemandState,
-      to: SubscriptionDemandState
+      from: WorkflowState,
+      to: WorkflowState
   )(implicit dbConn: DbConn, ec: ExecutionContext): Future[Long] = {
     val repo = forTenant(tenant)
     repo.execute(
@@ -2820,7 +2852,7 @@ trait SubscriptionDemandRepo
     */
   def findByStatesPaginated(
       tenant: TenantId,
-      states: Seq[SubscriptionDemandState],
+      states: Seq[WorkflowState],
       apis: Option[Seq[ApiId]] = None,
       teams: Option[Seq[TeamId]] = None,
       page: Int,
@@ -3539,7 +3571,7 @@ trait DataStore {
                 )
               case Some(batch) =>
                 val reservationCheck =
-                  if (child.state != SubscriptionDemandState.Accepted)
+                  if (child.state != WorkflowState.Accepted)
                     Right(())
                   else
                     for {
@@ -3726,7 +3758,7 @@ trait DataStore {
                                 (
                                     SubscriptionBatchItem,
                                     SubscriptionDemand,
-                                    SubscriptionDemandStep
+                                    WorkflowStep
                                 )
                               ]
                             ): Either[
@@ -3735,7 +3767,7 @@ trait DataStore {
                                 (
                                     SubscriptionBatchItem,
                                     SubscriptionDemand,
-                                    SubscriptionDemandStep
+                                    WorkflowStep
                                 )
                               ]
                             ]
@@ -3785,7 +3817,7 @@ trait DataStore {
                                         ) match {
                                           case Some(step)
                                               if step.id == reference.step &&
-                                                step.state == SubscriptionDemandState.InProgress &&
+                                                step.state == WorkflowState.InProgress &&
                                                 step.step.isInstanceOf[
                                                   ValidationStep.TeamAdmin
                                                 ] =>
@@ -3817,17 +3849,17 @@ trait DataStore {
                                 val nextStep =
                                   if (accepted)
                                     step.copy(state =
-                                      SubscriptionDemandState.Accepted
+                                      WorkflowState.Accepted
                                     )
                                   else
                                     step.copy(
-                                      state = SubscriptionDemandState.Refused,
+                                      state = WorkflowState.Refused,
                                       metadata = Json.obj("by" -> actor.asJson)
                                     )
                                 val updated = child.copy(
                                   state =
                                     if (accepted) child.state
-                                    else SubscriptionDemandState.Refused,
+                                    else WorkflowState.Refused,
                                   steps = child.steps.map(current =>
                                     if (current.id == step.id) nextStep
                                     else current
@@ -4028,12 +4060,12 @@ trait DataStore {
                         clearWorkflowArtifacts().map(_ => Right(()))
                       } else {
                         val canceled = child.copy(
-                          state = SubscriptionDemandState.Canceled,
+                          state = WorkflowState.Canceled,
                           steps = child.steps.map { step =>
                             if (step.state.isClosed) step
                             else
                               step
-                                .copy(state = SubscriptionDemandState.Canceled)
+                                .copy(state = WorkflowState.Canceled)
                           }
                         )
                         batch.withChildProgress(canceled) match {
@@ -4158,7 +4190,7 @@ trait DataStore {
                           Either[AppError, Option[ApiSubscription]]
                         ] =
                           child.state match {
-                            case SubscriptionDemandState.Accepted =>
+                            case WorkflowState.Accepted =>
                               item.subscription match {
                                 case Some(id) =>
                                   apiSubscriptionRepo
@@ -4189,12 +4221,12 @@ trait DataStore {
                         }
                       case Some(child) =>
                         val canceled = child.copy(
-                          state = SubscriptionDemandState.Canceled,
+                          state = WorkflowState.Canceled,
                           steps = child.steps.map { step =>
                             if (step.state.isClosed) step
                             else
                               step
-                                .copy(state = SubscriptionDemandState.Canceled)
+                                .copy(state = WorkflowState.Canceled)
                           }
                         )
                         Future.successful(
@@ -4395,12 +4427,12 @@ trait DataStore {
                                         child.plan == item.plan &&
                                         !child.state.isClosed =>
                                     val blocked = child.copy(
-                                      state = SubscriptionDemandState.Blocked,
+                                      state = WorkflowState.Blocked,
                                       steps = child.steps.map { step =>
                                         if (step.state.isClosed) step
                                         else
                                           step.copy(state =
-                                            SubscriptionDemandState.Blocked
+                                            WorkflowState.Blocked
                                           )
                                       }
                                     )
@@ -4754,6 +4786,8 @@ trait DataStore {
   def passwordResetRepo: PasswordResetRepo
 
   def accountCreationRepo: AccountCreationRepo
+
+  def teamCreationRepo: TeamCreationRepo
 
   def messageRepo: MessageRepo
 

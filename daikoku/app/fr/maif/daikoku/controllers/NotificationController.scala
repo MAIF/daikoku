@@ -15,10 +15,14 @@ import fr.maif.daikoku.controllers.authorizations.async.*
 import fr.maif.daikoku.domain.*
 import fr.maif.daikoku.domain.NotificationAction.*
 import fr.maif.daikoku.domain.NotificationType.AcceptOnly
-import fr.maif.daikoku.domain.TeamPermission.{Administrator, TeamUser}
+import fr.maif.daikoku.domain.TeamPermission.TeamUser
 import fr.maif.daikoku.domain.json.NotificationStatusFormat
 import fr.maif.daikoku.env.Env
-import fr.maif.daikoku.services.{AccountCreationService, ApiService}
+import fr.maif.daikoku.services.{
+  AccountCreationService,
+  ApiService,
+  TeamService
+}
 import fr.maif.daikoku.utils.Translator
 import org.apache.pekko.http.scaladsl.util.FastFuture
 import play.api.i18n.I18nSupport
@@ -39,6 +43,7 @@ class NotificationController(
     env: Env,
     apiService: ApiService,
     accountCreationService: AccountCreationService,
+    teamService: TeamService,
     translator: Translator,
     cc: ControllerComponents
 ) extends AbstractController(cc)
@@ -130,9 +135,7 @@ class NotificationController(
     }
   def acceptNotification(notificationId: String) =
     DaikokuAction.async(parse.json) { ctx =>
-      import cats.data.*
       import cats.implicits.*
-
       implicit val c = ctx
 
       PublicUserAccess(
@@ -161,6 +164,14 @@ class NotificationController(
                   accountCreationService.acceptAccountCreationAttempt(
                     demand,
                     step
+                  )
+                )
+              case TeamCreationAttempt(demand, step) =>
+                EitherT(
+                  teamService.acceptTeamCreationAttempt(
+                    demand,
+                    step,
+                    notification
                   )
                 )
               case ApiSubscriptionDemand(
@@ -219,7 +230,7 @@ class NotificationController(
                 EitherT(acceptTransferOwnership(ctx.tenant, teamId, apiId))
               case _ => EitherT(nothing())
             }
-            acceptedNotification <- EitherT.liftF(
+            acceptedNotification <- EitherT.right[AppError](
               env.dataStore.notificationRepo
                 .forTenant(ctx.tenant.id)
                 .save(notification.copy(status = NotificationStatus.Accepted()))
@@ -681,12 +692,14 @@ class NotificationController(
             .findById(notificationId),
           AppError.NotificationNotFound
         )
-        sender <- EitherT.fromOptionF[Future, AppError, User](
-          env.dataStore.userRepo.findById(notification.sender.id.get),
-          AppError.UserNotFound()
+        sender <- EitherT.liftF[Future, AppError, Option[User]](
+          notification.sender.id match {
+            case Some(id) => env.dataStore.userRepo.findById(id)
+            case None    => Future.successful(None)
+          }
         )
       } yield {
-        implicit val lang: String = sender.defaultLanguage
+        implicit val lang: String = sender.flatMap(_.defaultLanguage)
           .orElse(ctx.tenant.defaultLanguage)
           .getOrElse("en")
 
@@ -694,6 +707,21 @@ class NotificationController(
           case None => rejectNotificationOfMe(notification)
           case Some(team) =>
             notification.action match {
+              case TeamCreationAttempt(demand, step) =>
+                TeamAdminOnly(
+                  AuditTrailEvent(s"@{user.name} has rejected team creation ${demand.value}")
+                )(team.value, ctx) { _ =>
+                  (for {
+                    _ <- EitherT(teamService.declineTeamCreationAttempt(
+                      demand, step, ctx.tenant, maybeMessage
+                    ))
+                    _ <- EitherT.liftF[Future, AppError, Boolean](
+                      env.dataStore.notificationRepo.forTenant(ctx.tenant)
+                        .save(notification.copy(status = NotificationStatus.Rejected()))
+                    )
+                  } yield Ok(Json.obj("done" -> true)))
+                    .leftMap(_.render()).merge
+                }
               case action: ApiSubscriptionBatchDemand =>
                 rejectBatchSubscriptionNotification(
                   team,
@@ -830,7 +858,7 @@ class NotificationController(
 
   def acceptApiSubscription(
       subscriptionDemandId: DemandId,
-      subscriptionDemandStepId: SubscriptionDemandStepId,
+      workflowStepId: WorkflowStepId,
       teamRequestId: TeamId,
       apiId: ApiId,
       plan: UsagePlanId,
@@ -881,8 +909,8 @@ class NotificationController(
         adminCustomName =
           ctx.request.body.getBodyField[String]("adminCustomName"),
         steps = demand.steps.map(s =>
-          if (s.id == subscriptionDemandStepId)
-            s.copy(state = SubscriptionDemandState.Accepted)
+          if (s.id == workflowStepId)
+            s.copy(state = WorkflowState.Accepted)
           else s
         )
       )
@@ -929,8 +957,8 @@ class NotificationController(
           .findByStates(
             tenant.id,
             Seq(
-              SubscriptionDemandState.InProgress,
-              SubscriptionDemandState.Waiting
+              WorkflowState.InProgress,
+              WorkflowState.Waiting
             ),
             apis = versions.map(_.id).some
           )

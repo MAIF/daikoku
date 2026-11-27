@@ -36,7 +36,7 @@ class SubscriptionBatchReferenceSpec extends PlaySpec {
 
     "keep the reference when updating a child state" in {
       demand.copy(batch = Some(reference))
-        .copy(state = SubscriptionDemandState.Accepted).batch mustBe Some(reference)
+        .copy(state = WorkflowState.Accepted).batch mustBe Some(reference)
     }
 
     "reject incomplete or malformed references instead of losing the parent link" in {

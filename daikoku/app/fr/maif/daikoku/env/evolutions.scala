@@ -911,13 +911,13 @@ object evolution_1613_b extends EvolutionScript {
               steps = (plan \ "subscriptionProcess")
                 .as(using json.SeqValidationStepFormat)
                 .map(step =>
-                  SubscriptionDemandStep(
-                    id = SubscriptionDemandStepId(IdGenerator.token),
-                    state = SubscriptionDemandState.InProgress,
+                  WorkflowStep(
+                    id = WorkflowStepId(IdGenerator.token),
+                    state = WorkflowState.InProgress,
                     step = step
                   )
                 ),
-              state = SubscriptionDemandState.InProgress,
+              state = WorkflowState.InProgress,
               team = teamId,
               from = sender.id.get,
               date = date,
@@ -2654,6 +2654,56 @@ object evolution_1920 extends EvolutionScript {
     }
 }
 
+object evolution_1920_b extends EvolutionScript {
+  override def version: String = "19.2.0_b"
+
+  override def script: (
+      Option[DatastoreId],
+      DataStore,
+      Materializer,
+      ExecutionContext,
+      OtoroshiClient
+  ) => Future[Done] =
+    (
+        _: Option[DatastoreId],
+        dataStore: DataStore,
+        _: Materializer,
+        ec: ExecutionContext,
+        _: OtoroshiClient
+    ) => {
+      given ExecutionContext = ec
+      logger.info(
+        s"Begin evolution $version - add an empty teamCreationProcess to the tenants that have none"
+      )
+
+      val statements = Seq(
+        """UPDATE tenants
+          |SET content = jsonb_set(content, '{teamCreationProcess}', '[]'::jsonb, true)
+          |WHERE content IS NOT NULL
+          |  AND (
+          |    NOT (content ? 'teamCreationProcess')
+          |    OR content->'teamCreationProcess' = 'null'::jsonb
+          |  );""".stripMargin
+      )
+
+      statements
+        .foldLeft(Future.successful(())) { (acc, statement) =>
+          acc.flatMap { _ =>
+            dataStore.teamRepo
+              .forAllTenant()
+              .execute(query = statement)
+              .map(_ => ())
+          }
+        }
+        .map { _ =>
+          logger.info(
+            s"[evolution $version] :: teamCreationProcess added to the tenants"
+          )
+          Done
+        }
+    }
+}
+
 object evolutions {
   val list: List[EvolutionScript] =
     List(
@@ -2687,7 +2737,8 @@ object evolutions {
       evolution_1910_b,
       evolution_1910_c,
       evolution_1910_d,
-      evolution_1920
+      evolution_1920,
+      evolution_1920_b
     )
   def run(
       dataStore: DataStore,

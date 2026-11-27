@@ -244,6 +244,8 @@ GET     /api/teams/:teamId/tenant/otoroshis/:oto/routes         fr.maif.daikoku.
 GET     /api/tenants/:tenantId/otoroshis/:oto/apikeys           fr.maif.daikoku.controllers.OtoroshiSettingsController.otoroshiApiKeysForTenant(tenantId, oto)
 
 POST    /api/teams                                      fr.maif.daikoku.controllers.TeamController.createTeam()
+GET     /api/team/_validate                             fr.maif.daikoku.controllers.TeamController.validateTeamCreationAttempt()
+GET     /api/team/_decline                              fr.maif.daikoku.controllers.TeamController.declineTeamCreationAttempt()
 GET     /api/teams/admin                                fr.maif.daikoku.controllers.TeamController.tenantAdminTeam()
 GET     /api/teams/:teamId                              fr.maif.daikoku.controllers.TeamController.team(teamId)
 PUT     /api/teams/:teamId                              fr.maif.daikoku.controllers.TeamController.updateTeam(teamId)
@@ -386,6 +388,7 @@ DELETE  /fakeotoroshi/apis/apim.otoroshi.io/v1/apikeys/:clientId     fr.maif.dai
 PUT     /fakeotoroshi/apis/apim.otoroshi.io/v1/apikeys/:clientId     fr.maif.daikoku.controllers.MockController.updateFakeOtoroshiApiKey(clientId)
 GET     /fakeotoroshi/apis/apim.otoroshi.io/v1/apikeys               fr.maif.daikoku.controllers.MockController.fakeOtoroshiApiKeys()
 POST    /fakeotoroshi/apis/apim.otoroshi.io/v1/apikeys               fr.maif.daikoku.controllers.MockController.createFakeOtoroshiApiKey()
+POST    /fakeotoroshi/apis/process/_validate                         fr.maif.daikoku.controllers.MockController.fakeHttpStepValidation()
 
 GET     /admin-api/swagger.json                      fr.maif.daikoku.controllers.AdminApiSwaggerController.swagger()
 GET     /admin-api/openapi.json                      fr.maif.daikoku.controllers.AdminApiSwaggerController.swagger()

@@ -333,7 +333,7 @@ class SubscriptionBatchStorageSpec
               5.seconds
             )
             .get
-          child.state mustBe SubscriptionDemandState.Refused
+          child.state mustBe WorkflowState.Refused
         }
         val savedBatch = Await
           .result(
@@ -705,8 +705,8 @@ class SubscriptionBatchStorageSpec
             .get
         }
         children.map(_.state) mustBe Seq(
-          SubscriptionDemandState.Accepted,
-          SubscriptionDemandState.Refused
+          WorkflowState.Accepted,
+          WorkflowState.Refused
         )
         Await
           .result(
@@ -886,7 +886,7 @@ class SubscriptionBatchStorageSpec
             5.seconds
           )
           .get
-        canceledChild.state mustBe SubscriptionDemandState.Canceled
+        canceledChild.state mustBe WorkflowState.Canceled
         Await.result(
           store.notificationRepo
             .findPendingByTeam(template.tenant, TeamId("producer")),
@@ -899,7 +899,7 @@ class SubscriptionBatchStorageSpec
         afterCancellation.status mustBe 200
         afterCancellation.json mustBe play.api.libs.json.Json.arr()
         val unitDemand = newChild(template, template.items.head)
-          .copy(state = SubscriptionDemandState.Waiting)
+          .copy(state = WorkflowState.Waiting)
         Await.result(
           store.subscriptionDemandRepo
             .forTenant(template.tenant)
@@ -1164,7 +1164,7 @@ class SubscriptionBatchStorageSpec
 
         val first = results.head.toOption.get
         first.keyring mustBe Some(KeyringId("keyring"))
-        val progressed = first.copy(state = SubscriptionDemandState.InProgress)
+        val progressed = first.copy(state = WorkflowState.InProgress)
         Await.result(
           store.subscriptionDemandRepo
             .forTenant(parent.tenant)
@@ -1809,13 +1809,13 @@ class SubscriptionBatchStorageSpec
             5.seconds
           )
           .get
-        child.state mustBe SubscriptionDemandState.InProgress
+        child.state mustBe WorkflowState.InProgress
         val validators = Await.result(
           store.stepValidatorRepo.forTenant(parent.tenant).findAll(),
           5.seconds
         )
         validators must have size 1
-        validators.head.subscriptionDemand mustBe child.id
+        validators.head.demandId mustBe child.id
 
         val secondRun = Await.result(
           daikokuComponents.apiService
@@ -1929,10 +1929,10 @@ class SubscriptionBatchStorageSpec
         }
         val first = children.head
         val firstAfterAdmin = first.copy(
-          state = SubscriptionDemandState.InProgress,
+          state = WorkflowState.InProgress,
           steps = first.steps.map(step =>
             if (step.step.id == "admin")
-              step.copy(state = SubscriptionDemandState.Accepted)
+              step.copy(state = WorkflowState.Accepted)
             else step
           )
         )
@@ -1948,10 +1948,10 @@ class SubscriptionBatchStorageSpec
 
         val second = children(1)
         val secondAfterAdmin = second.copy(
-          state = SubscriptionDemandState.InProgress,
+          state = WorkflowState.InProgress,
           steps = second.steps.map(step =>
             if (step.step.id == "admin")
-              step.copy(state = SubscriptionDemandState.Accepted)
+              step.copy(state = WorkflowState.Accepted)
             else step
           )
         )
@@ -1989,12 +1989,12 @@ class SubscriptionBatchStorageSpec
           child.steps
             .find(_.step.id == "callback")
             .get
-            .state mustBe SubscriptionDemandState.Accepted
+            .state mustBe WorkflowState.Accepted
           child.steps
             .find(_.step.id == "email")
             .get
-            .state mustBe SubscriptionDemandState.InProgress
-          child.state mustBe SubscriptionDemandState.InProgress
+            .state mustBe WorkflowState.InProgress
+          child.state mustBe WorkflowState.InProgress
         }
         requests.asScala.toSeq.sorted mustBe parent.items
           .map(_.plan.value)
@@ -2206,9 +2206,9 @@ class SubscriptionBatchStorageSpec
               5.seconds
             )
             .get
-          child.steps.head.state mustBe SubscriptionDemandState.Accepted
-          child.steps(1).state mustBe SubscriptionDemandState.Refused
-          child.state mustBe SubscriptionDemandState.Refused
+          child.steps.head.state mustBe WorkflowState.Accepted
+          child.steps(1).state mustBe WorkflowState.Refused
+          child.state mustBe WorkflowState.Refused
         }
       } finally {
         Await.result(
@@ -3131,7 +3131,7 @@ class SubscriptionBatchStorageSpec
           ),
           5.seconds
         ) mustBe defined
-        val accepted = child.copy(state = SubscriptionDemandState.Accepted)
+        val accepted = child.copy(state = WorkflowState.Accepted)
         Await.result(
           store.saveBatchChildProgress(
             accepted,
@@ -3299,10 +3299,10 @@ class SubscriptionBatchStorageSpec
           parent.id
         ).map(_._2.toOption.get)
         val acceptedAdmin = children.head.copy(
-          state = SubscriptionDemandState.InProgress,
+          state = WorkflowState.InProgress,
           steps = children.head.steps.map(step =>
             if (step.step.id == "admin")
-              step.copy(state = SubscriptionDemandState.Accepted)
+              step.copy(state = WorkflowState.Accepted)
             else step
           )
         )
@@ -3348,7 +3348,7 @@ class SubscriptionBatchStorageSpec
         continued.steps
           .find(_.step.id == "email")
           .get
-          .state mustBe SubscriptionDemandState.InProgress
+          .state mustBe WorkflowState.InProgress
         Await
           .result(
             store.subscriptionDemandRepo
@@ -3357,7 +3357,7 @@ class SubscriptionBatchStorageSpec
             5.seconds
           )
           .get
-          .state mustBe SubscriptionDemandState.Canceled
+          .state mustBe WorkflowState.Canceled
         saved.items.foreach(_.reservation mustBe None)
       } finally {
         requester.foreach(user =>
@@ -3479,7 +3479,7 @@ class SubscriptionBatchStorageSpec
             5.seconds
           )
           .get
-          .state mustBe SubscriptionDemandState.Canceled
+          .state mustBe WorkflowState.Canceled
         Await
           .result(
             store.apiSubscriptionRepo.forTenant(parent.tenant).findAll(),
@@ -3603,7 +3603,7 @@ class SubscriptionBatchStorageSpec
           tenant = parent.tenant,
           token = IdGenerator.token(32),
           step = step.id,
-          subscriptionDemand = child.id
+          demandId = child.id
         )
         val notification = Notification(
           id = NotificationId(IdGenerator.token(32)),
@@ -3676,8 +3676,8 @@ class SubscriptionBatchStorageSpec
             5.seconds
           )
           .get
-        canceled.state mustBe SubscriptionDemandState.Canceled
-        canceled.steps.map(_.state) mustBe Seq(SubscriptionDemandState.Canceled)
+        canceled.state mustBe WorkflowState.Canceled
+        canceled.steps.map(_.state) mustBe Seq(WorkflowState.Canceled)
         val savedParent = Await
           .result(
             store.subscriptionBatchDemandRepo
@@ -3876,7 +3876,7 @@ class SubscriptionBatchStorageSpec
             5.seconds
           )
           .get
-        savedChild.state mustBe SubscriptionDemandState.Blocked
+        savedChild.state mustBe WorkflowState.Blocked
         savedChild.batch mustBe Some(
           SubscriptionBatchReference(parent.id, parent.items.head.id)
         )
@@ -3930,7 +3930,7 @@ class SubscriptionBatchStorageSpec
           .toOption
           .get
         val updates = Seq(
-          child.copy(state = SubscriptionDemandState.InProgress),
+          child.copy(state = WorkflowState.InProgress),
           child.copy(customMaxPerDay = Some(42L))
         )
         val results = Await.result(
@@ -3949,7 +3949,7 @@ class SubscriptionBatchStorageSpec
             5.seconds
           )
           .get
-        val refused = savedChild.copy(state = SubscriptionDemandState.Refused)
+        val refused = savedChild.copy(state = WorkflowState.Refused)
         val rejection = Notification(
           id = NotificationId(IdGenerator.token(32)),
           tenant = parent.tenant,
@@ -3993,7 +3993,7 @@ class SubscriptionBatchStorageSpec
         Await
           .result(
             store.saveBatchChildProgress(
-              child.copy(state = SubscriptionDemandState.InProgress),
+              child.copy(state = WorkflowState.InProgress),
               refused
             ),
             5.seconds
@@ -4046,10 +4046,10 @@ class SubscriptionBatchStorageSpec
         val children = awaitMaterialization(service, parent.tenant, parent.id)
           .map(_._2.toOption.get)
         val states = Seq(
-          SubscriptionDemandState.Waiting,
-          SubscriptionDemandState.InProgress,
-          SubscriptionDemandState.Blocked,
-          SubscriptionDemandState.Canceled
+          WorkflowState.Waiting,
+          WorkflowState.InProgress,
+          WorkflowState.Blocked,
+          WorkflowState.Canceled
         )
         for ((child, state) <- children.zip(states)) {
           Await.result(
@@ -4136,9 +4136,9 @@ class SubscriptionBatchStorageSpec
         val children = awaitMaterialization(service, parent.tenant, parent.id)
           .map(_._2.toOption.get)
         val refused =
-          children.head.copy(state = SubscriptionDemandState.Refused)
+          children.head.copy(state = WorkflowState.Refused)
         val accepted =
-          children(1).copy(state = SubscriptionDemandState.Accepted)
+          children(1).copy(state = WorkflowState.Accepted)
         for (child <- Seq(refused, accepted)) {
           Await.result(
             store.subscriptionDemandRepo.forTenant(parent.tenant).save(child),
@@ -4221,7 +4221,7 @@ class SubscriptionBatchStorageSpec
           store.subscriptionDemandRepo
             .forTenant(parent.tenant)
             .save(
-              refused.copy(state = SubscriptionDemandState.InProgress)
+              refused.copy(state = WorkflowState.InProgress)
             ),
           5.seconds
         ) mustBe true
@@ -4825,8 +4825,8 @@ class SubscriptionBatchStorageSpec
         child.customMetadata mustBe Some(
           play.api.libs.json.Json.obj("reason" -> "access")
         )
-        child.steps.map(_.state) mustBe Seq(SubscriptionDemandState.Accepted)
-        child.state mustBe SubscriptionDemandState.Waiting
+        child.steps.map(_.state) mustBe Seq(WorkflowState.Accepted)
+        child.state mustBe WorkflowState.Waiting
         Await.result(
           store.subscriptionDemandRepo.forTenant(parent.tenant).count(),
           5.seconds
@@ -4939,7 +4939,7 @@ class SubscriptionBatchStorageSpec
           ) mustBe Some(saved)
 
           val progressed =
-            saved.copy(state = SubscriptionDemandState.InProgress)
+            saved.copy(state = WorkflowState.InProgress)
           Await.result(
             repo.forTenant(parent.tenant).save(progressed),
             5.seconds

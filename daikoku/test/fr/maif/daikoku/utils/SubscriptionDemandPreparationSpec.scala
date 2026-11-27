@@ -69,7 +69,7 @@ class SubscriptionDemandPreparationSpec extends PlaySpec {
       child.keyring mustBe Some(KeyringId("existing"))
       child.keyringCustomName mustBe None
       child.steps.map(_.step) mustBe item.process.steps
-      child.state mustBe SubscriptionDemandState.Waiting
+      child.state mustBe WorkflowState.Waiting
       batch.items.head.demand mustBe None
       SubscriptionDemandPreparation.fromBatch(batch, item.id).toOption.get.id must not be child.id
     }
@@ -127,9 +127,9 @@ class SubscriptionDemandPreparationSpec extends PlaySpec {
       val prepared = SubscriptionDemandPreparation.prepare(demand, process)
       prepared.steps.map(_.step) mustBe process.steps
       prepared.steps.map(_.state) mustBe Seq(
-        SubscriptionDemandState.Accepted,
-        SubscriptionDemandState.Waiting,
-        SubscriptionDemandState.Waiting
+        WorkflowState.Accepted,
+        WorkflowState.Waiting,
+        WorkflowState.Waiting
       )
       prepared.steps.map(_.id).distinct.size mustBe 3
       val another = SubscriptionDemandPreparation.prepare(demand, process)

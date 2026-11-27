@@ -2506,6 +2506,51 @@ export const graphql = {
               }
               motivation
             }
+            ... on TeamCreationAttempt {
+            __typename
+              demand {
+                _id
+                email
+                name
+                avatar
+                metadata
+                creationSecurity
+                authorizedOtoroshiEntities {
+                  otoroshiSettingsId
+                  authorizedEntities {
+                    groups
+                    services
+                    routes
+                  }
+                }
+                value
+                steps {
+                  step {
+                    ... on Form {
+                      __typename
+                      formatter
+                      type
+                    }
+                    ... on Email {
+                      __typename
+                      type
+                    }
+                    ... on TeamAdmin {
+                      __typename
+                      type
+                    }
+                    ... on Payment {
+                      __typename
+                      type
+                    }
+                    ... on HttpRequest {
+                      __typename
+                      type
+                    }
+                  }
+                }
+              }
+            }
             ... on SubscriptionPriceChangeScheduled {
             __typename
               api {

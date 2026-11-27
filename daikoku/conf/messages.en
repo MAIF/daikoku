@@ -135,6 +135,22 @@ mail.account.creation.mail.accepted.body = Hello [userName], </br>\
 Thank you for signing up on [tenant]. </br>\
 After review, we are pleased to inform you that your account creation request has been approved. </br>\
 
+mail.team.creation.mail.validation.title = New team pending approval on [tenant]
+mail.team.creation.mail.confirmation.title = Confirm your team creation on [tenant]
+mail.team.creation.mail.confirmation.body = Please <a href="[urlAccept]">confirm</a> or <a href="[urlDecline]">reject</a> the creation of your team on [tenant].
+mail.team.creation.mail.accepted.title = Your team has been created on [tenant]
+mail.team.creation.mail.accepted.body = Hello [userName], your team has been created on [tenant].
+mail.team.creation.mail.rejected.title = Your team creation on [tenant] was rejected
+mail.team.creation.mail.rejected.body = Hello [userName], your team creation request was rejected. [message]
+mail.team.creation.error.title = Team creation failed
+mail.team.creation.error.body = A technical error occurred for team creation request [demandId]. There is no retry action.
+mail.team.creation.mail.validation.body = Hello, </br>\
+A team creation request has just been submitted on [tenant].</br>\
+Team details:</br>\
+Name: [userName]</br>\
+Email : [userEmail]</br>\
+You can <a href="[urlAccept]" target="_blank">approve</a> or <a href="[urlDecline]" target="_blank">reject</a> this team creation.
+
 mail.billing.price.change.title=The price of one of your plans is changing
 mail.billing.price.change.body=The price of the plan [planName] of the API [apiName] changes on [effectiveAt]. </br>\
 From that date, the calls of the team [teamName] are charged [costPerRequest] [currency] each. </br>\

@@ -37,9 +37,9 @@ class KeyringServiceSpec
       api = defaultApi.api.id,
       plan = defaultApi.plans.head.id,
       steps = Seq(
-        SubscriptionDemandStep(
-          id = SubscriptionDemandStepId(IdGenerator.token(32)),
-          state = SubscriptionDemandState.Waiting,
+        WorkflowStep(
+          id = WorkflowStepId(IdGenerator.token(32)),
+          state = WorkflowState.Waiting,
           step = ValidationStep.TeamAdmin(
             id = IdGenerator.token(32),
             team = teamOwnerId
@@ -151,7 +151,7 @@ class KeyringServiceSpec
         val otherKeyring = newKeyring()
         val demands = Seq(
           newDemand(keyring),
-          newDemand(keyring).copy(state = SubscriptionDemandState.InProgress)
+          newDemand(keyring).copy(state = WorkflowState.InProgress)
         )
         val unrelatedDemands = Seq(
           newDemand(otherKeyring),
@@ -164,7 +164,7 @@ class KeyringServiceSpec
             tenant = tenant.id,
             token = IdGenerator.token(32),
             step = demand.steps.head.id,
-            subscriptionDemand = demand.id
+            demandId = demand.id
           )
         }
         val notifications = allDemands.flatMap { demand =>

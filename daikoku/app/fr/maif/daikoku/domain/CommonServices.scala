@@ -201,8 +201,8 @@ object CommonServices {
             .findByStates(
               ctx.tenant.id,
               Seq(
-                SubscriptionDemandState.Waiting,
-                SubscriptionDemandState.InProgress
+                WorkflowState.Waiting,
+                WorkflowState.InProgress
               ),
               apis = allApis.map(_.id).some,
               teams = Seq(TeamId(teamId)).some

@@ -218,13 +218,13 @@ class SubscriptionBatchDemandSpec extends PlaySpec {
             item = SubscriptionBatchItemId("plan-one"),
             plan = UsagePlanId("plan-one-id"),
             demand = DemandId("demand-one"),
-            step = SubscriptionDemandStepId("step-one")
+            step = WorkflowStepId("step-one")
           ),
           NotificationAction.SubscriptionBatchApprovalItem(
             item = SubscriptionBatchItemId("plan-two"),
             plan = UsagePlanId("plan-two-id"),
             demand = DemandId("demand-two"),
-            step = SubscriptionDemandStepId("step-two")
+            step = WorkflowStepId("step-two")
           )
         ),
         motivation = Some("Business use case")

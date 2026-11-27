@@ -80,7 +80,7 @@ class DeletionServiceSpec
       sub: ApiSubscription,
       keyring: Keyring,
       demandId: DemandId,
-      stepId: SubscriptionDemandStepId
+      stepId: WorkflowStepId
   ): Seq[Notification] = {
     def notif(id: String, action: NotificationAction) = Notification(
       id = NotificationId(id),
@@ -271,16 +271,16 @@ class DeletionServiceSpec
         api = defaultApi.api.id,
         plan = subscribedPlan,
         steps = Seq(
-          SubscriptionDemandStep(
-            id = SubscriptionDemandStepId("admin"),
-            state = SubscriptionDemandState.Waiting,
+          WorkflowStep(
+            id = WorkflowStepId("admin"),
+            state = WorkflowState.Waiting,
             step = ValidationStep.TeamAdmin(
               id = IdGenerator.token(10),
               team = teamOwner.id
             )
           )
         ),
-        state = SubscriptionDemandState.InProgress,
+        state = WorkflowState.InProgress,
         team = teamConsumerId,
         from = user.id,
         motivation = None
@@ -296,7 +296,7 @@ class DeletionServiceSpec
           plan = defaultApi.plans.reverse.head.id,
           team = teamConsumerId,
           demand = DemandId("test"),
-          step = SubscriptionDemandStepId("admin"),
+          step = WorkflowStepId("admin"),
           motivation = None
         )
       )
@@ -538,16 +538,16 @@ class DeletionServiceSpec
         api = defaultApi.api.id,
         plan = subscribedPlan,
         steps = Seq(
-          SubscriptionDemandStep(
-            id = SubscriptionDemandStepId("admin"),
-            state = SubscriptionDemandState.Waiting,
+          WorkflowStep(
+            id = WorkflowStepId("admin"),
+            state = WorkflowState.Waiting,
             step = ValidationStep.TeamAdmin(
               id = IdGenerator.token(10),
               team = teamOwner.id
             )
           )
         ),
-        state = SubscriptionDemandState.InProgress,
+        state = WorkflowState.InProgress,
         team = teamConsumerId,
         from = user.id,
         motivation = None
@@ -563,7 +563,7 @@ class DeletionServiceSpec
           plan = defaultApi.plans.reverse.head.id,
           team = teamConsumerId,
           demand = DemandId("test"),
-          step = SubscriptionDemandStepId("admin"),
+          step = WorkflowStepId("admin"),
           motivation = None
         )
       )
@@ -750,16 +750,16 @@ class DeletionServiceSpec
         api = defaultApi.api.id,
         plan = subscribedPlan,
         steps = Seq(
-          SubscriptionDemandStep(
-            id = SubscriptionDemandStepId("admin"),
-            state = SubscriptionDemandState.Waiting,
+          WorkflowStep(
+            id = WorkflowStepId("admin"),
+            state = WorkflowState.Waiting,
             step = ValidationStep.TeamAdmin(
               id = IdGenerator.token(10),
               team = teamOwner.id
             )
           )
         ),
-        state = SubscriptionDemandState.InProgress,
+        state = WorkflowState.InProgress,
         team = teamConsumerId,
         from = randomUser.id,
         motivation = None
@@ -775,7 +775,7 @@ class DeletionServiceSpec
           plan = defaultApi.plans.reverse.head.id,
           team = teamConsumerId,
           demand = DemandId("test"),
-          step = SubscriptionDemandStepId("admin"),
+          step = WorkflowStepId("admin"),
           motivation = None
         )
       )
@@ -908,16 +908,16 @@ class DeletionServiceSpec
         api = defaultApi.api.id,
         plan = subscribedPlan,
         steps = Seq(
-          SubscriptionDemandStep(
-            id = SubscriptionDemandStepId("admin"),
-            state = SubscriptionDemandState.Waiting,
+          WorkflowStep(
+            id = WorkflowStepId("admin"),
+            state = WorkflowState.Waiting,
             step = ValidationStep.TeamAdmin(
               id = IdGenerator.token(10),
               team = teamOwner.id
             )
           )
         ),
-        state = SubscriptionDemandState.InProgress,
+        state = WorkflowState.InProgress,
         team = teamConsumerId,
         from = user.id,
         motivation = None
@@ -933,7 +933,7 @@ class DeletionServiceSpec
           plan = defaultApi.plans.reverse.head.id,
           team = teamConsumerId,
           demand = DemandId("test"),
-          step = SubscriptionDemandStepId("admin"),
+          step = WorkflowStepId("admin"),
           motivation = None
         )
       )
@@ -1532,16 +1532,16 @@ class DeletionServiceSpec
         api = defaultApi.api.id,
         plan = subscribedPlan,
         steps = Seq(
-          SubscriptionDemandStep(
-            id = SubscriptionDemandStepId("admin"),
-            state = SubscriptionDemandState.Waiting,
+          WorkflowStep(
+            id = WorkflowStepId("admin"),
+            state = WorkflowState.Waiting,
             step = ValidationStep.TeamAdmin(
               id = IdGenerator.token(10),
               team = teamOwner.id
             )
           )
         ),
-        state = SubscriptionDemandState.InProgress,
+        state = WorkflowState.InProgress,
         team = teamConsumerId,
         from = user.id,
         motivation = None
@@ -1557,7 +1557,7 @@ class DeletionServiceSpec
           plan = defaultApi.plans.head.id,
           team = teamConsumerId,
           demand = DemandId("test"),
-          step = SubscriptionDemandStepId("admin"),
+          step = WorkflowStepId("admin"),
           motivation = None
         )
       )
@@ -3633,7 +3633,7 @@ class DeletionServiceSpec
         keyring = keyring.id
       )
       val demandId = DemandId("notif-demand")
-      val stepId = SubscriptionDemandStepId("notif-step")
+      val stepId = WorkflowStepId("notif-step")
 
       setupEnvBlocking(
         tenants = Seq(
@@ -3740,7 +3740,7 @@ class DeletionServiceSpec
         keyring = keyring.id
       )
       val demandId = DemandId("notif-demand")
-      val stepId = SubscriptionDemandStepId("notif-step")
+      val stepId = WorkflowStepId("notif-step")
 
       setupEnvBlocking(
         tenants = Seq(
@@ -3858,7 +3858,7 @@ class DeletionServiceSpec
         keyring = keyring.id
       )
       val demandId = DemandId("notif-demand")
-      val stepId = SubscriptionDemandStepId("notif-step")
+      val stepId = WorkflowStepId("notif-step")
 
       setupEnvBlocking(
         tenants = Seq(
@@ -3975,7 +3975,7 @@ class DeletionServiceSpec
         keyring = keyring.id
       )
       val demandId = DemandId("notif-demand")
-      val stepId = SubscriptionDemandStepId("notif-step")
+      val stepId = WorkflowStepId("notif-step")
 
       setupEnvBlocking(
         tenants = Seq(
@@ -4091,7 +4091,7 @@ class DeletionServiceSpec
         keyring = keyring.id
       )
       val demandId = DemandId("notif-demand")
-      val stepId = SubscriptionDemandStepId("notif-step")
+      val stepId = WorkflowStepId("notif-step")
       val userPersonalTeam = Team(
         id = TeamId("user-personal-notif"),
         tenant = tenant.id,
@@ -4202,21 +4202,21 @@ class DeletionServiceSpec
         keyring = keyring.id
       )
       val demandId = DemandId("notif-demand")
-      val stepId = SubscriptionDemandStepId("notif-step")
+      val stepId = WorkflowStepId("notif-step")
       val demand = SubscriptionDemand(
         id = demandId,
         tenant = tenant.id,
         api = api.id,
         plan = plan.id,
         steps = Seq(
-          SubscriptionDemandStep(
-            id = SubscriptionDemandStepId("admin"),
-            state = SubscriptionDemandState.Waiting,
+          WorkflowStep(
+            id = WorkflowStepId("admin"),
+            state = WorkflowState.Waiting,
             step = ValidationStep
               .TeamAdmin(id = IdGenerator.token(10), team = teamOwner.id)
           )
         ),
-        state = SubscriptionDemandState.InProgress,
+        state = WorkflowState.InProgress,
         team = teamConsumerId,
         from = user.id,
         motivation = None

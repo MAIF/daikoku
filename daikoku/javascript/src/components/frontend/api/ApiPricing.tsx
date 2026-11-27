@@ -5,7 +5,17 @@ import classNames from 'classnames';
 import { GraphQLClient } from 'graphql-request';
 import cloneDeep from 'lodash/cloneDeep';
 import difference from 'lodash/difference';
-import { CopyPlus, Download, EllipsisVertical, ExternalLink, KeyRound, Pencil, Plus, Trash2 } from 'lucide-react';
+import {
+  CopyPlus,
+  DiagramFlowHorizontal,
+  Download,
+  EllipsisVertical,
+  ExternalLink,
+  KeyRound,
+  Pencil,
+  Plus,
+  Trash2
+} from 'lucide-react';
 import { nanoid } from 'nanoid';
 import { ReactNode, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
@@ -38,7 +48,7 @@ import {
   OtoroshiEntitiesSelectorProps,
   OtoroshiEntity
 } from '../../../types';
-import { SubscriptionProcessEditor } from '../../backoffice/apis/SubscriptionProcessEditor';
+import { ValidationWorkflowEditor } from '../../backoffice/apis/ValidationWorkflowEditor';
 import { DynamicTable, DynamicTableFeatures, FetchData, FetchResult } from "../../inputs";
 import {
   access,
@@ -555,7 +565,7 @@ const QuotasForm = (props: { ownerTeam: ITeamSimple, plan: IUsagePlanGQL, savePl
       />}
       {!quotasDisplayed && (
         <div className='mrf-flex mrf-jc_end mrf-mt_5'>
-          <button className='btn --secondary'
+          <button className='btn --primary'
             type='button'
             onClick={() => props.savePlan(convertIUsagePlanGQLToIUsagePlan({
               ...props.plan,
@@ -563,7 +573,7 @@ const QuotasForm = (props: { ownerTeam: ITeamSimple, plan: IUsagePlanGQL, savePl
               maxPerSecond: undefined,
               maxPerMonth: undefined
             }))}>
-            Save
+            {translate("Save")}
           </button>
         </div>
       )}
@@ -702,7 +712,7 @@ const BillingForm = (props: { ownerTeam: ITeamSimple, plan: IUsagePlanGQL, saveP
       />}
       {!billingDisplayed && (
         <div className='mrf-flex mrf-jc_end mrf-mt_5'>
-          <button className='mrf-btn mrf-btn_green mrf-ml_10'
+          <button className='btn --primary'
             type='button'
             disabled={!isPaymentDefined}
             onClick={() => props.savePlan({
@@ -712,7 +722,7 @@ const BillingForm = (props: { ownerTeam: ITeamSimple, plan: IUsagePlanGQL, saveP
               currency: undefined,
               paymentSettings: undefined
             })}>
-            Save
+            {translate("Save")}
           </button>
         </div>
       )}
@@ -1696,6 +1706,15 @@ export const ApiPricing = (props: ApiPricingProps) => {
         content: <Form
           schema={otoroshiSchema(plan)}
           value={plan.otoroshiTarget}
+          footer={({ valid }) => {
+            return (
+              <div className="d-flex justify-content-end gap-2">
+                <button className="btn --primary" onClick={valid}>
+                  {translate("Save")}
+                </button>
+              </div>
+            );
+          }}
           onSubmit={(otoroshiTarget) => {
             savePlan(convertIUsagePlanGQLToIUsagePlan({ ...plan, otoroshiTarget }))
           }}
@@ -1704,14 +1723,15 @@ export const ApiPricing = (props: ApiPricingProps) => {
       editProcess: () => {
         openRightPanel({
           title: translate("api.pricings.subscription.process.table.title"),
-          content: <SubscriptionProcessEditor
+          content: <ValidationWorkflowEditor
             save={updatedProcess => {
               return Promise.resolve(savePlan(convertIUsagePlanGQLToIUsagePlan({ ...plan, subscriptionProcess: updatedProcess })))
             }}
             process={plan.subscriptionProcess}
             team={props.ownerTeam._id}
             tenant={tenant}
-          />
+          />,
+          defaultSize:95
         })
       }
     }
@@ -1984,7 +2004,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
                       <Can I={manage} a={API} team={props.ownerTeam}>
                         <button className='dropdown-item d-flex gap-1 align-items-center'
                           onClick={() => actions(plan).editProcess()}>
-                          <Pencil size={16} />
+                          <DiagramFlowHorizontal size={16} />
                           {translate('pricing.edit.process.btn.label')}
                         </button>
                       </Can>

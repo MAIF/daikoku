@@ -58,7 +58,7 @@ test("un admin daikoku peut creer une équipe quelque soit la securité", async 
   await page.getByRole('button', { name: 'Créer une nouvelle équipe' }).click();
   await page.getByRole('textbox', { name: 'Nom' }).fill('test created team');
   await page.getByRole('button', { name: 'Créer', exact: true }).click();
-  await expect(page.getByText('L\'équipe test created team a')).toBeVisible();
+  await expect(page.getByText('La demande de création de l')).toBeVisible();
   await expect(page.locator('.avatar-with-action', { hasText: 'test created team' })).toBeVisible();
 });
 
@@ -120,7 +120,7 @@ test("un utilisateur peut creer une équipe si la securité de creation d'équip
   await page.locator('.modal-footer').getByRole('button', { name: 'Créer une équipe' }).click();
   await page.getByRole('textbox', { name: 'Nom' }).fill('test created team');
   await page.getByRole('button', { name: 'Créer', exact: true }).click();
-  await expect(page.getByText('L\'équipe test created team a')).toBeVisible();
+  await expect(page.getByText('La demande de création de ')).toBeVisible();
   await page.getByRole('button', { name: 'Mes équipes' }).click();
   await expect(page.getByRole('link', { name: 'test created team' })).toBeVisible();
 });
